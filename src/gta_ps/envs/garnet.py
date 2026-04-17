@@ -26,6 +26,7 @@ class GARNETEnv:
         Number of successor states per (s, a) pair.
     reward_support : int
         Number of states with nonzero reward at each shift.
+        Per memo §8: fixed in {1, 2, 4, 8} regardless of |S|.
     gamma : float
         Discount factor.
     reversible : float
@@ -40,7 +41,7 @@ class GARNETEnv:
         n_states: int = 100,
         n_actions: int = 10,
         branching: int = 3,
-        reward_support: int = 5,
+        reward_support: int = 4,   # fixed, not a function of |S|
         gamma: float = 0.99,
         reversible: float = 0.0,
         seed: int = 0,

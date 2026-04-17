@@ -2,7 +2,9 @@ env: garnet
 n_states: 500
 n_actions: 10
 branching: 4
-reward_support: 25
+# reward_support is fixed in {1,2,4,8} per memo §8 — NOT a function of |S|
+reward_support: 4
+reward_support_sweep: [1, 2, 4, 8]
 gamma: 0.99
 n_shifts: 20
 seeds: 1000

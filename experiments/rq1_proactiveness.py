@@ -35,6 +35,7 @@ def run_single_seed(
     env_name: str,
     n_states: int,
     k_fourrooms: int,
+    reward_support: int,
     seed: int,
     gamma: float,
     n_shifts: int,
@@ -44,8 +45,9 @@ def run_single_seed(
     rng = np.random.default_rng(seed)
 
     if env_name == "garnet":
+        # reward_support is fixed in {1,2,4,8} per memo §8 — NOT scaled by |S|
         env = GARNETEnv(n_states=n_states, n_actions=10, branching=4,
-                        reward_support=max(1, n_states // 20),
+                        reward_support=reward_support,
                         gamma=gamma, seed=seed)
     else:
         env = FourRoomsTabular(k=k_fourrooms, gamma=gamma, seed=seed)
@@ -104,6 +106,10 @@ def main():
     parser.add_argument("--env", default="garnet", choices=["garnet", "fourrooms"])
     parser.add_argument("--n-states", type=int, default=100)
     parser.add_argument("--k-fourrooms", type=int, default=1)
+    # GARNET reward support: fixed in {1,2,4,8}, never a function of |S| (memo §8)
+    parser.add_argument("--reward-support", type=int, default=4,
+                        choices=[1, 2, 4, 8],
+                        help="GARNET |supp(r_t)|; ignored for fourrooms")
     parser.add_argument("--seeds", type=int, default=20)
     parser.add_argument("--n-shifts", type=int, default=5)
     parser.add_argument("--gamma", type=float, default=0.99)
@@ -124,6 +130,7 @@ def main():
             env_name=args.env,
             n_states=args.n_states,
             k_fourrooms=args.k_fourrooms,
+            reward_support=args.reward_support,
             seed=seed,
             gamma=args.gamma,
             n_shifts=args.n_shifts,
@@ -133,7 +140,7 @@ def main():
 
     summary = aggregate(all_results, budgets)
 
-    out_path = Path(args.out_dir) / f"rq1_{args.env}_S{args.n_states or 'fr'}_k{args.k_fourrooms}.json"
+    out_path = Path(args.out_dir) / f"rq1_{args.env}_S{args.n_states or 'fr'}_supp{args.reward_support}_k{args.k_fourrooms}.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(summary, f, indent=2)
