@@ -1,0 +1,14 @@
+env: fourrooms
+k_fourrooms: 4      # all rooms active; unequal weights
+gamma: 0.99
+n_shifts: 20
+seeds: 1000
+eps_metric: 0.1
+
+alpha: 0.5
+beta: 1.0
+beta1: 1.0
+beta2: 0.1
+alpha_exp: 1.0
+
+arnoldi_k: 15

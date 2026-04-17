@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "gta-ps"
+version = "0.1.0"
+description = "Graph Topology Augmentation for Prioritized Sweeping"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "gymnasium>=1.0",
+    "minigrid>=2.3",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "tqdm>=4.66",
+    "rich>=13.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
