@@ -1,0 +1,751 @@
+% ============================================================
+% references.bib — GTA-PS Prototype Proposal
+% ============================================================
+
+% ---- MDP Foundations & Dynamic Programming -----------------
+
+@book{bellman1957dynamic,
+  author    = {Bellman, Richard},
+  title     = {Dynamic Programming},
+  publisher = {Princeton University Press},
+  year      = {1957}
+}
+
+@book{puterman1994markov,
+  author    = {Puterman, Martin L.},
+  title     = {Markov Decision Processes: Discrete Stochastic Dynamic Programming},
+  publisher = {John Wiley \& Sons},
+  year      = {1994},
+  doi       = {10.1002/9780470316887}
+}
+
+@book{sutton2018reinforcement,
+  author    = {Sutton, Richard S. and Barto, Andrew G.},
+  title     = {Reinforcement Learning: An Introduction},
+  edition   = {2nd},
+  publisher = {MIT Press},
+  year      = {2018},
+  url       = {http://incompleteideas.net/book/the-book-2nd.html}
+}
+
+@article{shani2005mdp,
+  author    = {Shani, Guy and Heckerman, David and Brafman, Ronen I.},
+  title     = {An {MDP}-Based Recommender System},
+  journal   = {Journal of Machine Learning Research},
+  volume    = {6},
+  pages     = {1265--1295},
+  year      = {2005},
+  url       = {https://jmlr.org/papers/v6/shani05a.html},
+  note      = {Canonical formulation of recommendation as a sequential MDP optimization problem with long-term value effects}
+}
+
+@inproceedings{andrychowicz2017her,
+  author    = {Andrychowicz, Marcin and Wolski, Filip and Ray, Alex and Schneider, Jonas and Fong, Rachel and Welinder, Peter and McGrew, Bob and Tobin, Josh and Abbeel, Pieter and Zaremba, Wojciech},
+  title     = {Hindsight Experience Replay},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {30},
+  year      = {2017},
+  publisher = {Curran Associates, Inc.},
+  url       = {https://papers.nips.cc/paper_files/paper/2017/file/453fadbd8a1a3af50a9df4df899537b5-Paper.pdf},
+  note      = {Canonical goal-conditioned robotics RL paper: fixed robot dynamics with changing target goals and sparse binary rewards}
+}
+
+@article{aviv2005pomdp,
+  author    = {Aviv, Yossi and Pazgal, Amit},
+  title     = {A Partially Observed {Markov} Decision Process for Dynamic Pricing},
+  journal   = {Management Science},
+  volume    = {51},
+  number    = {9},
+  pages     = {1400--1416},
+  year      = {2005},
+  doi       = {10.1287/mnsc.1050.0393},
+  note      = {Concrete operations-research sequential decision model with stable selling dynamics and changing demand uncertainty}
+}
+
+@inproceedings{zou2019engagement,
+  author    = {Zou, Lixin and Xia, Long and Ding, Zhuoye and Song, Jiaxing and Liu, Weidong and Yin, Dawei},
+  title     = {Reinforcement Learning to Optimize Long-term User Engagement in Recommender Systems},
+  booktitle = {Proceedings of the 25th {ACM} {SIGKDD} International Conference on Knowledge Discovery \& Data Mining},
+  pages     = {2810--2818},
+  year      = {2019},
+  doi       = {10.1145/3292500.3330668},
+  url       = {https://dl.acm.org/doi/10.1145/3292500.3330668},
+  note      = {Sequential recommender-system formulation centered on evolving user engagement and long-term preference optimization}
+}
+
+% ---- Spectral Graph Theory Foundations ---------------------
+
+@book{doyle1984random,
+  author    = {Doyle, Peter G. and Snell, J. Laurie},
+  title     = {Random Walks and Electric Networks},
+  publisher = {Mathematical Association of America},
+  series    = {Carus Mathematical Monographs},
+  volume    = {22},
+  year      = {1984},
+  url       = {https://arxiv.org/abs/math/0001057},
+  note      = {Canonical reference establishing the correspondence between random-walk
+               potentials on Markov chains and voltage potentials in resistor networks;
+               the graph Laplacian $(L+\varepsilon I)^{-1}$ as a potential operator
+               originates in this circuit-theory perspective}
+}
+
+@book{chung1997spectral,
+  author    = {Chung, Fan R. K.},
+  title     = {Spectral Graph Theory},
+  series    = {{CBMS} Regional Conference Series in Mathematics},
+  number    = {92},
+  publisher = {American Mathematical Society},
+  year      = {1997},
+  note      = {Primary reference for undirected normalized Laplacian,
+               eigenvalue bounds $\lambda_k\in[0,2]$, and Cheeger inequality}
+}
+
+@article{chung2005laplacians,
+  author    = {Chung, Fan},
+  title     = {Laplacians and the {Cheeger} Inequality for Directed Graphs},
+  journal   = {Annals of Combinatorics},
+  volume    = {9},
+  number    = {1},
+  pages     = {1--19},
+  year      = {2005},
+  doi       = {10.1007/s00026-005-0237-z},
+  note      = {Establishes directed graph Laplacians via the Perron (stationary)
+               vector normalization; Cheeger inequality for directed graphs;
+               spectral gap relating to directed connectivity}
+}
+
+@article{fiedler1973algebraic,
+  author    = {Fiedler, Miroslav},
+  title     = {Algebraic Connectivity of Graphs},
+  journal   = {Czechoslovak Mathematical Journal},
+  volume    = {23},
+  number    = {98},
+  pages     = {298--305},
+  year      = {1973}
+}
+
+@article{sandryhaila2013discrete,
+  title={Discrete signal processing on graphs},
+  author={Sandryhaila, Aliaksei and Moura, Jos{\'e} MF},
+  journal={IEEE transactions on signal processing},
+  volume={61},
+  number={7},
+  pages={1644--1656},
+  year={2013},
+  publisher={IEEE},
+  note={Introduces the adjacency-based graph Fourier transform (GFT) for directed graphs}
+}
+
+@book{levin2017markov,
+  author    = {Levin, David A. and Peres, Yuval},
+  title     = {Markov Chains and Mixing Times},
+  edition   = {2nd},
+  publisher = {American Mathematical Society},
+  year      = {2017},
+  note      = {With contributions by Elizabeth L. Wilmer}
+}
+
+@book{levin2009markov,
+  author    = {Levin, David A. and Peres, Yuval and Wilmer, Elizabeth L.},
+  title     = {Markov Chains and Mixing Times},
+  publisher = {American Mathematical Society},
+  year      = {2009},
+  note      = {1st edition; cited for Chapter~13 on mixing times, multiplicative reversiblization, and conductance bounds}
+}
+
+@article{bierkens2016non,
+  title={Non-reversible metropolis-hastings},
+  author={Bierkens, Joris},
+  journal={Statistics and Computing},
+  volume={26},
+  number={6},
+  pages={1213--1228},
+  year={2016},
+  publisher={Springer},
+  note={Introduce additive reversiblization for non-reversible Markov chains}
+}
+
+@article{montenegro2006mathematical,
+  author    = {Montenegro, Ravi and Tetali, Prasad},
+  title     = {Mathematical Aspects of Mixing Times in {Markov} Chains},
+  journal   = {Foundations and Trends in Theoretical Computer Science},
+  volume    = {1},
+  number    = {3},
+  pages     = {237--354},
+  year      = {2006},
+  doi       = {10.1561/0400000003},
+  note      = {Survey covering conductance, singular-value / reversiblization methods, and rigorous mixing-time bounds for finite Markov chains}
+}
+
+@article{chung2000discrete,
+  author    = {Chung, Fan and Yau, Shing-Tung},
+  title     = {Discrete {Green}'s functions},
+  journal   = {Journal of Combinatorial Theory, Series A},
+  volume    = {91},
+  number    = {1-2},
+  pages     = {191--214},
+  year      = {2000},
+  doi       = {10.1006/jcta.2000.3094},
+  note      = {Foundational properties of Green's functions on finite graphs, including their relation to the graph Laplacian, spectral components, and the fundamental matrices of a graph}
+}
+
+% ---- Computational Linear Algebra --------------------------
+
+@book{golub2013matrix,
+  author    = {Golub, Gene H. and Van Loan, Charles F.},
+  title     = {Matrix Computations},
+  edition   = {4th},
+  publisher = {Johns Hopkins University Press},
+  year      = {2013},
+  note      = {Chapter~7 (Arnoldi, unsymmetric Lanczos); Chapter~8 (symmetric Lanczos).
+               Primary reference for both Arnoldi process and non-symmetric eigensolvers}
+}
+
+@book{horn1985matrix,
+  author    = {Horn, Roger A. and Johnson, Charles R.},
+  title     = {Matrix Analysis},
+  publisher = {Cambridge University Press},
+  year      = {1985},
+  note      = {Foundational reference for eigenvalue theory of non-symmetric matrices;
+               establishes biorthogonal eigenvector decomposition and left/right
+               eigenvector structures}
+}
+
+@article{saad1986gmres,
+  author    = {Saad, Youcef and Schultz, Martin H.},
+  title     = {{GMRES}: A Generalized Minimal Residual Algorithm for Solving
+               Nonsymmetric Linear Systems},
+  journal   = {{SIAM} Journal on Scientific and Statistical Computing},
+  volume    = {7},
+  number    = {3},
+  pages     = {856--869},
+  year      = {1986},
+  doi       = {10.1137/0907058},
+  note      = {Introduces GMRES: Krylov subspace method for non-symmetric systems;
+               replaces CG for solving $(L^{out}_t+\varepsilon I)x=b$ in GTA-PS}
+}
+
+@article{eisenstat1983variational,
+  author    = {Eisenstat, Stanley C. and Elman, Howard C. and Schultz, Martin H.},
+  title     = {Variational Iterative Methods for Nonsymmetric Systems of Linear Equations},
+  journal   = {{SIAM} Journal on Numerical Analysis},
+  volume    = {20},
+  number    = {2},
+  pages     = {345--357},
+  year      = {1983},
+  doi       = {10.1137/0720023},
+  note      = {Establishes convergence bound for GMRES when the symmetric part of $A$
+               is positive definite: $\|r_j\|/\|r_0\|\leq(1-\lambda_{\min}(\frac{A+A^\top}{2})^2/\lambda_{\max}(A^\top A))^{j/2}$.
+               Used in GTA-PS for the GMRES rate on $L^{out}_t+\varepsilon I$}
+}
+
+
+@book{saad2011numerical,
+  author    = {Saad, Yousef},
+  title     = {Numerical Methods for Large Eigenvalue Problems},
+  edition   = {2nd},
+  publisher = {{SIAM}},
+  year      = {2011},
+  doi       = {10.1137/1.9781611970739}
+}
+
+@article{davis1970rotation,
+  author    = {Davis, Chandler and Kahan, William Morton},
+  title     = {The Rotation of Eigenvectors by a Perturbation. {III}},
+  journal   = {SIAM Journal on Numerical Analysis},
+  volume    = {7},
+  number    = {1},
+  pages     = {1--46},
+  year      = {1970},
+  doi       = {10.1137/0707001}
+}
+
+@book{bhatia1997matrix,
+  author    = {Bhatia, Rajendra},
+  title     = {Matrix Analysis},
+  series    = {Graduate Texts in Mathematics},
+  volume    = {169},
+  publisher = {Springer},
+  year      = {1997},
+  doi       = {10.1007/978-1-4612-0653-8}
+}
+
+@article{sherman1950adjustment,
+  author    = {Sherman, Jack and Morrison, Winifred J.},
+  title     = {Adjustment of an Inverse Matrix Corresponding to a Change in One Element of a Given Matrix},
+  journal   = {Annals of Mathematical Statistics},
+  volume    = {21},
+  number    = {1},
+  pages     = {124--127},
+  year      = {1950},
+  doi       = {10.1214/aoms/1177729893}
+}
+
+@article{fredman1987fibonacci,
+  author    = {Fredman, Michael L. and Tarjan, Robert Endre},
+  title     = {Fibonacci Heaps and Their Uses in Improved Network Optimization Algorithms},
+  journal   = {Journal of the {ACM}},
+  volume    = {34},
+  number    = {3},
+  pages     = {596--615},
+  year      = {1987},
+  doi       = {10.1145/28869.28874}
+}
+
+% ---- Prioritized Sweeping Foundations ----------------------
+
+@article{moore1993prioritized,
+  author    = {Moore, Andrew W. and Atkeson, Christopher G.},
+  title     = {Prioritized Sweeping: Reinforcement Learning with Less Data and Less Time},
+  journal   = {Machine Learning},
+  volume    = {13},
+  number    = {1},
+  pages     = {103--130},
+  year      = {1993},
+  publisher = {Springer},
+  doi       = {10.1007/BF00993104}
+}
+
+
+@article{peng1993efficient,
+  author    = {Peng, Jing and Williams, Ronald J.},
+  title     = {Efficient Learning and Planning Within the {Dyna} Framework},
+  journal   = {Adaptive Behavior},
+  volume    = {1},
+  number    = {4},
+  pages     = {437--454},
+  year      = {1993},
+  publisher = {SAGE Publications},
+  doi       = {10.1177/105971239300100403}
+}
+
+@article{wingate2005prioritization,
+  author    = {Wingate, David and Seppi, Kevin D.},
+  title     = {Prioritization Methods for Accelerating {MDP} Solvers},
+  journal   = {Journal of Machine Learning Research},
+  volume    = {6},
+  pages     = {851--881},
+  year      = {2005},
+  url       = {https://jmlr.org/papers/v6/wingate05a.html},
+  note      = {Systematic study of backup-ordering heuristics for value and policy
+               iteration; shows orders-of-magnitude speedups from good prioritization
+               while preserving convergence guarantees; leaves the theoretically
+               optimal ordering as an open problem}
+}
+
+
+@inproceedings{sutton1990dyna,
+  author    = {Sutton, Richard S.},
+  title     = {Integrated Architectures for Learning, Planning, and Reacting Based on Approximating Dynamic Programming},
+  booktitle = {Proceedings of the Seventh International Conference on Machine Learning (ICML)},
+  pages     = {216--224},
+  year      = {1990},
+  publisher = {Morgan Kaufmann}
+}
+
+@inproceedings{silver2008dyna2,
+  author    = {Silver, David and Sutton, Richard S. and M\"{u}ller, Martin},
+  title     = {Sample-Based Learning and Search with Permanent and Transient Memories},
+  booktitle = {Proceedings of the 25th International Conference on Machine Learning ({ICML})},
+  pages     = {968--975},
+  year      = {2008},
+  publisher = {{ACM}},
+  doi       = {10.1145/1390156.1390280},
+  note      = {Introduces Dyna-2: permanent background memory (Dyna-like) + transient foreground memory (tree search)}
+}
+
+
+@article{barto1995rtdp,
+  author    = {Barto, Andrew G. and Bradtke, Steven J. and Singh, Satinder P.},
+  title     = {Learning to Act Using Real-Time Dynamic Programming},
+  journal   = {Artificial Intelligence},
+  volume    = {72},
+  number    = {1--2},
+  pages     = {81--138},
+  year      = {1995},
+  doi       = {10.1016/0004-3702(94)00011-O}
+}
+
+@article{dai2011topological,
+  author    = {Dai, Peng and Mausam and Weld, Daniel S. and Goldsmith, Judy},
+  title     = {Topological Value Iteration Algorithms},
+  journal   = {Journal of Artificial Intelligence Research},
+  volume    = {42},
+  pages     = {181--209},
+  year      = {2011},
+  doi       = {10.1613/jair.3390},
+  url       = {https://arxiv.org/abs/1401.3910},
+  note      = {Introduces TVI (SCC-based backup ordering) and FTVI (focused TVI with heuristic pruning)}
+}
+
+@inproceedings{bonet2003labeled,
+  author    = {Bonet, Blai and Geffner, H\'{e}ctor},
+  title     = {Labeled {RTDP}: Improving the Convergence of Real-Time Dynamic Programming},
+  booktitle = {Proceedings of the 13th International Conference on Automated Planning and Scheduling ({ICAPS})},
+  pages     = {12--21},
+  year      = {2003},
+  publisher = {{AAAI} Press}
+}
+
+
+@InProceedings{pmlr-v28-vanseijen13,
+  title = 	 {Planning by Prioritized Sweeping with Small Backups},
+  author = 	 {Van Seijen, Harm and Sutton, Rich},
+  booktitle = 	 {Proceedings of the 30th International Conference on Machine Learning},
+  pages = 	 {361--369},
+  year = 	 {2013},
+  editor = 	 {Dasgupta, Sanjoy and McAllester, David},
+  volume = 	 {28},
+  number =       {3},
+  series = 	 {Proceedings of Machine Learning Research},
+  address = 	 {Atlanta, Georgia, USA},
+  month = 	 {17--19 Jun},
+  publisher =    {PMLR},
+  pdf = 	 {http://proceedings.mlr.press/v28/vanseijen13.pdf},
+  url = 	 {https://proceedings.mlr.press/v28/vanseijen13.html},
+  abstract = 	 {Efficient planning plays a crucial role in model-based reinforcement learning. Traditionally, the main planning operation is a full backup based on the current estimates of the successor states. Consequently, its computation time is proportional to the number of successor states. In this paper, we introduce a new planning backup that  uses only the current value of a single successor state and has a computation time independent of the number of successor states. This new backup, which we call a small backup, opens the door to a new class of model-based reinforcement learning methods that exhibit much finer control over their planning process than traditional methods. We empirically demonstrate that this increased flexibility allows for more efficient planning by showing that an implementation of prioritized sweeping based on small backups achieves a substantial performance improvement over classical implementations. }
+}
+
+@inproceedings{corneil2018vast,
+  author    = {Corneil, Dane and Gerstner, Wulfram and Brea, Johanni},
+  title     = {Efficient Model-Based Deep Reinforcement Learning with Variational State Tabulation},
+  booktitle = {Proceedings of the 35th International Conference on Machine Learning ({ICML})},
+  pages     = {1049--1058},
+  year      = {2018},
+  publisher = {{PMLR}},
+  url       = {https://arxiv.org/abs/1802.04325}
+}
+
+@inproceedings{schaul2016prioritized,
+  author    = {Schaul, Tom and Quan, John and Antonoglou, Ioannis and Silver, David},
+  title     = {Prioritized Experience Replay},
+  booktitle = {International Conference on Learning Representations ({ICLR})},
+  year      = {2016},
+  url       = {https://arxiv.org/abs/1511.05952}
+}
+
+% ---- Successor Representation -----------------------------
+
+@article{dayan1993improving,
+  author    = {Dayan, Peter},
+  title     = {Improving Generalization for Temporal Difference Learning: The Successor Representation},
+  journal   = {Neural Computation},
+  volume    = {5},
+  number    = {4},
+  pages     = {613--624},
+  year      = {1993},
+  doi       = {10.1162/neco.1993.5.4.613}
+}
+
+% ---- Spectral and Laplacian Methods in RL ------------------
+
+@inproceedings{mahadevan2005proto,
+  author    = {Mahadevan, Sridhar},
+  title     = {Proto-Value Functions: Developmental Reinforcement Learning},
+  booktitle = {Proceedings of the 22nd International Conference on Machine Learning ({ICML})},
+  pages     = {553--560},
+  year      = {2005},
+  doi       = {10.1145/1102351.1102421},
+  note      = {First paper to name Laplacian eigenvectors ``Fourier eigenfunctions of the
+               Laplace--Beltrami operator''; introduces spectral basis for value functions}
+}
+
+@article{mahadevan2007proto,
+  author    = {Mahadevan, Sridhar and Maggioni, Mauro},
+  title     = {Proto-Value Functions: {A} {Laplacian} Framework for Learning Representation and Control in {Markov} Decision Processes},
+  journal   = {Journal of Machine Learning Research},
+  volume    = {8},
+  pages     = {2169--2231},
+  year      = {2007}
+}
+
+@article{shuman2013emerging,
+  author    = {Shuman, David I. and Narang, Sunil K. and Frossard, Pascal and Ortega, Antonio and Vandergheynst, Pierre},
+  title     = {The Emerging Field of Signal Processing on Graphs},
+  journal   = {{IEEE} Signal Processing Magazine},
+  volume    = {30},
+  number    = {3},
+  pages     = {83--98},
+  year      = {2013},
+  doi       = {10.1109/MSP.2012.2235192},
+  note      = {Canonical reference for Graph Fourier Transform (GFT): eigenvectors of
+               graph Laplacian as frequency basis; filtering in graph spectral domain}
+}
+
+@article{belkin2003laplacian,
+  author    = {Belkin, Mikhail and Niyogi, Partha},
+  title     = {Laplacian Eigenmaps for Dimensionality Reduction and Data Representation},
+  journal   = {Neural Computation},
+  volume    = {15},
+  number    = {6},
+  pages     = {1373--1396},
+  year      = {2003},
+  doi       = {10.1162/089976603321780317},
+  note      = {Establishes graph Laplacian eigenvectors as smooth basis functions on
+               discrete data manifolds; precursor to proto-value functions in RL}
+}
+
+@inproceedings{wu2019laplacian,
+  author    = {Wu, Yifan and Tucker, George and Nachum, Ofir},
+  title     = {The {Laplacian} in {RL}: Learning Representations with Efficient Approximations},
+  booktitle = {International Conference on Learning Representations ({ICLR})},
+  year      = {2019},
+  url       = {https://arxiv.org/abs/1810.04586},
+  note      = {Proposes Krylov-based approximation of graph Laplacian eigenvectors
+               for state representation learning in model-free RL; shows scalability
+               beyond tabular settings and benefits for goal-reaching tasks}
+}
+
+@article{stachenfeld2017hippocampus,
+  author    = {Stachenfeld, Kimberly L. and Botvinick, Matthew M. and Gershman, Samuel J.},
+  title     = {The Hippocampus as a Predictive Map},
+  journal   = {Nature Neuroscience},
+  volume    = {20},
+  number    = {11},
+  pages     = {1643--1653},
+  year      = {2017},
+  publisher = {Nature Publishing Group},
+  doi       = {10.1038/nn.4650}
+}
+
+@inproceedings{machado2018eigenoption,
+  author    = {Machado, Marlos C. and Rosenbaum, Clemens and Guo, Xiaoxiao and Liu, Miao and Tesauro, Gerald and Campbell, Murray},
+  title     = {Eigenoption Discovery Through the Deep Successor Representation},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2018},
+  url       = {https://arxiv.org/abs/1710.11089}
+}
+
+@inproceedings{jinnai2019discovering,
+  author    = {Jinnai, Yuu and Park, Jee Won and Abel, David and Konidaris, George},
+  title     = {Discovering Options for Exploration by Minimizing Cover Time},
+  booktitle = {Proceedings of the 36th International Conference on Machine Learning ({ICML})},
+  pages     = {3130--3139},
+  year      = {2019},
+  publisher = {PMLR}
+}
+
+@inproceedings{machado2017laplacian,
+  author    = {Machado, Marlos C. and Bellemare, Marc G. and Bowling, Michael},
+  title     = {A {Laplacian} Framework for Option Discovery in Reinforcement Learning},
+  booktitle = {Proceedings of the 34th International Conference on Machine Learning ({ICML})},
+  pages     = {2295--2304},
+  year      = {2017},
+  publisher = {{PMLR}},
+  url       = {https://proceedings.mlr.press/v70/machado17a.html},
+  note      = {Introduces eigenpurposes: intrinsic reward functions defined from
+               proto-value function eigenvectors; options traverse principal directions
+               of state space; tested in tabular domains and Atari 2600}
+}
+
+@inproceedings{wang2021laplacian,
+  author    = {Wang, Kaixin and Zhou, Kuangqi and Zhang, Qixin and Shao, Jie and Hooi, Bryan and Feng, Jiashi},
+  title     = {Towards Better {Laplacian} Representation in Reinforcement Learning with Generalized Graph Drawing},
+  booktitle = {Proceedings of the 38th International Conference on Machine Learning ({ICML})},
+  pages     = {10946--10957},
+  year      = {2021},
+  publisher = {{PMLR}},
+  url       = {https://arxiv.org/abs/2107.05545},
+  note      = {Reformulates graph-drawing objective so eigenvectors are the unique
+               global minimiser; shows improved Laplacian representations for reward
+               shaping and option discovery}
+}
+
+@article{gomez2024proper,
+  author    = {Gomez, Diego and Bowling, Michael and Machado, Marlos C.},
+  title     = {Proper {Laplacian} Representation Learning},
+  journal   = {arXiv preprint arXiv:2310.10833},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2310.10833},
+  note      = {Proposes a theoretically sound objective that recovers both eigenvectors
+               and eigenvalues of the graph Laplacian without tunable hyperparameters;
+               subsumes Wu 2019 and Wang 2021 as special cases}
+}
+
+@inproceedings{chauhan2026effective,
+  author    = {Chauhan, Jatin and Bhardwaj, Shivam and Saibewar, Aditya and
+               Ramesh, Aditya and Babar, Sadbhavana and Kaul, Manohar},
+  title     = {Graph-Theoretic Intrinsic Reward: Guiding {RL} with Effective Resistance},
+  booktitle = {International Conference on Learning Representations ({ICLR})},
+  year      = {2026},
+  url       = {https://openreview.net/forum?id=W8bKDPf1Ko},
+  note      = {Uses effective resistance (pseudoinverse entry of graph Laplacian)
+               as a dense intrinsic reward provably correlated with structural
+               goal accessibility; provides convergence guarantees; ICLR 2026}
+}
+
+
+% ---- Nonstationary MDPs ------------------------------------
+
+@inproceedings{cheung2020nonstationary,
+  author    = {Cheung, Wang Chi and Simchi-Levi, David and Zhu, Ruihao},
+  title     = {Reinforcement Learning for Non-Stationary {Markov} Decision Processes: The Blessing of (More) Optimism},
+  booktitle = {Proceedings of the 37th International Conference on Machine Learning ({ICML})},
+  pages     = {1843--1854},
+  year      = {2020},
+  publisher = {{PMLR}},
+  url       = {https://arxiv.org/abs/1906.02922}
+}
+
+@article{khetarpal2022continual,
+  author    = {Khetarpal, Khimya and Riemer, Matthew and Rish, Irina and Precup, Doina},
+  title     = {Towards Continual Reinforcement Learning: {A} Review and Perspectives},
+  journal   = {Journal of Artificial Intelligence Research},
+  volume    = {75},
+  pages     = {477--524},
+  year      = {2022},
+  doi       = {10.1613/jair.1.13673}
+}
+
+@article{padakandla2020reinforcement,
+  author    = {Padakandla, Sindhu and J, Prabuchandran K. and Bhatnagar, Shalabh},
+  title     = {Reinforcement Learning Algorithm for Non-Stationary Environments},
+  journal   = {Applied Intelligence},
+  volume    = {50},
+  pages     = {3590--3606},
+  year      = {2020},
+  publisher = {Springer},
+  doi       = {10.1007/s10489-020-01758-5}
+}
+
+
+
+% ---- Model-Based RL ----------------------------------------
+
+@inproceedings{janner2019trust,
+  author    = {Janner, Michael and Fu, Justin and Zhang, Marvin and Levine, Sergey},
+  title     = {When to Trust Your Model: Model-Based Policy Optimization},
+  booktitle = {Advances in Neural Information Processing Systems ({NeurIPS})},
+  volume    = {32},
+  year      = {2019},
+  url       = {https://arxiv.org/abs/1906.08253}
+}
+
+@article{schrittwieser2020muzero,
+  author    = {Schrittwieser, Julian and Antonoglou, Ioannis and Hubert, Thomas and Simonyan, Karen and Sifre, Laurent and Schmitt, Simon and Guez, Arthur and Lockhart, Edward and Hassabis, Demis and Graepel, Thore and Lillicrap, Timothy and Silver, David},
+  title     = {Mastering {Atari}, {Go}, Chess and Shogi by Planning with a Learned Model},
+  journal   = {Nature},
+  volume    = {588},
+  pages     = {604--609},
+  year      = {2020},
+  doi       = {10.1038/s41586-020-03051-4}
+}
+
+% ---- Bayesian / Uncertainty-Aware PS -----------------------
+
+@inproceedings{fellows2021bayesian,
+  author    = {Fellows, Mattie and Hartikainen, Kristian and Whiteson, Shimon},
+  title     = {Bayesian {Bellman} Operators},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {34},
+  year      = {2021},
+  url       = {https://arxiv.org/abs/2106.05997}
+}
+
+% ---- MBRL background (general known-model planning) --------
+
+@inproceedings{hamrick2020role,
+  author    = {Hamrick, Jessica B. and Bapst, Victor and Sanchez-Gonzalez, Alvaro and Pfaff, Tobias and Weber, Theophane and Buesing, Lars and Battaglia, Peter W.},
+  title     = {Combining {Q}-Learning and Search with Amortized Value Estimates},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2020},
+  url       = {https://arxiv.org/abs/1912.02807}
+}
+
+
+% ---- Benchmarks and Environments ------------------------------
+
+% Environments
+@article{sutton1999between,
+  author    = {Sutton, Richard S. and Precup, Doina and Singh, Satinder},
+  title     = {Between {MDPs} and Semi-{MDPs}: A Framework for Temporal Abstraction in Reinforcement Learning},
+  journal   = {Artificial Intelligence},
+  volume    = {112},
+  number    = {1--2},
+  pages     = {181--211},
+  year      = {1999},
+  doi       = {10.1016/S0004-3702(99)00052-1},
+  note      = {Introduces the Four-Rooms gridworld benchmark}
+}
+
+@article{dietterich2000hierarchical,
+  author    = {Dietterich, Thomas G.},
+  title     = {Hierarchical Reinforcement Learning with the {MAXQ} Value Function Decomposition},
+  journal   = {Journal of Artificial Intelligence Research},
+  volume    = {13},
+  pages     = {227--303},
+  year      = {2000},
+  doi       = {10.1613/jair.773},
+  note      = {Introduces the Taxi domain; $|\mathcal{S}|=500$, deterministic known model}
+}
+
+@article{archibald1995generation,
+  author    = {Archibald, T. W. and McKinnon, K. I. M. and Thomas, L. C.},
+  title     = {On the Generation of {Markov} Decision Processes},
+  journal   = {Journal of the Operational Research Society},
+  volume    = {46},
+  number    = {3},
+  pages     = {354--361},
+  year      = {1995},
+  doi       = {10.1057/jors.1995.55},
+  note      = {GARNET: randomised tabular MDPs with controlled $|S|$, $|A|$, branching factor; standard PS benchmark}
+}
+
+@inproceedings{ji2023safetygymnasium,
+  author    = {Ji, Jiaming and Zhang, Borong and Zhou, Jiayi and Pan, Xuehai and
+               Huang, Weidong and Sun, Ruiyang and Geng, Yiran and Zhong, Yifan and
+               Dai, Juntao and Yang, Yaodong},
+  title     = {Safety-Gymnasium: A Unified Safe Reinforcement Learning Benchmark},
+  booktitle = {Advances in Neural Information Processing Systems ({NeurIPS})},
+  year      = {2023},
+  url       = {https://arxiv.org/abs/2310.12567},
+  note      = {Introduces the Safety-Gymnasium benchmark family, including car-based goal-reaching tasks with hazards such as \texttt{SafetyCarGoal}}
+}
+
+@inproceedings{todorov2012mujoco,
+  author    = {Todorov, Emanuel and Erez, Tom and Tassa, Yuval},
+  title     = {{MuJoCo}: A Physics Engine for Model-Based Control},
+  booktitle = {2012 {IEEE/RSJ} International Conference on Intelligent Robots and Systems ({IROS})},
+  pages     = {5026--5033},
+  year      = {2012},
+  organization = {{IEEE}},
+  doi       = {10.1109/IROS.2012.6386109},
+  note      = {Canonical reference for MuJoCo control tasks including the planar reaching benchmark \texttt{Reacher}}
+}
+
+% Frameworks / libraries
+@article{towers2024gymnasium,
+  author    = {Towers, Mark and Kwiatkowski, Ariel and Terry, Jordan and Balis, John U. and
+               {De Cola}, Gianluca and Deleu, Tristan and Goul{\~a}o, Manuel and
+               Kallinteris, Andreas and Krimmel, Markus and KG, Arjun and
+               Perez-Higueras, Rodrigo and Pierrot, Andrea and Schulhoff, Sander and
+               Tan, Jun Jet and Tan, Hannah and Younis, Omar G.},
+  title     = {Gymnasium: A Standard Interface for Reinforcement Learning Environments},
+  journal   = {arXiv preprint arXiv:2407.17032},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2407.17032},
+  note      = {Provides \texttt{FrozenLake-v1} (stochastic, known $p$) and \texttt{Taxi-v3}}
+}
+
+@inproceedings{chevalier2023minigrid,
+  author    = {Chevalier-Boisvert, Maxime and Dai, Bolun and Towers, Mark and
+               {Perez-Vicente}, Rodrigo and Willems, Lucas and Lahlou, Salem and
+               Pal, Suman and Castro, Pablo Samuel and Precup, Doina},
+  title     = {{Minigrid} \& {Miniworld}: Modular \& Customizable Reinforcement Learning
+               Environments for Goal-Oriented Tasks},
+  booktitle = {Advances in Neural Information Processing Systems ({NeurIPS})},
+  volume    = {36},
+  year      = {2023},
+  url       = {https://arxiv.org/abs/2306.13831},
+  note      = {Provides \texttt{MiniGrid-FourRooms-v1} and flexible goal-relocation wrappers}
+}
+
+@misc{abel2019simple,
+  author    = {Abel, David},
+  title     = {simple\_rl: Reinforcement Learning in {Python}},
+  year      = {2019},
+  url       = {https://github.com/david-abel/simple_rl},
+  note      = {Reference tabular implementations: chain MDP, four-rooms, prioritized sweeping, Dyna-Q}
+}
+
+
