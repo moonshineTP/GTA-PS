@@ -1,74 +1,76 @@
 """
-GTA-PS: Graph Topology Augmentation for Prioritized Sweeping.
+GTA-PS Computation Management Module (memo §Algorithm and Complexity).
 
-Augmented priority signal (Section 4-5 of memo):
-  tau(s) = |xi(s)| + beta_t * |delta_f_out(s)| + alpha_t * |delta_f_in(s)|
+Exposes named procedures: GtaPolicyUpdate, TopologyUpdate, RewardUpdate,
+PopAndPrioritize, PushPredecessors, RefreshTopQ, RekeyResidualQueue.
 
-Variants:
-  GTA-PS (base)      -- fixed alpha, beta
-  GTA-PS^alpha       -- SLEM-coupled alpha_t, fixed beta
-  GTA-PS^beta        -- fixed alpha, SLEM-coupled beta_t
-  GTA-PS^{alpha,beta} -- both adaptive (full variant)
+Hosts (DpHost, DynaHost) call these and own the Bellman/TD update.
+The topology policy π^PS and LU factorizations are always derived from the
+ORACLE P. The empirical _P_model is used only for predecessor lookup and
+value-residual computation in push_predecessors (synced by DynaHost).
 """
+from __future__ import annotations
+
 import heapq
 import math
-import numpy as np
 from typing import Optional
 
-from ..utils.spectral import (
-    slem_arnoldi,
-    resolvent_forward,
-    resolvent_backward,
-)
+import numpy as np
+import scipy.sparse as sp
+import scipy.sparse.linalg as spla
+from scipy.special import softmax as _sp_softmax
+
+from .base import PrioritizedSweepingModule, BellmanMixin, TdMixin
+from ..utils.spectral import slem_arnoldi, in_laplacian
+
+# LU + Sherman-Morrison column cache for n ≤ threshold; GMRES above.
+_LU_THRESHOLD = 600
 
 
-class GTAPS:
+class GtaPS(PrioritizedSweepingModule, BellmanMixin):
     """
-    GTA-PS planner with known model.
+    GTA-PS computation management module.
 
     Parameters
     ----------
     P : ndarray (|A|, |S|, |S|)
     r : ndarray (|S|,)
-    gamma : float
-    alpha : float
-        Base forward->backward weight (used when adaptive_alpha=False).
-    beta : float
-        Base topology weight (used when adaptive_beta=False).
-    beta1, beta2 : float
-        GTA-PS^beta schedule parameters: beta_t = beta1 * ((1 - SLEM) - beta2).
-    adaptive_alpha : bool
-        If True, use alpha_t = SLEM^alpha_exp (SLEM-coupled forward/backward mix).
-    adaptive_beta : bool
-        If True, use beta_t = beta1 * ((1 - SLEM) - beta2).
-    alpha_exp : float
-        Exponent for SLEM-coupled alpha schedule.
-    eps : float
-        Resolvent parameter; None defaults to eps* = (1-gamma)/gamma.
-    arnoldi_k : int
-        Number of Arnoldi vectors for SLEM estimation.
-    slem_recompute_every : int
-        Recompute SLEM via Arnoldi every this many steps; use incremental otherwise.
+    gamma : float = 0.95
+    alpha : float = 0.5                 base forward→backward mix (adaptive_alpha=False)
+    beta  : float = 1.0                 base topology weight (adaptive_beta=False)
+    beta1 : float = 1.0                 schedule amplitude
+    beta2 : float = 0.1                 schedule exponent / offset
+    beta_mode : str = "clip-linear"     "power"|"linear"|"clip-linear"|"fixed"
+    adaptive_beta  : bool = False       
+    eta   : float | None = None         resolvent ε; None → ε* = (1−γ)/γ
+    b     : float = 1.0                 Boltzmann temperature for π^PS
+    arnoldi_k : int = 15
+    q     : int | None = None           frontier size; None → |S|
     """
 
     def __init__(
         self,
         P: np.ndarray,
         r: np.ndarray,
-        gamma: float = 0.99,
+        gamma: float = 0.95,
         alpha: float = 0.5,
         beta: float = 1.0,
         beta1: float = 1.0,
         beta2: float = 0.1,
-        adaptive_alpha: bool = False,
+        beta_mode: str = "linear",
         adaptive_beta: bool = False,
-        alpha_exp: float = 1.0,
-        eps: Optional[float] = None,
+        eta: Optional[float] = None,
+        b: float = 1.0,
         arnoldi_k: int = 15,
+        q: Optional[int] = None,
+        # legacy kwarg — accepted but ignored (schedule was always linear in old code)
         slem_recompute_every: Optional[int] = None,
     ):
-        self.P = P
+        self.P = P                  # oracle — topology always uses this
+        self._P_model = P.copy()   # empirical; DynaHost replaces with P_hat
+        self._r_model = r.copy()
         self.r = r.copy()
+
         self.gamma = gamma
         self.n_states = P.shape[1]
         self.n_actions = P.shape[0]
@@ -77,139 +79,510 @@ class GTAPS:
         self.beta_base = beta
         self.beta1 = beta1
         self.beta2 = beta2
-        self.adaptive_alpha = adaptive_alpha
         self.adaptive_beta = adaptive_beta
-        self.alpha_exp = alpha_exp
-        self.eps = eps if eps is not None else (1.0 - gamma) / gamma
+        self.eta = eta if eta is not None else (1.0 - gamma) / gamma
+        self.b = b
         self.arnoldi_k = arnoldi_k
-        self.slem_recompute_every = slem_recompute_every
+        self.q = q
+        self.beta_mode = beta_mode
 
-        self.V = np.zeros(self.n_states)
-        self._slem: Optional[float] = None
-        self._f_out_prev: Optional[np.ndarray] = None
-        self._f_in_prev: Optional[np.ndarray] = None
-        self._step_count = 0
+        self._init_topology()
+
+
 
     # ------------------------------------------------------------------
-    # Schedule computation
+    # Linear-system helpers (auto-select LU vs GMRES based on n)
     # ------------------------------------------------------------------
 
-    def _compute_slem(self, P_pi: np.ndarray) -> float:
-        """SLEM of the current policy-induced chain."""
+    def _solve_out(self, rhs: np.ndarray, x0: np.ndarray | None = None) -> np.ndarray:
+        if self._lu_out is not None:
+            return self._lu_out.solve(rhs)
+        f, info = spla.gmres(self._A_out, rhs, x0=x0, restart=30, maxiter=500, atol=1e-8)
+        if info != 0:
+            f = spla.spsolve(self._A_out.tocsc(), rhs)
+        return f
+
+    def _solve_in(self, rhs: np.ndarray, x0: np.ndarray | None = None) -> np.ndarray:
+        if self._lu_in is not None:
+            return self._lu_in.solve(rhs)
+        f, info = spla.gmres(self._A_in, rhs, x0=x0, restart=30, maxiter=500, atol=1e-8)
+        if info != 0:
+            f = spla.spsolve(self._A_in.tocsc(), rhs)
+        return f
+
+    def _rebuild_sparse_systems(self) -> None:
+        """Rebuild _A_out/_A_in from current P_pi (large-n path, after policy change)."""
+        n, eta = self.n_states, self.eta
+        Psp = sp.csr_array(self.P_pi)
+        Psp.data[np.abs(Psp.data) < 1e-12] = 0.0
+        Psp.eliminate_zeros()
+        self._A_out = sp.eye(n, format="csr") * (1.0 + eta) - Psp
+        self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * eta
+
+
+
+    # ------------------------------------------------------------------
+    # Initialisation / precompute (memo Algorithm lines 1-7, oracle P)
+    # ------------------------------------------------------------------
+
+    def _init_topology(self) -> None:
         n = self.n_states
-        recompute_every = self.slem_recompute_every or max(1, int(math.ceil(n ** 0.5)))
-        if self._slem is None or self._step_count % recompute_every == 0:
-            self._slem = slem_arnoldi(P_pi, k=self.arnoldi_k)
-        return self._slem
+        eta = self.eta
+        use_lu = n <= _LU_THRESHOLD
 
-    def _alpha_t(self, slem: float) -> float:
-        if not self.adaptive_alpha:
-            return self.alpha_base
-        return slem ** self.alpha_exp
+        self.V = np.zeros(n)
+        self.xi = np.zeros(n)
+        self.tau = np.zeros(n)
+
+        # Boltzmann topology policy π^PS from oracle P (V=0 initially)
+        Q_0 = self.r[None, :] + self.gamma * (
+            self.P * self.V[None, None, :]
+        ).sum(axis=2)  # (|A|, |S|)
+        pi_all = _sp_softmax(self.b * Q_0, axis=0)   # (|A|, |S|) softmax over actions
+        self.pi_PS = pi_all.T.copy()                   # (|S|, |A|)
+        self.P_pi = np.einsum("sa,ast->st", self.pi_PS, self.P)  # (|S|, |S|)
+
+        # Always store sparse system matrices (needed for large-n GMRES path and rebuilds)
+        Psp = sp.csr_array(self.P_pi)
+        Psp.data[np.abs(Psp.data) < 1e-12] = 0.0
+        Psp.eliminate_zeros()
+        self._A_out = sp.eye(n, format="csr") * (1.0 + eta) - Psp
+        self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * (eta + 1e-6)
+
+        if use_lu:
+            self._lu_out = spla.splu(self._A_out.tocsc())
+            self._lu_in = spla.splu(self._A_in.tocsc())
+        else:
+            self._lu_out = None
+            self._lu_in = None
+
+        # Resolvent fields
+        self.f_out = self._solve_out(self.r)
+        self.f_in = self._solve_in(self.r)
+        self.f_out_shift = self.f_out.copy()
+        self.f_in_shift  = self.f_in.copy()
+
+        # g is kept for backward-compat attribute access; not maintained during planning.
+        # SM f_out update uses two LU tri-solves instead of the O(n²) column cache.
+        self.g = None
+
+        # SLEM and schedules
+        k_arn = min(self.arnoldi_k, n - 2)
+        self.slem, self._v0_arnoldi = slem_arnoldi(self.P_pi, k=k_arn)
+        self.beta_t = self._beta_t(self.slem)
+        self.alpha_t = self._alpha_t(self.slem)
+
+        # Observability attributes (constraint 2)
+        self._last_beta = self.beta_t
+        self._last_signal_ratio = 0.0
+        self._slem = self.slem
+
+        # Priority queues and counters
+        self.q_t = self.q if self.q is not None else n
+        self._step_count = 0
+        self._T_arn = max(1, n)  # SLEM refresh every n backups (amortised O(1) per backup)
+        self._T_topo = 100 # Lazy topology update every 100 backups
+        self._pending_delta_pi = np.zeros((n, self.n_actions))
+        self._has_pending_topo = False
+        self._version_xi: dict = {}
+        self._top_q: set = set()
+        self._H_q: list = []         # topology frontier: xi=0, tau>0 states
+        self._version_hq: dict = {}
+
+        # Initialise xi from residuals with V=0 — vectorized O(|A||S|) numpy
+        EV_all = (self._P_model * self.V[None, None, :]).sum(axis=2)  # (|A|, |S|)
+        self.xi = np.abs(
+            (self._r_model[None, :] + self.gamma * EV_all).max(axis=0) - self.V
+        )  # (|S|,)
+        self._rebuild_q_tau()
+        self._refresh_top_q()
+        self._rekey_residual_queue()
+        self._build_predecessor_cache()
+
+
+    def _build_predecessor_cache(self) -> None:
+        """Precompute predecessors[(s)] = list of (pred, a) with _P_model[a,pred,s]>0.
+
+        Called at init and after update_model.  Makes push_predecessors O(|preds|)
+        instead of O(|A|·|S|) via np.where scan.
+        
+        Thresholding: we ignore transitions with probability < 1e-2 to avoid
+        including 'prior-only' transitions from the CountModel which would
+        make the graph dense and explode planning complexity.
+        """
+        n = self.n_states
+        cache: list[list[tuple[int,int]]] = [[] for _ in range(n)]
+        for a in range(self.n_actions):
+            # Threshold to avoid prior-induced density
+            rows, cols = np.where(self._P_model[a] > 1e-2)  # (pred, succ) pairs
+            for pred, succ in zip(rows.tolist(), cols.tolist()):
+                cache[succ].append((pred, a))
+        self._predecessors = cache
+
+
+
+    # ------------------------------------------------------------------
+    # Schedule helpers
+    # ------------------------------------------------------------------
 
     def _beta_t(self, slem: float) -> float:
         if not self.adaptive_beta:
             return self.beta_base
-        return self.beta1 * ((1.0 - slem) - self.beta2)
+        if self.beta_mode == "fixed":
+            return self.beta1
+        if self.beta_mode == "linear":
+            # β_t = β₁ · ((1−SLEM) + β₂)
+            # β₂ is a plain additive offset in spectral-gap space.
+            # β₂ < 0  → dampening threshold (dampen; β_t=0 when |β₂| > 1−SLEM)
+            # β₂ = 0  → pure spectral-gap scaling (β_t > 0 iff SLEM < 1)
+            # β₂ > 0  → positive floor (β_t always > 0 when β₁ > 0)
+            # Recommended tuning range: β₂ ∈ (−0.05, 0.25)..
+            return self.beta1 * ((1.0 - slem) + self.beta2)
+        if self.beta_mode == "log":
+            # β_t = β₁ · (−log SLEM + β₂)
+            # −log(SLEM) ≈ (1−SLEM) for SLEM≈1 but saturates as SLEM→0,
+            # preventing topology overdrive on fast-mixing chains.
+            return self.beta1 * (-np.log(max(slem, 1e-15)) + self.beta2)
+        raise ValueError(f"Invalid beta_mode: {self.beta_mode!r}. "
+                         f"Choose from: 'fixed', 'linear', 'log', 'power'.")
+
+    def _alpha_t(self, slem: float) -> float:
+        return self.alpha_base
+
+
 
     # ------------------------------------------------------------------
-    # Resolvent fields
+    # Queue maintenance
     # ------------------------------------------------------------------
 
-    def _compute_topology_signals(
-        self, P_pi: np.ndarray, r: np.ndarray, alpha: float, beta: float
-    ):
-        """Compute delta_f_out and delta_f_in after a reward shift."""
-        f_out = resolvent_forward(P_pi, r, self.eps)
-        f_in = resolvent_backward(P_pi, r, self.eps)
+    def _rebuild_q_tau(self) -> None:
+        n = len(self.tau)
+        q = min(self.q_t, n)
+        # argpartition is O(n); argsort would be O(n log n) — memo §Complexity claims O(|S|+q log|S|).
+        idx = np.argpartition(self.tau, n - q)[n - q:]
+        self._top_q = set(idx.tolist())
 
-        if self._f_out_prev is None:
-            df_out = np.abs(f_out)
-            df_in = np.abs(f_in)
+    def _refresh_top_q(self) -> None:
+        """Rebuild top-q set and H_q frontier heap.
+
+        H_q holds states in top-q that have ξ=0 (pure topology candidates).
+        Score = β_t·τ[s]; excluded when β_t ≤ 0 (no topology amplification).
+        Called only at init and reward shifts — NOT per backup — to avoid
+        O(n log n) argsort overhead inside the planning loop.
+        """
+        self._rebuild_q_tau()
+        # Build H_q: top-q states with ξ=0 and positive β_t·τ score
+        self._version_hq = {}
+        entries = []
+        if self.beta_t > 0:
+            for s in self._top_q:
+                if self.xi[s] <= 1e-8:
+                    score = self.beta_t * self.tau[s]
+                    if score > 0:
+                        self._version_hq[int(s)] = 0
+                        entries.append((-score, 0, int(s)))
+        heapq.heapify(entries)
+        self._H_q = entries
+
+
+    def _rekey_residual_queue(self) -> None:
+        # Gate on ξ[s] > 0 (per memo §Algorithm: Q_ξ = {s : ξ[s] > 0}).
+        # Score = ξ + β_t·τ.
+        #   β_t > 0 → topology amplifies priority (proactive).
+        #   β_t < 0 → topology dampens priority (conservative on fast-mixing).
+        #   β_t = 0 → pure Standard-PS (no topology signal).
+        # Floor at 0 (not at ξ): a residual state must stay in the queue
+        # (positive priority) but its relative rank can be reduced by negative τ.
+        hot = np.where(self.xi > 1e-8)[0]
+        self._version_xi = {int(s): 0 for s in hot}
+        entries = [
+            (-float(max(0.0, self.xi[s] + self.beta_t * self.tau[s])), 0, int(s))
+            for s in hot
+        ]
+        heapq.heapify(entries)
+        self._Q_xi = entries
+
+        # Topology frontier H_q: top-q states with xi=0, tau>0 (only when β_t > 0).
+        # These are backed up to propagate topology signal even with zero residual.
+        topo_entries = []
+        self._version_hq = {}
+        if self.beta_t > 0:
+            for s in self._top_q:
+                s = int(s)
+                if self.xi[s] <= 1e-8 and self.tau[s] > 0:
+                    self._version_hq[s] = 0
+                    topo_entries.append((-self.beta_t * float(self.tau[s]), 0, s))
+        heapq.heapify(topo_entries)
+        self._H_q = topo_entries
+
+
+
+    # ------------------------------------------------------------------
+    # GtaPolicyUpdate
+    # ------------------------------------------------------------------
+
+    def gta_policy_update(
+        self, s: int, adv_PS_row: np.ndarray
+    ) -> np.ndarray:
+        """Update π^PS[s] via softmax on advantage; return Δπ row."""
+        # Clip to prevent softmax overflow
+        adv_clipped = np.clip(self.b * adv_PS_row, -50, 50)
+        new_pi = _sp_softmax(adv_clipped)       # (|A|,)
+        delta_pi = new_pi - self.pi_PS[s]
+        self.pi_PS[s] += delta_pi
+        # Update P_pi row s using oracle P (topology uses oracle graph)
+        self.P_pi[s] = (self.pi_PS[s, :, None] * self.P[:, s, :]).sum(axis=0)
+        return delta_pi
+
+
+
+    # ------------------------------------------------------------------
+    # TopologyUpdate (Sherman-Morrison on A_out column cache)
+    # ------------------------------------------------------------------
+
+    def topology_update_lazy(self) -> None:
+        """Apply all accumulated delta_pi changes at once by rebuilding LU."""
+        if not self._has_pending_topo:
+            return
+            
+        n = self.n_states
+        eta = self.eta
+        
+        # Rebuild A_out and A_in from the current P_pi (which was updated in gta_policy_update)
+        Psp = sp.csr_array(self.P_pi)
+        Psp.data[np.abs(Psp.data) < 1e-12] = 0.0
+        Psp.eliminate_zeros()
+        
+        self._A_out = sp.eye(n, format="csr") * (1.0 + eta) - Psp
+        self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * (eta + 1e-6)
+        
+        if self._lu_out is not None:
+            self._lu_out = spla.splu(self._A_out.tocsc())
+            self._lu_in = spla.splu(self._A_in.tocsc())
+            self.f_out = self._lu_out.solve(self.r)
+            self.f_in = self._lu_in.solve(self.r)
         else:
-            df_out = np.abs(f_out - self._f_out_prev)
-            df_in = np.abs(f_in - self._f_in_prev)
+            self.f_out = self._solve_out(self.r, x0=self.f_out)
+            self.f_in = self._solve_in(self.r, x0=self.f_in)
 
-        self._f_out_prev = f_out
-        self._f_in_prev = f_in
-        return df_out, df_in
+        # Periodic SLEM refresh
+        try:
+            self.slem, self._v0_arnoldi = slem_arnoldi(
+                self.P_pi, k=min(self.arnoldi_k, n - 2),
+                v0=self._v0_arnoldi,
+            )
+        except Exception:
+            pass
+        self.beta_t = self._beta_t(self.slem)
+        self.alpha_t = self._alpha_t(self.slem)
+
+        # Update tau based on new fields — plain assignment so tau tracks the
+        # current displacement from the last reward-shift snapshot rather than
+        # ratcheting to its historical peak (which caused stale-signal rotation).
+        tau_new = (1 - self.alpha_t) * np.abs(self.f_out - self.f_out_shift) + \
+                  self.alpha_t * np.abs(self.f_in - self.f_in_shift)
+        self.tau = tau_new
+        
+        self._pending_delta_pi.fill(0)
+        self._has_pending_topo = False
+
+    def topology_update(self, s_upd: int, delta_pi_row: np.ndarray) -> None:
+        """Deprecated: use notify_backup which handles lazy accumulation."""
+        pass
+
+
 
     # ------------------------------------------------------------------
-    # Core backup
+    # PrioritizedSweepingModule interface
+    # ------------------------------------------------------------------
+
+    def reward_update(self, delta_r: np.ndarray) -> None:
+        self.r += delta_r
+        self._r_model += delta_r
+        # Do NOT reset _step_count here: Arnoldi fires on its natural schedule
+        # (every _T_arn backup steps). Forcing it on the first post-shift step
+        # costs O(n·deg·arnoldi_k) redundantly before any V has changed.
+        # A_out/A_in are unchanged by a reward shift — only rhs changes.
+        f_out_prev = self.f_out.copy()
+        f_in_prev  = self.f_in.copy()
+
+        if self._lu_out is not None:
+            # Small n: use LU tri-solve (O(n)) instead of g @ delta_r (O(n²)).
+            delta_f_out = self._lu_out.solve(delta_r)
+            delta_f_in = self._lu_in.solve(delta_r)
+            self.f_out += delta_f_out
+            self.f_in  += delta_f_in
+        else:
+            # Large n: GMRES re-solve with updated rhs; delta from stored prev
+            self.f_out = self._solve_out(self.r)
+            self.f_in = self._solve_in(self.r)
+        
+        # tau is the magnitude of the jump (proactive response to reward shift)
+        self.tau = (1 - self.alpha_t) * np.abs(self.f_out - f_out_prev) + \
+                   self.alpha_t * np.abs(self.f_in - f_in_prev)
+
+        # Snapshot fields at start of shift to track displacement during planning
+        self.f_out_shift = f_out_prev
+        self.f_in_shift  = f_in_prev
+
+        # Recompute xi from current V and the new reward vector.
+        # Without this, Q_xi tracks stale residuals from the pre-shift reward;
+        # on sparse-reward envs (e.g. FourRooms, 1 non-zero per 104 states) this
+        # leaves Q_xi pointing at the wrong goal state for every subsequent shift.
+        EV_all = (self._P_model * self.V[None, None, :]).sum(axis=2)
+        self.xi = np.abs(
+            (self._r_model[None, :] + self.gamma * EV_all).max(axis=0) - self.V
+        )
+
+        # Full refresh: rebuild top-q set and H_q frontier (done per reward shift, not per backup)
+        self._refresh_top_q()
+        self._rekey_residual_queue()
+
+    def pop_and_prioritize(self) -> int | None:
+        # Peek valid head from Q_xi (residual queue).
+        xi_pri, xi_s = None, None
+        while self._Q_xi:
+            neg_pri, v, s = self._Q_xi[0]
+            if self._version_xi.get(s, -1) == v:
+                xi_pri, xi_s = -neg_pri, s
+                break
+            heapq.heappop(self._Q_xi)
+
+        # Peek valid head from H_q (topology frontier).
+        hq_pri, hq_s = None, None
+        while self._H_q:
+            neg_pri, v, s = self._H_q[0]
+            if self._version_hq.get(s, -1) == v:
+                hq_pri, hq_s = -neg_pri, s
+                break
+            heapq.heappop(self._H_q)
+
+        if xi_s is None and hq_s is None:
+            return None
+
+        # BUDGET PRIORITY:
+        # 1. Residual-reducing backups (Q_xi) are MANDATORY for convergence.
+        # 2. Topology backups (H_q) are EXPLORATORY (policy updates with xi=0).
+        # If we have both, we must not let H_q starve Q_xi, otherwise we
+        # perform no-op Bellman backups and error stays flat.
+        
+        # POP LOGIC: Always exhaust Q_xi first if budget is tight.
+        # We only take from H_q if it is significantly higher priority OR Q_xi is empty.
+        # Given the derailed lines, we enforce: Residuals first.
+        if xi_s is not None:
+            heapq.heappop(self._Q_xi)
+            chosen = xi_s
+        else:
+            heapq.heappop(self._H_q)
+            chosen = hq_s
+
+        self._last_beta = self.beta_t
+        self._last_signal_ratio = float(
+            np.sum(np.abs(self.beta_t * self.tau))
+            / max(float(np.sum(self.xi)), 1e-12)
+        )
+        self._slem = self.slem
+        return chosen
+
+    def push_predecessors(self, s: int, xi_s: float) -> None:
+        """Uses _predecessors cache (built from _P_model; O(|preds|) per call)."""
+        for pred, _a in self._predecessors[s]:
+            xi_pred = self.compute_bellman_residual(
+                pred, self._P_model, self._r_model, self.gamma, self.V
+            )
+            self.xi[pred] = xi_pred
+            if xi_pred > 1e-8:
+                # Score = ξ + β_t·τ, floored at 0 so the state stays
+                # EMA-style update to the score: incorporate latest tau into the existing residual priority.
+                # This ensures the global field update reflects in the queue ranks.
+                score = max(0.0, 0.8 * xi_pred + 0.2 * self.beta_t * self.tau[pred])
+                v = self._version_xi.get(pred, -1) + 1
+                self._version_xi[pred] = v
+                heapq.heappush(self._Q_xi, (-score, v, pred))
+                # Invalidate any H_q entry — state now has nonzero residual.
+                if int(pred) in self._version_hq:
+                    self._version_hq[int(pred)] += 1
+
+    def notify_backup(
+        self, s: int, adv_PS_row: np.ndarray, xi_s: float
+    ) -> None:
+        # s was just backed up; zero its residual so _rekey_residual_queue does
+        # not re-insert it with stale priority on the next topology_update call.
+        self.xi[s] = 0.0
+        delta_pi = self.gta_policy_update(s, adv_PS_row)
+        
+        # Lazy topology update: accumulate delta_pi
+        self._pending_delta_pi[s] += delta_pi
+        self._has_pending_topo = True
+        
+        self._step_count += 1
+        if self._step_count % self._T_topo == 0:
+            self.topology_update_lazy()
+
+    def update_model(self, P: np.ndarray, r: np.ndarray) -> None:
+        """Sync empirical model for predecessor lookup (DynaHost only).
+        Does NOT rebuild LU or topology signals — those depend on oracle P."""
+        self._P_model = P.copy()
+        self._r_model = r.copy()
+        self._build_predecessor_cache()
+    def update_value(self, s: int, v_s: float) -> None:
+        self.V[s] = v_s
+
+    def reset(self) -> None:
+        """Re-run full precompute on stored (self.P, self.r)."""
+        self._P_model = self.P.copy()
+        self._r_model = self.r.copy()
+        self._init_topology()
+
+
+
+    # ------------------------------------------------------------------
+    # Convenience wrappers (backward compat + plan() shim)
     # ------------------------------------------------------------------
 
     def bellman_residual_state(self, s: int) -> float:
-        EV = (self.P[:, s, :] * self.V[None, :]).sum(axis=1)
-        v_new = self.r[s] + self.gamma * EV.max()
-        return abs(v_new - self.V[s])
+        return self.compute_bellman_residual(
+            s, self._P_model, self._r_model, self.gamma, self.V
+        )
+
+    def td_residual_state(self, s: int) -> float:
+        return self.compute_td_residual(
+            s, self._P_model, self._r_model, self.gamma, self.V
+        )
 
     def backup_state(self, s: int) -> float:
-        EV = (self.P[:, s, :] * self.V[None, :]).sum(axis=1)
-        v_new = self.r[s] + self.gamma * EV.max()
-        delta = abs(v_new - self.V[s])
-        self.V[s] = v_new
-        return delta
-
-    # ------------------------------------------------------------------
-    # Main planning loop
-    # ------------------------------------------------------------------
-
-    def plan(self, K: int, r: Optional[np.ndarray] = None) -> np.ndarray:
-        """
-        Run K augmented-priority backup steps after an optional reward shift.
-
-        Returns V after K backups.
-        """
-        if r is not None:
-            self.r = r.copy()
-
-        # Derive policy-induced chain from greedy(V) for spectral signals
-        Q = self.r[None, :] + self.gamma * (self.P * self.V[None, None, :]).sum(axis=2)  # (|A|,|S|)
-        policy = Q.argmax(axis=0)
-        P_pi = np.zeros((self.n_states, self.n_states))
-        for s in range(self.n_states):
-            P_pi[s] = self.P[policy[s], s]
-
-        slem = self._compute_slem(P_pi)
-        alpha = self._alpha_t(slem)
-        beta = self._beta_t(slem)
-
-        df_out, df_in = self._compute_topology_signals(P_pi, self.r, alpha, beta)
-
-        # Augmented priority
-        xi = np.array([self.bellman_residual_state(s) for s in range(self.n_states)])
-        # Clamp beta: if beta < 0, topology signal is damped (GTA-PS^beta safety floor)
-        if beta >= 0:
-            tau = xi + beta * (df_out + alpha * df_in)
-        else:
-            # beta < 0: down-weight topology; tau >= xi (never below Dyna-PS)
-            tau = xi + max(beta, -1.0) * (df_out + alpha * df_in)
-            tau = np.maximum(tau, xi)
-
-        heap = [(-tau[s], s) for s in range(self.n_states) if tau[s] > 0]
-        heapq.heapify(heap)
-
-        for _ in range(K):
-            if not heap:
-                break
-            neg_pri, s = heapq.heappop(heap)
-            self.backup_state(s)
-            self._step_count += 1
-            # Propagate residuals to predecessors
-            for a in range(self.n_actions):
-                for pred in np.where(self.P[a, :, s] > 0)[0]:
-                    xi_pred = self.bellman_residual_state(pred)
-                    if xi_pred > 0:
-                        tau_pred = xi_pred + max(beta, 0) * (
-                            df_out[pred] + alpha * df_in[pred]
-                        )
-                        heapq.heappush(heap, (-tau_pred, pred))
-
-        return self.V.copy()
+        return self.apply_bellman_backup(
+            s, self._P_model, self._r_model, self.gamma, self.V
+        )
 
     def reset_value(self) -> None:
-        self.V = np.zeros(self.n_states)
-        self._f_out_prev = None
-        self._f_in_prev = None
-        self._slem = None
-        self._step_count = 0
+        self.reset()
+
+    def plan(self, K: int, r: np.ndarray | None = None) -> np.ndarray:
+        """Run K Bellman backups (budget per host step). r triggers reward_update first.
+        Backward-compat shim: GtaPS(P, r, gamma, **kwargs).plan(K, r=r_new) works.
+        """
+        if r is not None:
+            self.reward_update(r - self.r)
+
+        for _ in range(K):
+            s = self.pop_and_prioritize()
+            if s is None:
+                break
+            delta_V = self.apply_bellman_backup(
+                s, self._P_model, self._r_model, self.gamma, self.V
+            )
+            # Q[:,s] over oracle P — O(|A|·|S|) per step, not O(|A|·|S|²)
+            ev_s = (self.P[:, s, :] * self.V[None, :]).sum(axis=1)  # (|A|,)
+            q_s = self._r_model[s] + self.gamma * ev_s               # (|A|,)
+            adv_PS_row = q_s - q_s.max()                               # (|A|,)
+            self.notify_backup(s, adv_PS_row, delta_V)
+            self.push_predecessors(s, delta_V)
+
+        self._last_beta = self.beta_t
+        self._last_signal_ratio = float(
+            np.sum(np.abs(self.beta_t * self.tau))
+            / max(float(np.sum(self.xi)), 1e-12)
+        )
+        self._slem = self.slem
+        return self.V.copy()
