@@ -1,15 +1,44 @@
 env: fourrooms
-k_fourrooms: 1      # 1 active room = single bottleneck, directed to doorway
-gamma: 0.99
-n_shifts: 20
-seeds: 1000
-eps_metric: 0.1
-# budgets computed from |S|~384: [38, 192, 384]
-
-alpha: 0.5
-beta: 1.0
-beta1: 1.0
-beta2: 0.1
-alpha_exp: 1.0
-
-arnoldi_k: 15
+k_fourrooms: 1
+gamma: 0.95
+n_shifts: 10
+seeds: 30
+n_peaks_per_room: 2
+sigma_range:
+- 0.8
+- 3.0
+room_peak_ranges:
+- - 0.3
+  - 1.0
+- - 0.3
+  - 1.0
+- - 0.3
+  - 1.0
+- - 0.3
+  - 1.0
+eps_metric: 10
+budgets:
+- 20
+- 50
+- 200
+arnoldi_k: 10
+slem_recompute_every: null
+default:
+  alpha: 0.5
+  beta: 1.0
+  beta1: 1.0
+  beta2: 0.1
+  eta: null
+  b: 1.0
+tuned:
+  gta_base:
+    beta: -0.01344
+    alpha: 0.734729
+    eta: 0.085186
+    b: 3.736005
+  gta_beta:
+    beta1: 0.211806
+    beta2: 0.275867
+    alpha: 0.828395
+    eta: 0.095833
+    b: 3.987655
