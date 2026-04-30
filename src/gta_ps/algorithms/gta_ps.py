@@ -159,8 +159,6 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         # Resolvent fields
         self.f_out = self._solve_out(self.r)
         self.f_in = self._solve_in(self.r)
-        self.f_out_shift = self.f_out.copy()
-        self.f_in_shift  = self.f_in.copy()
 
         # g is kept for backward-compat attribute access; not maintained during planning.
         # SM f_out update uses two LU tri-solves instead of the O(n²) column cache.
@@ -181,7 +179,9 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self.q_t = self.q if self.q is not None else n
         self._step_count = 0
         self._T_arn = max(1, n)  # SLEM refresh every n backups (amortised O(1) per backup)
-        self._T_topo = 100 # Lazy topology update every 100 backups
+        self._T_topo = 100  # Lazy topology update every 100 backups
+        self._T_tau = max(1, n)  # τ=G·ξ refresh cadence (every n backups)
+        self._tau_refresh_count = 0
         self._pending_delta_pi = np.zeros((n, self.n_actions))
         self._has_pending_topo = False
         self._version_xi: dict = {}
@@ -194,9 +194,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self.xi = np.abs(
             (self._r_model[None, :] + self.gamma * EV_all).max(axis=0) - self.V
         )  # (|S|,)
-        self._rebuild_q_tau()
-        self._refresh_top_q()
-        self._rekey_residual_queue()
+        self._refresh_tau()
         self._build_predecessor_cache()
 
 
@@ -336,6 +334,20 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
 
 
 
+    def _refresh_tau(self) -> None:
+        """Compute τ = G·ξ (two tri-solves) and rebuild all queues.
+
+        τ_t(s) = γΦ_t(s) at η=η*, where Φ_t = (I−γP_t)^{-1}·ξ_t is the
+        expected discounted future Bellman residual (exact-sorter identity).
+        """
+        tau_out = self._solve_out(self.xi)
+        tau_in  = self._solve_in(self.xi)
+        self.tau = (1.0 - self.alpha_t) * tau_out + self.alpha_t * tau_in
+        self._rebuild_q_tau()
+        self._refresh_top_q()
+        self._rekey_residual_queue()
+
+
     # ------------------------------------------------------------------
     # TopologyUpdate (Sherman-Morrison on A_out column cache)
     # ------------------------------------------------------------------
@@ -376,13 +388,9 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self.beta_t = self._beta_t(self.slem)
         self.alpha_t = self._alpha_t(self.slem)
 
-        # Update tau based on new fields — plain assignment so tau tracks the
-        # current displacement from the last reward-shift snapshot rather than
-        # ratcheting to its historical peak (which caused stale-signal rotation).
-        tau_new = (1 - self.alpha_t) * np.abs(self.f_out - self.f_out_shift) + \
-                  self.alpha_t * np.abs(self.f_in - self.f_in_shift)
-        self.tau = tau_new
-        
+        # Recompute τ = G·ξ with fresh LU factors and current Bellman residuals.
+        self._refresh_tau()
+
         self._pending_delta_pi.fill(0)
         self._has_pending_topo = False
 
@@ -403,27 +411,14 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         # (every _T_arn backup steps). Forcing it on the first post-shift step
         # costs O(n·deg·arnoldi_k) redundantly before any V has changed.
         # A_out/A_in are unchanged by a reward shift — only rhs changes.
-        f_out_prev = self.f_out.copy()
-        f_in_prev  = self.f_in.copy()
-
         if self._lu_out is not None:
             # Small n: use LU tri-solve (O(n)) instead of g @ delta_r (O(n²)).
-            delta_f_out = self._lu_out.solve(delta_r)
-            delta_f_in = self._lu_in.solve(delta_r)
-            self.f_out += delta_f_out
-            self.f_in  += delta_f_in
+            self.f_out += self._lu_out.solve(delta_r)
+            self.f_in  += self._lu_in.solve(delta_r)
         else:
-            # Large n: GMRES re-solve with updated rhs; delta from stored prev
+            # Large n: GMRES re-solve with updated rhs.
             self.f_out = self._solve_out(self.r)
             self.f_in = self._solve_in(self.r)
-        
-        # tau is the magnitude of the jump (proactive response to reward shift)
-        self.tau = (1 - self.alpha_t) * np.abs(self.f_out - f_out_prev) + \
-                   self.alpha_t * np.abs(self.f_in - f_in_prev)
-
-        # Snapshot fields at start of shift to track displacement during planning
-        self.f_out_shift = f_out_prev
-        self.f_in_shift  = f_in_prev
 
         # Recompute xi from current V and the new reward vector.
         # Without this, Q_xi tracks stale residuals from the pre-shift reward;
@@ -434,9 +429,8 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
             (self._r_model[None, :] + self.gamma * EV_all).max(axis=0) - self.V
         )
 
-        # Full refresh: rebuild top-q set and H_q frontier (done per reward shift, not per backup)
-        self._refresh_top_q()
-        self._rekey_residual_queue()
+        # τ = G·ξ: full refresh with new xi (done per reward shift, not per backup).
+        self._refresh_tau()
 
     def pop_and_prioritize(self) -> int | None:
         # Peek valid head from Q_xi (residual queue).
