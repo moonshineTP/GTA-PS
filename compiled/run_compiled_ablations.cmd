@@ -11,46 +11,52 @@ set "PYTHONPATH=%CODE_ROOT%\src;%CODE_ROOT%\threads;%CODE_ROOT%\misc"
 :: Find and validate artifacts directory
 set "ARTIFACTS_DIR="
 
-:: Strategy 1: Check if ARTIFACTS_DIR is set as environment variable
+:: Strategy 1: Check if ARTIFACTS_DIR_ENV is set as environment variable
 if defined ARTIFACTS_DIR_ENV (
-    set "ARTIFACTS_DIR=!ARTIFACTS_DIR_ENV!"
+    if exist "!ARTIFACTS_DIR_ENV!" (
+        set "ARTIFACTS_DIR=!ARTIFACTS_DIR_ENV!"
+    )
 )
 
-:: Strategy 2: Check relative to script location
+:: Strategy 2: Check relative to script location (code\compiled\artifacts)
 if not defined ARTIFACTS_DIR (
     if exist "%~dp0artifacts" (
         set "ARTIFACTS_DIR=%~dp0artifacts"
     )
 )
 
-:: Strategy 3: Check in parent directories from current location
-if not defined ARTIFACTS_DIR (
-    for /d %%D in (artifacts compiled\artifacts ..\artifacts ..\..\artifacts) do (
-        if exist "%%~D" (
-            set "ARTIFACTS_DIR=%%~D"
-            goto :found_artifacts
-        )
-    )
-)
-
-:: Strategy 4: Search from script's parent directory
+:: Strategy 3: Check in code directory (code\artifacts)
 if not defined ARTIFACTS_DIR (
     if exist "%~dp0..\artifacts" (
         set "ARTIFACTS_DIR=%~dp0..\artifacts"
     )
 )
 
-:found_artifacts
+:: Strategy 4: Check in parent workspace (parent\artifacts)
+if not defined ARTIFACTS_DIR (
+    if exist "%~dp0..\..\artifacts" (
+        set "ARTIFACTS_DIR=%~dp0..\..\artifacts"
+    )
+)
+
+:: Strategy 5: Check further up the tree
+if not defined ARTIFACTS_DIR (
+    if exist "%~dp0..\..\..\artifacts" (
+        set "ARTIFACTS_DIR=%~dp0..\..\..\artifacts"
+    )
+)
+
 if not defined ARTIFACTS_DIR (
     echo ERROR: Cannot find artifacts directory
     echo.
     echo Searched in:
-    echo   - Script directory: %~dp0artifacts
-    echo   - Current directory: artifacts, compiled\artifacts, ..\artifacts, ..\..\artifacts
-    echo   - Parent of script: %~dp0..\artifacts
+    echo   - %~dp0artifacts
+    echo   - %~dp0..\artifacts
+    echo   - %~dp0..\..\artifacts
+    echo   - %~dp0..\..\..\artifacts
     echo.
-    echo Solution: Set ARTIFACTS_DIR_ENV environment variable to point to the artifacts folder
-    echo   Example: set ARTIFACTS_DIR_ENV=D:\path\to\artifacts
+    echo Solution: Set ARTIFACTS_DIR_ENV environment variable or ensure artifacts folder exists
+    echo   Example: set ARTIFACTS_DIR_ENV=D:\workspace\artifacts
     exit /b 1
 )
 
