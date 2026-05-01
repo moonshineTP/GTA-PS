@@ -7,6 +7,8 @@ set "USER_ARGS=%*"
 :: Path to the artifacts directory - works from both code\compiled and code
 if exist "%~dp0artifacts" (
     set "ARTIFACTS_DIR=%~dp0artifacts"
+) else if exist "%~dp0..\artifacts" (
+    set "ARTIFACTS_DIR=%~dp0..\artifacts"
 ) else (
     set "ARTIFACTS_DIR=artifacts"
 )
@@ -15,6 +17,8 @@ if exist "%~dp0artifacts" (
 set "CODE_ROOT=%~dp0.."
 set "PYTHONPATH=%CODE_ROOT%\src;%CODE_ROOT%\threads;%CODE_ROOT%\misc"
 
+echo ======================================================
+echo GTA-PS Compiled Sanity Suite
 echo ======================================================
 echo GTA-PS Compiled Sanity Suite
 echo ======================================================
