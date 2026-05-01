@@ -10,23 +10,47 @@ set "PYTHONPATH=%CODE_ROOT%\src;%CODE_ROOT%\threads;%CODE_ROOT%\misc"
 
 :: Find and validate artifacts directory
 set "ARTIFACTS_DIR="
-if exist "%~dp0artifacts" (
-    set "ARTIFACTS_DIR=%~dp0artifacts"
-) else if exist "%~dp0..\artifacts" (
-    set "ARTIFACTS_DIR=%~dp0..\artifacts"
-) else if exist "compiled\artifacts" (
-    set "ARTIFACTS_DIR=compiled\artifacts"
-) else if exist "artifacts" (
-    set "ARTIFACTS_DIR=artifacts"
+
+:: Strategy 1: Check if ARTIFACTS_DIR is set as environment variable
+if defined ARTIFACTS_DIR_ENV (
+    set "ARTIFACTS_DIR=!ARTIFACTS_DIR_ENV!"
 )
 
+:: Strategy 2: Check relative to script location
+if not defined ARTIFACTS_DIR (
+    if exist "%~dp0artifacts" (
+        set "ARTIFACTS_DIR=%~dp0artifacts"
+    )
+)
+
+:: Strategy 3: Check in parent directories from current location
+if not defined ARTIFACTS_DIR (
+    for /d %%D in (artifacts compiled\artifacts ..\artifacts ..\..\artifacts) do (
+        if exist "%%~D" (
+            set "ARTIFACTS_DIR=%%~D"
+            goto :found_artifacts
+        )
+    )
+)
+
+:: Strategy 4: Search from script's parent directory
+if not defined ARTIFACTS_DIR (
+    if exist "%~dp0..\artifacts" (
+        set "ARTIFACTS_DIR=%~dp0..\artifacts"
+    )
+)
+
+:found_artifacts
 if not defined ARTIFACTS_DIR (
     echo ERROR: Cannot find artifacts directory
-    echo Expected locations:
-    echo   - %~dp0artifacts
-    echo   - %~dp0..\artifacts
-    echo   - compiled/artifacts
-    echo   - artifacts
+    echo.
+    echo Searched in:
+    echo   - Script directory: %~dp0artifacts
+    echo   - Current directory: artifacts, compiled\artifacts, ..\artifacts, ..\..\artifacts
+    echo   - Parent of script: %~dp0..\artifacts
+    echo.
+    echo Solution: Set ARTIFACTS_DIR_ENV environment variable to point to the artifacts folder
+    echo   Example: set ARTIFACTS_DIR_ENV=D:\path\to\artifacts
     exit /b 1
 )
 
