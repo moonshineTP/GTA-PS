@@ -11,79 +11,57 @@ echo "======================================================"
 
 # Smoothness Ablation
 echo "[1/11] Smoothness Ablation (Compiled)"
-if [ -f "$ARTIFACTS_DIR/misc__smoothness__ablation.dist/misc__smoothness__ablation" ]; then
-    "$ARTIFACTS_DIR/misc__smoothness__ablation.dist/misc__smoothness__ablation" "$@"
-fi
+"$ARTIFACTS_DIR/smoothness_ablation.dist/smoothness_ablation" "$@"
 echo ""
 
 # Mixing Threshold Ablation
 echo "[2/11] Mixing Threshold Ablation (Compiled)"
-if [ -f "$ARTIFACTS_DIR/misc__mixing__threshold__ablation.dist/misc__mixing__threshold__ablation" ]; then
-    "$ARTIFACTS_DIR/misc__mixing__threshold__ablation.dist/misc__mixing__threshold__ablation" "$@"
-fi
+"$ARTIFACTS_DIR/mixing_threshold_ablation.dist/mixing_threshold_ablation" "$@"
 echo ""
 
 # Shift-rate Ablation
 echo "[3/11] Shift-rate Ablation (Compiled)"
-if [ -f "$ARTIFACTS_DIR/misc__shift__rate__ablation.dist/misc__shift__rate__ablation" ]; then
-    "$ARTIFACTS_DIR/misc__shift__rate__ablation.dist/misc__shift__rate__ablation" "$@"
-fi
+"$ARTIFACTS_DIR/shift_rate_ablation.dist/shift_rate_ablation" "$@"
 echo ""
 
 # Boltzmann-b Ablation
 echo "[4/11] Boltzmann-b Ablation (Compiled)"
-if [ -f "$ARTIFACTS_DIR/misc__boltzmann__b__ablation.dist/misc__boltzmann__b__ablation" ]; then
-    "$ARTIFACTS_DIR/misc__boltzmann__b__ablation.dist/misc__boltzmann__b__ablation" "$@"
-fi
+"$ARTIFACTS_DIR/boltzmann_b_ablation.dist/boltzmann_b_ablation" "$@"
 echo ""
 
 # Scheduler Ablation
 echo "[5/11] Scheduler Ablation (Compiled)"
-if [ -f "$ARTIFACTS_DIR/misc__scheduler__ablation.dist/misc__scheduler__ablation" ]; then
-    "$ARTIFACTS_DIR/misc__scheduler__ablation.dist/misc__scheduler__ablation" "$@"
-fi
+"$ARTIFACTS_DIR/scheduler_ablation.dist/scheduler_ablation" "$@"
 echo ""
 
 # Gamma Ablation
 echo "[6/11] Gamma Ablation (Compiled)"
-if [ -f "$ARTIFACTS_DIR/misc__gamma__ablation.dist/misc__gamma__ablation" ]; then
-    "$ARTIFACTS_DIR/misc__gamma__ablation.dist/misc__gamma__ablation" "$@"
-fi
+"$ARTIFACTS_DIR/gamma_ablation.dist/gamma_ablation" "$@"
 echo ""
 
 # Mixing Ablation
 echo "[7/11] Mixing Ablation (Compiled)"
-if [ -f "$ARTIFACTS_DIR/misc__mixing__ablation.dist/misc__mixing__ablation" ]; then
-    "$ARTIFACTS_DIR/misc__mixing__ablation.dist/misc__mixing__ablation" "$@"
-fi
+"$ARTIFACTS_DIR/mixing_ablation.dist/mixing_ablation" "$@"
 echo ""
 
 # Periodicity Ablation
 echo "[8/11] Periodicity Ablation (Compiled)"
-if [ -f "$ARTIFACTS_DIR/misc__periodicity__ablation.dist/misc__periodicity__ablation" ]; then
-    "$ARTIFACTS_DIR/misc__periodicity__ablation.dist/misc__periodicity__ablation" "$@"
-fi
+"$ARTIFACTS_DIR/periodicity_ablation.dist/periodicity_ablation" "$@"
 echo ""
 
 # Reward-support Ablation
 echo "[9/11] Reward-support Ablation (Compiled)"
-if [ -f "$ARTIFACTS_DIR/misc__reward__support__ablation.dist/misc__reward__support__ablation" ]; then
-    "$ARTIFACTS_DIR/misc__reward__support__ablation.dist/misc__reward__support__ablation" "$@"
-fi
+"$ARTIFACTS_DIR/reward_support_ablation.dist/reward_support_ablation" "$@"
 echo ""
 
 # Cumulative Ablation
 echo "[10/11] Cumulative Ablation (Compiled)"
-if [ -f "$ARTIFACTS_DIR/misc__cumulative__ablation.dist/misc__cumulative__ablation" ]; then
-    "$ARTIFACTS_DIR/misc__cumulative__ablation.dist/misc__cumulative__ablation" "$@"
-fi
+"$ARTIFACTS_DIR/cumulative_ablation.dist/cumulative_ablation" "$@"
 echo ""
 
 # Showcase
 echo "[11/11] Showcase (Compiled)"
-if [ -f "$ARTIFACTS_DIR/misc__showcase.dist/misc__showcase" ]; then
-    "$ARTIFACTS_DIR/misc__showcase.dist/misc__showcase" "$@"
-fi
+"$ARTIFACTS_DIR/showcase.dist/showcase" "$@"
 echo ""
 
 echo "Done."

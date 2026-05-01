@@ -29,8 +29,13 @@ exit /b 0
 :RunRQ
 set "LABEL=%~1"
 set "EXE_NAME=%~2"
+set "DIST_NAME=%EXE_NAME:.exe=.dist%"
 
 echo [%LABEL%]
-"%ARTIFACTS_DIR%\%EXE_NAME:.exe=.dist%\%EXE_NAME%" %USER_ARGS%
+if exist "%ARTIFACTS_DIR%\%DIST_NAME%\%EXE_NAME%" (
+    "%ARTIFACTS_DIR%\%DIST_NAME%\%EXE_NAME%" %USER_ARGS%
+) else (
+    echo ERROR: %EXE_NAME% not found in %ARTIFACTS_DIR%\%DIST_NAME%
+)
 echo.
 exit /b 0

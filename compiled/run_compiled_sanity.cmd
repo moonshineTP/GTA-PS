@@ -13,12 +13,29 @@ echo ======================================================
 
 :: 1. Time Benchmark
 echo [1/2] Time Benchmark (Compiled)
-"%ARTIFACTS_DIR%\time_benchmark.dist\time_benchmark.exe" %USER_ARGS%
+if exist "%ARTIFACTS_DIR%\time_benchmark.dist\time_benchmark.exe" (
+    "%ARTIFACTS_DIR%\time_benchmark.dist\time_benchmark.exe" %USER_ARGS%
+) else (
+    echo ERROR: time_benchmark not found
+)
 echo.
 
 :: 2. Convergence Benchmark
 echo [2/2] Convergence Benchmark (Compiled)
-"%ARTIFACTS_DIR%\convergence_benchmark.dist\convergence_benchmark.exe" %USER_ARGS%
+if exist "%ARTIFACTS_DIR%\convergence_benchmark.dist\convergence_benchmark.exe" (
+    "%ARTIFACTS_DIR%\convergence_benchmark.dist\convergence_benchmark.exe" %USER_ARGS%
+) else (
+    echo ERROR: convergence_benchmark not found
+)
+echo.
+
+:: 2. Convergence Benchmark
+echo [2/2] Convergence Benchmark (Compiled)
+if exist "%ARTIFACTS_DIR%\convergence_benchmark.dist\convergence_benchmark.exe" (
+    "%ARTIFACTS_DIR%\convergence_benchmark.dist\convergence_benchmark.exe" %USER_ARGS%
+) else (
+    echo ERROR: convergence_benchmark not found
+)
 echo.
 
 echo Done.
