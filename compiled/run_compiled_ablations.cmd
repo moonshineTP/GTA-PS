@@ -4,12 +4,21 @@ setlocal
 :: Capture all user arguments once at the start
 set "USER_ARGS=%*"
 
-:: Path to the artifacts directory relative to this script
-set "ARTIFACTS_DIR=%~dp0artifacts"
+:: Path to the artifacts directory - works from both code\compiled and code
+if exist "%~dp0artifacts" (
+    set "ARTIFACTS_DIR=%~dp0artifacts"
+) else (
+    set "ARTIFACTS_DIR=artifacts"
+)
+
+:: Set PYTHONPATH for executables that need it
+set "CODE_ROOT=%~dp0.."
+set "PYTHONPATH=%CODE_ROOT%\src;%CODE_ROOT%\threads;%CODE_ROOT%\misc"
 
 echo ======================================================
 echo GTA-PS Compiled Ablations Suite
 echo ======================================================
+
 
 call :RunAbl "Smoothness Ablation" "smoothness_ablation.exe"
 call :RunAbl "Mixing Threshold Ablation" "mixing_threshold_ablation.exe"
@@ -35,6 +44,8 @@ set "DIST_NAME=%EXE_NAME:.exe=.dist%"
 echo [%LABEL%]
 if exist "%ARTIFACTS_DIR%\%DIST_NAME%\%EXE_NAME%" (
     "%ARTIFACTS_DIR%\%DIST_NAME%\%EXE_NAME%" %USER_ARGS%
+) else if exist "%ARTIFACTS_DIR%\%DIST_NAME%\%EXE_NAME:exe=%" (
+    "%ARTIFACTS_DIR%\%DIST_NAME%\%EXE_NAME:exe=%" %USER_ARGS%
 ) else (
     echo ERROR: %EXE_NAME% not found in %ARTIFACTS_DIR%\%DIST_NAME%
 )
