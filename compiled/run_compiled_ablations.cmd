@@ -1,69 +1,73 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Capture all user arguments once at the start
+:: If first argument looks like a path, use it as executables directory
+if not "%~1"=="" (
+    if exist "%~1" (
+        set "EXES_DIR=%~1"
+        set "USER_ARGS=%~2 %~3 %~4 %~5 %~6 %~7 %~8 %~9"
+        goto :found_exes
+    )
+)
+
+:: Otherwise capture all args as user arguments
 set "USER_ARGS=%*"
 
 :: Set PYTHONPATH for executables that need it
 set "CODE_ROOT=%~dp0.."
 set "PYTHONPATH=%CODE_ROOT%\src;%CODE_ROOT%\threads;%CODE_ROOT%\misc"
 
-:: Find and validate artifacts directory
-set "ARTIFACTS_DIR="
+:: Find executables directory
+set "EXES_DIR="
 
-:: Strategy 1: Check if ARTIFACTS_DIR_ENV is set as environment variable
-if defined ARTIFACTS_DIR_ENV (
-    if exist "!ARTIFACTS_DIR_ENV!" (
-        set "ARTIFACTS_DIR=!ARTIFACTS_DIR_ENV!"
+:: Strategy 1: Check if EXES_DIR_ENV is set
+if defined EXES_DIR_ENV (
+    if exist "!EXES_DIR_ENV!" (
+        set "EXES_DIR=!EXES_DIR_ENV!"
     )
 )
 
-:: Strategy 2: Check relative to script location (code\compiled\artifacts)
-if not defined ARTIFACTS_DIR (
+:: Strategy 2: Check for artifacts structure (compiled\artifacts\*.dist\*.exe)
+if not defined EXES_DIR (
     if exist "%~dp0artifacts" (
-        set "ARTIFACTS_DIR=%~dp0artifacts"
+        set "EXES_DIR=%~dp0artifacts"
     )
 )
 
-:: Strategy 3: Check in code directory (code\artifacts)
-if not defined ARTIFACTS_DIR (
+:: Strategy 3: Check parent directories
+if not defined EXES_DIR (
     if exist "%~dp0..\artifacts" (
-        set "ARTIFACTS_DIR=%~dp0..\artifacts"
+        set "EXES_DIR=%~dp0..\artifacts"
     )
 )
 
-:: Strategy 4: Check in parent workspace (parent\artifacts)
-if not defined ARTIFACTS_DIR (
+if not defined EXES_DIR (
     if exist "%~dp0..\..\artifacts" (
-        set "ARTIFACTS_DIR=%~dp0..\..\artifacts"
+        set "EXES_DIR=%~dp0..\..\artifacts"
     )
 )
 
-:: Strategy 5: Check further up the tree
-if not defined ARTIFACTS_DIR (
-    if exist "%~dp0..\..\..\artifacts" (
-        set "ARTIFACTS_DIR=%~dp0..\..\..\artifacts"
-    )
-)
-
-if not defined ARTIFACTS_DIR (
-    echo ERROR: Cannot find artifacts directory
+:found_exes
+if not defined EXES_DIR (
+    echo ERROR: Cannot find executables
     echo.
-    echo Searched in:
-    echo   - %~dp0artifacts
-    echo   - %~dp0..\artifacts
-    echo   - %~dp0..\..\artifacts
-    echo   - %~dp0..\..\..\artifacts
+    echo Usage:
+    echo   run_compiled_ablations.cmd [path_to_exes] [args...]
     echo.
-    echo Solution: Set ARTIFACTS_DIR_ENV environment variable or ensure artifacts folder exists
-    echo   Example: set ARTIFACTS_DIR_ENV=D:\workspace\artifacts
+    echo Examples:
+    echo   run_compiled_ablations.cmd
+    echo   run_compiled_ablations.cmd D:\executables
+    echo   run_compiled_ablations.cmd "C:\Program Files\GTA-PS\exes"
+    echo.
+    echo Or set environment variable:
+    echo   set EXES_DIR_ENV=D:\path\to\exes
     exit /b 1
 )
 
 echo ======================================================
 echo GTA-PS Compiled Ablations Suite
 echo ======================================================
-echo Using artifacts from: !ARTIFACTS_DIR!
+echo Using executables from: !EXES_DIR!
 echo.
 echo GTA-PS Compiled Ablations Suite
 echo ======================================================
@@ -88,17 +92,38 @@ exit /b 0
 :RunAbl
 set "LABEL=%~1"
 set "EXE_NAME=%~2"
-set "DIST_NAME=%EXE_NAME:.exe=.dist%"
 
 echo [%LABEL%]
-if exist "!ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME!" (
-    "!ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME!" !USER_ARGS!
-) else if exist "!ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME:exe=!" (
-    "!ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME:exe=!" !USER_ARGS!
-) else (
-    echo ERROR: !EXE_NAME! not found
-    echo Expected: !ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME! or !ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME:exe=!
-    exit /b 1
+
+:: Try to run executable directly from EXES_DIR
+if exist "!EXES_DIR!\!EXE_NAME!" (
+    "!EXES_DIR!\!EXE_NAME!" !USER_ARGS!
+    exit /b 0
 )
+
+:: Try with .exe extension
+if exist "!EXES_DIR!\!EXE_NAME!.exe" (
+    "!EXES_DIR!\!EXE_NAME!.exe" !USER_ARGS!
+    exit /b 0
+)
+
+:: Try artifacts structure: EXES_DIR\name.dist\name.exe
+set "DIST_NAME=!EXE_NAME:.exe=.dist!"
+if exist "!EXES_DIR!\!DIST_NAME!\!EXE_NAME!" (
+    "!EXES_DIR!\!DIST_NAME!\!EXE_NAME!" !USER_ARGS!
+    exit /b 0
+)
+
+:: Try artifacts structure without .exe
+if exist "!EXES_DIR!\!DIST_NAME!\!DIST_NAME!" (
+    "!EXES_DIR!\!DIST_NAME!\!DIST_NAME!" !USER_ARGS!
+    exit /b 0
+)
+
+echo ERROR: !EXE_NAME! not found
+echo Searched in:
+echo   - !EXES_DIR!\!EXE_NAME!
+echo   - !EXES_DIR!\!EXE_NAME!.exe
+echo   - !EXES_DIR!\!DIST_NAME!\!EXE_NAME!
 echo.
-exit /b 0
+exit /b 1
