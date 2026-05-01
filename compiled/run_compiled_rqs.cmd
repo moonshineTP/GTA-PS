@@ -1,25 +1,40 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 :: Capture all user arguments once at the start
 set "USER_ARGS=%*"
-
-:: Path to the artifacts directory - works from both code\compiled and code
-if exist "%~dp0artifacts" (
-    set "ARTIFACTS_DIR=%~dp0artifacts"
-) else if exist "%~dp0..\artifacts" (
-    set "ARTIFACTS_DIR=%~dp0..\artifacts"
-) else (
-    set "ARTIFACTS_DIR=artifacts"
-)
 
 :: Set PYTHONPATH for executables that need it
 set "CODE_ROOT=%~dp0.."
 set "PYTHONPATH=%CODE_ROOT%\src;%CODE_ROOT%\threads;%CODE_ROOT%\misc"
 
+:: Find and validate artifacts directory
+set "ARTIFACTS_DIR="
+if exist "%~dp0artifacts" (
+    set "ARTIFACTS_DIR=%~dp0artifacts"
+) else if exist "%~dp0..\artifacts" (
+    set "ARTIFACTS_DIR=%~dp0..\artifacts"
+) else if exist "compiled\artifacts" (
+    set "ARTIFACTS_DIR=compiled\artifacts"
+) else if exist "artifacts" (
+    set "ARTIFACTS_DIR=artifacts"
+)
+
+if not defined ARTIFACTS_DIR (
+    echo ERROR: Cannot find artifacts directory
+    echo Expected locations:
+    echo   - %~dp0artifacts
+    echo   - %~dp0..\artifacts
+    echo   - compiled/artifacts
+    echo   - artifacts
+    exit /b 1
+)
+
 echo ======================================================
 echo GTA-PS Compiled RQs Suite
 echo ======================================================
+echo Using artifacts from: !ARTIFACTS_DIR!
+echo.
 echo GTA-PS Compiled RQs Suite
 echo ======================================================
 
@@ -45,12 +60,14 @@ set "EXE_NAME=%~2"
 set "DIST_NAME=%EXE_NAME:.exe=.dist%"
 
 echo [%LABEL%]
-if exist "%ARTIFACTS_DIR%\%DIST_NAME%\%EXE_NAME%" (
-    "%ARTIFACTS_DIR%\%DIST_NAME%\%EXE_NAME%" %USER_ARGS%
-) else if exist "%ARTIFACTS_DIR%\%DIST_NAME%\%EXE_NAME:exe=%" (
-    "%ARTIFACTS_DIR%\%DIST_NAME%\%EXE_NAME:exe=%" %USER_ARGS%
+if exist "!ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME!" (
+    "!ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME!" !USER_ARGS!
+) else if exist "!ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME:exe=!" (
+    "!ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME:exe=!" !USER_ARGS!
 ) else (
-    echo ERROR: %EXE_NAME% not found in %ARTIFACTS_DIR%\%DIST_NAME%
+    echo ERROR: !EXE_NAME! not found
+    echo Expected: !ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME! or !ARTIFACTS_DIR!\!DIST_NAME!\!EXE_NAME:exe=!
+    exit /b 1
 )
 echo.
 exit /b 0
