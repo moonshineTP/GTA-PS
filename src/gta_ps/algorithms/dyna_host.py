@@ -61,8 +61,7 @@ class DynaHost(TdMixin):
         delta_r = r - np.asarray(module_r)
         self.r_oracle = r.copy()
         self.module.reward_update(delta_r)
-        P_hat, _ = self.model.get_model()
-        self.module.update_model(P_hat, self.r_oracle)
+        # We don't sync the model here; plan_steps will do it.
 
 
     def real_step(
@@ -70,40 +69,51 @@ class DynaHost(TdMixin):
     ) -> None:
         """
         Process one real (s, a, r, s') interaction.
-        TD residual — NOT distributional Bellman — drives priority.
-        Syncs empirical model and V estimate into the module after every step.
+        TD residual drives priority. Does NOT sync the entire model to the module
+        every step (O(A*S^2) bottleneck); instead, only updates the local state value.
         """
         self.model.update(s, a, s_next, r)
-        P_hat, r_hat = self.model.get_model()
-        reward_model = self.r_oracle if self.r_oracle is not None else r_hat
-
-        # TD update (signed error)
-        # We manually apply it here so we can clip if needed, though apply_td_backup is preferred.
-        # Let's use apply_td_backup and just clip the Q values if they get too large.
+        
+        # TD update
         abs_delta = self.apply_td_backup(s, a, r, s_next, self.gamma, self.eta_td, self.Q)
 
-        # Sync empirical model so push_predecessors uses P_hat
-        self.module.update_model(P_hat, reward_model)
-        # V(s) ≈ max_a Q(s,a)
+        # Update local value in module
         self.module.update_value(s, float(self.Q[:, s].max()))
 
-        # Enqueue s for backup
+        # Enqueue s for backup. Note: push_predecessors might use a stale 
+        # predecessor cache if real_step is called many times without plan_steps.
+        # This is acceptable for performance; plan_steps syncs the cache.
         self.module.push_predecessors(s, abs_delta)
+
+
+    def real_steps_batch(
+        self, states: np.ndarray, actions: np.ndarray, rewards: np.ndarray, next_states: np.ndarray
+    ) -> None:
+        """
+        Efficient batch update for high-volume interaction bursts.
+        """
+        self.model.update_batch(states, actions, next_states, rewards)
+        for i in range(len(states)):
+            s, a, r, sn = int(states[i]), int(actions[i]), float(rewards[i]), int(next_states[i])
+            abs_delta = self.apply_td_backup(s, a, r, sn, self.gamma, self.eta_td, self.Q)
+            self.module.update_value(s, float(self.Q[:, s].max()))
+            self.module.push_predecessors(s, abs_delta)
 
 
     def plan_steps(self, K: int) -> None:
         """
-        Run K simulated Dyna planning steps using P_hat and TD updates.
-        No distributional Bellman backup anywhere in this method.
+        Run K simulated Dyna planning steps.
+        Syncs the empirical model once before planning to ensure O(A*S^2)
+        overhead is amortised across K backups.
         """
-        # Cache model for the duration of planning to avoid redundant CSR conversions
+        # Sync model and rebuild predecessor cache once per planning burst
         P_hat, r_hat = self.model.get_model()
+        reward_model = self.r_oracle if self.r_oracle is not None else r_hat
+        self.module.update_model(P_hat, reward_model)
+        
         n_states = self.n_states
         gamma = self.gamma
         eta_td = self.eta_td
-        
-        # Pre-sample random values for epsilon-greedy if needed, but here a is argmax.
-        # The main bottleneck is the per-backup module interaction and sampling.
         
         for _ in range(K):
             s = self.module.pop_and_prioritize()
@@ -115,7 +125,6 @@ class DynaHost(TdMixin):
             # Sample next state from empirical model
             probs = P_hat[a, s]
             s_sim = int(np.random.choice(n_states, p=probs))
-            reward_model = self.r_oracle if self.r_oracle is not None else r_hat
             r_sim = reward_model[s]
 
             # TD update

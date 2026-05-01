@@ -88,7 +88,13 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
             for step in range(n_steps_per_shift):
                 # Dyna interaction
                 burst_size = 5 * n_states if step == 0 else 1
-                for _ in range(burst_size):
+                if burst_size > 1:
+                    ss = np.random.randint(n_states, size=burst_size)
+                    aa = np.random.randint(n_actions, size=burst_size)
+                    sn = np.array([np.random.choice(n_states, p=env.P[aa[i], ss[i]]) for i in range(burst_size)])
+                    rr = r_new[ss]
+                    agent.real_steps_batch(ss, aa, rr, sn)
+                else:
                     s_rand = np.random.randint(n_states)
                     a_rand = np.random.randint(n_actions)
                     s_next_rand = np.random.choice(n_states, p=env.P[a_rand, s_rand])
@@ -189,7 +195,7 @@ if __name__ == "__main__":
     parser.add_argument("--n-shifts", type=int, default=4)
     parser.add_argument("--n-steps-per-shift", type=int, default=40)
     parser.add_argument("--gamma", type=float, default=0.95)
-    parser.add_argument("--n-states", type=int, default=80)
+    parser.add_argument("--n-states", type=int, default=75)
     args = parser.parse_args()
     warn_if_nonpublication_run(args.seeds, args.workers)
 

@@ -1,36 +1,40 @@
-# RQ1: Proactiveness Under Reward Shifts
+# RQ1: Proactiveness & Convergence
 
 **File:** `experiments/rq1_proactiveness.py`
 
 ## Research Question
-Does GTA‑PS reduce post‑shift value error compared to Dyna‑PS when replanning budgets are tight (`K < t_mix(1/4)`)?
+Does GTA‑PS reduce value error faster than Standard‑PS (Dyna‑PS) in both stationary and non-stationary (reward shift) settings?
 
 ## Experimental Protocol (memo §8)
 | Setting | Value |
 |---------|-------|
-| Environments | GARNET (`|S|=100,500`), FourRooms `k=1‑4` (≈104 states) |
+| Environments | GARNET, FourRooms, Reacher |
 | Budgets `K` | `|S|/4`, `|S|`, `4|S|` |
-| Seeds | 1000 (full run); 20‑40 for quick checks |
-| Shifts per seed | 5‑20 |
+| Seeds | 20–100 |
+| Shifts per seed | 5–20 (for timeline scripts) |
 | Primary metric | `||V^K - V*||_inf` |
-| Secondary metric | `K_ε` (see `metrics.py`) |
 
 ## Methods
 | Test | Class | Key params |
 |------|-------|------------|
-| `dyna_ps` | `DynaPS` | residual‑only baseline |
-| `gta_base` | `GtaPS` | α=0.5, β=1.0 |
-| `gta_beta` | `GtaPS` | `adaptive_beta=True` |
-
-All methods use a single agent per `(K, method)` and keep `V` warm‑started across reward shifts.
+| `dyna_ps` | `StandardPS` | residual‑only baseline |
+| `gta_fixed` | `GtaPS` | `adaptive_beta=False`, `beta_mode='fixed'` |
+| `gta_linear`| `GtaPS` | `adaptive_beta=True`, `beta_mode='linear'` |
 
 ## Running
-```bash
-# quick smoke test
-python experiments/rq1_proactiveness.py \
-  --env garnet --n-states 100 --seeds 20 --n-shifts 5
-```
-Results are written to `results/rq1_<tag>.json`.
 
-## Tuning‐Beta
-See the dedicated tuning script: [[tune-beta.md]]
+### Stationary Convergence
+```bash
+python experiments/rq1_proactiveness.py --env garnet --seeds 20
+```
+
+### Timeline (Reward Shifts)
+```bash
+# Oracle DP setting
+python experiments/rq1_dp_timeline.py --env fourrooms --seeds 10
+
+# Learned Dyna setting
+python experiments/rq1_dyna_timeline.py --env reacher --seeds 10
+```
+
+Results are written to `results/` as JSON files.

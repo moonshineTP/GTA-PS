@@ -123,8 +123,8 @@ def run_alpha_sweep(
                 "gta_base", host="dp", P=env.P, r=np.zeros(n_states), gamma=gamma,
                 beta=beta, alpha=alpha
             )
-            agent_plan.module.reward_update(r)
-            V = agent_plan.plan(K=K, r=None)
+            # Use host.plan(K, r=r) to correctly update both host and module reward
+            V = agent_plan.plan(K=K, r=r)
             value_errors[K] = {
                 "inf": float(value_error_inf(V, V_star)),
                 "l1":  float(value_error_l1(V, V_star)),
@@ -154,7 +154,7 @@ def main():
     budgets = [25, 100]
     
     if args.env == "garnet":
-        env_kwargs = {"n_states": 100, "n_actions": 10, "branching": 3, "reward_support": 4, "reversible": 0.0}
+        env_kwargs = {"n_states": 75, "n_actions": 10, "branching": 3, "reward_support": 4, "reversible": 0.0}
     else:
         env_kwargs = {"k_fourrooms": args.k}
 

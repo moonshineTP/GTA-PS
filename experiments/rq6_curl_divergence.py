@@ -76,7 +76,13 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
             
             for step in range(n_steps_per_shift):
                 burst_size = 5 * n_states if step == 0 else 1
-                for _ in range(burst_size):
+                if burst_size > 1:
+                    ss = np.random.randint(n_states, size=burst_size)
+                    aa = np.random.randint(env.n_actions, size=burst_size)
+                    sn = np.array([np.random.choice(n_states, p=env.P[aa[i], ss[i]]) for i in range(burst_size)])
+                    rr = r_new[ss]
+                    agent.real_steps_batch(ss, aa, rr, sn)
+                else:
                     s_rand = np.random.randint(n_states)
                     a_rand = np.random.randint(env.n_actions)
                     s_next_rand = np.random.choice(n_states, p=env.P[a_rand, s_rand])
@@ -185,7 +191,7 @@ if __name__ == "__main__":
     garnet_final = {}
     for rate in nbr_rates:
         res = runner.run(run_seed_worker, list(range(args.seeds)),
-                         dict(env_name="garnet", env_params={"n_states": 100, "n_nbr_rate": rate, "reversible": 0.0, "gamma": args.gamma},
+                         dict(env_name="garnet", env_params={"n_states": 75, "n_nbr_rate": rate, "reversible": 0.0, "gamma": args.gamma},
                               variants=variants, n_shifts=args.n_shifts, n_steps_per_shift=args.n_steps_per_shift, k_planning=args.K),
                          desc=f"garnet_nbr_{rate}")
         garnet_final[rate] = get_stats(res, variant_labels)

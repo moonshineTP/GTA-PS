@@ -34,4 +34,4 @@ These utilities are documented in [[spectral.md]].
 
 ---
 
-See also: [[dyna-ps.md]]
+See also: [[standard-ps.md]]

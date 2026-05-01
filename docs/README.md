@@ -1,1 +1,74 @@
-['gta-ps.md`](algorithms/gta-ps.md) | `GtaPS` class — variants, schedules, implementation notes |\n| [`dyna-ps.md`](algorithms/dyna-ps.md) | `DynaPS` baseline + `CountModelLearner` |\n| [`spectral.md`](algorithms/spectral.md) | Laplacians, SLEM estimation, resolvent operators |\n\n### Environments (`docs/environments/`)\n\n| File | Contents |\n|------|----------|\n| [`overview.md`](environments/overview.md) | All five envs — interface, constraints, setup |\n\n### Experiments (`docs/experiments/`)\n\n| File | Contents |\n|------|----------|\n| [`rq1-proactiveness.md`](experiments/rq1-proactiveness.md) | RQ1 protocol, run commands, output format |\n| [`metrics.md`](experiments/metrics.md) | `value_error_inf`, `steps_to_epsilon`, aggregation |\n| [`tune-beta.md`](experiments/tune-beta.md) | Beta schedule parameter tuning |\n\n### Memo (`docs/memo/`)\n\nContains the LaTeX memo copy (`GTA-PS-memo-copy.tex`) compiled alongside the main\n`GTA-PS-memo.tex` in the repo root.  The memo is the authoritative specification;\ncode is derived from it.\n\n---\n\n## Quick start\n\n```bash\n# Install (default stack: GARNET, FourRooms, MiniGrid, Reacher)\ncd code/\npython -m venv .venv && source .venv/bin/activate\npip install -e', '.', ['dev,reacher]', 'Smoke tests\npytest tests/test_smoke.py -q   # ~21 tests\n\n# Quick RQ1 run\npython experiments/rq1_proactiveness.py --env garnet --n-states 100 --seeds 20 --n-shifts 5\n\n# Tune beta schedule before full run\npython experiments/tune_beta.py\n```\n\n## Source layout\n\n```\nsrc/gta_ps/\n├── algorithms/\n│   ├── gta_ps.py        GTA-PS planner (all four variants)\n│   ├── standard_ps.py   Standard Prioritized Sweeping (DynaPS baseline)\n│   ├── dp_host.py       DP (oracle-model) host\n│   ├── dyna_host.py     Dyna (empirical-model) host\n│   ├── frequency_model.py Count-based model learner (Dyna hosts)\n│   ├── oracle_model.py  Oracle model wrapper\n│   └── base.py          Abstract base classes\n├── envs/\n│   ├── base.py          TabularEnv interface\n│   ├── garnet.py        GARNET tabular MDP\n│   ├── fourrooms.py     FourRooms grid (no gymnasium needed)\n│   ├── reacher.py       Reacher-v5 discretised (Dyna host)\n│   └── cargoal.py       CarGoal discretised (pinned stack)\n└── utils/\n    ├── spectral.py      Laplacians, SLEM, resolvents\n    └── metrics.py       value_error_inf, steps_to_epsilon\n```']]
+# GTA-PS Code Documentation
+
+This directory documents the `src/gta_ps` package and experiment scripts.
+
+## Index
+
+### Algorithms (`docs/algorithms/`)
+
+| File | Contents |
+|------|----------|
+| [`gta-ps.md`](algorithms/gta-ps.md) | `GtaPS` class — variants, schedules, implementation notes |
+| [`standard-ps.md`](algorithms/standard-ps.md) | `StandardPS` (DynaPS alias) + interface notes |
+| [`spectral.md`](algorithms/spectral.md) | Laplacians, SLEM estimation, resolvent operators |
+
+### Environments (`docs/environments/`)
+
+| File | Contents |
+|------|----------|
+| [`overview.md`](environments/overview.md) | All envs — interface, constraints, setup (GARNET, FourRooms, Reacher, CarGoal) |
+
+### Experiments (`docs/experiments/`)
+
+| File | Contents |
+|------|----------|
+| [`rq1-proactiveness.md`](experiments/rq1-proactiveness.md) | RQ1 protocol, run commands, output format |
+| [`metrics.md`](experiments/metrics.md) | `value_error_inf`, `steps_to_epsilon`, aggregation |
+
+### Memo (`docs/memo/`)
+
+The LaTeX memo (`GTA-PS-memo.tex`) in the repo root is the authoritative specification; the code is derived from it.
+
+---
+
+## Quick start
+
+```bash
+# Install (default stack: GARNET, FourRooms, MiniGrid, Reacher)
+cd code/
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev,reacher]"
+
+# Smoke tests
+pytest tests/test_smoke.py -q   # ~21 tests
+
+# Quick RQ1 run
+python experiments/rq1_proactiveness.py --env garnet --n-states 100 --seeds 20 --n-shifts 5
+
+# Beta schedule comparison (RQ2)
+python experiments/rq2_beta.py
+```
+
+## Source layout
+
+```
+src/gta_ps/
+├── algorithms/
+│   ├── base.py              # Base classes (PrioritizedSweepingModule, Mixins)
+│   ├── dp_host.py           # DP (oracle-model) host
+│   ├── dyna_host.py         # Dyna (empirical-model) host
+│   ├── empirical_model.py   # CountModel and SampleModel learners
+│   ├── gta_ps.py            # GTA-PS algorithm (α/β variants)
+│   ├── oracle_model.py      # Oracle transition/reward wrapper
+│   └── standard_ps.py       # Standard PS (DynaPS alias)
+├── envs/
+│   ├── base.py              # TabularEnv interface
+│   ├── garnet.py            # GARNET environment
+│   ├── fourrooms.py         # FourRooms environment
+│   ├── reacher.py           # Reacher-v5 wrapper
+│   └── cargoal.py           # Safety-Gymnasium CarGoal wrapper
+└── utils/
+    ├── hyperparams.py       # Hyperparameter management
+    ├── metrics.py           # Evaluation metrics
+    └── spectral.py          # Laplacians and Arnoldi/SLEM
+```

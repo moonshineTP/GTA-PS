@@ -15,7 +15,7 @@
 | Host | Relationship | Notes |
 |------|--------------|-------|
 | `DpHost` | Provides the oracle transition kernel and never updates the PS model. | `StandardPS` stays fixed throughout the episode. |
-| `DynaHost` | After each real transition it calls `module.update_model(P_hat, r_hat)` and `module.update_value(s, V[s])` to keep the PS priorities consistent with the empirical model and value estimates. | The host supplies `P_hat` through the `frequency_model` utilities.
+| `DynaHost` | After each real transition it calls `module.update_model(P_hat, r_hat)` and `module.update_value(s, V[s])` to keep the PS priorities consistent with the empirical model and value estimates. | The host supplies `P_hat` through the `empirical_model` utilities.
 
 ## Mixins
 
