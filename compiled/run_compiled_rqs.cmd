@@ -31,13 +31,6 @@ set "LABEL=%~1"
 set "EXE_NAME=%~2"
 
 echo [%LABEL%]
-:: Check both possible naming conventions (plain and experiments__ prefix)
-if exist "%ARTIFACTS_DIR%\%EXE_NAME:.exe=.dist%\%EXE_NAME%" (
-    "%ARTIFACTS_DIR%\%EXE_NAME:.exe=.dist%\%EXE_NAME%" %USER_ARGS%
-) else if exist "%ARTIFACTS_DIR%\experiments__%EXE_NAME:.exe=.dist%\experiments__%EXE_NAME%" (
-    "%ARTIFACTS_DIR%\experiments__%EXE_NAME:.exe=.dist%\experiments__%EXE_NAME%" %USER_ARGS%
-) else (
-    echo WARNING: Compiled executable %EXE_NAME% not found. Run 'code\compiled\compile_rqs.cmd' first.
-)
+"%ARTIFACTS_DIR%\%EXE_NAME:.exe=.dist%\%EXE_NAME%" %USER_ARGS%
 echo.
 exit /b 0
