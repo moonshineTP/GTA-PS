@@ -1,0 +1,31 @@
+env: cargoal
+n_bins: 20              # discretization bins per spatial axis (arena ≈ [-3,3]^2)
+# n_states = n_bins^2 = 400
+n_rollout_steps: 30000  # steps for initial model estimation
+gamma: 0.95
+n_shifts: 10
+seeds: 50
+eps_metric: 0.1
+# budgets: |S|/4, |S|, 4|S|
+budgets: [100, 400, 1600]
+
+# Disturbance modes (sweep in RQ4/RQ6)
+disturbance: calm
+disturbance_sweep: [calm, directional_rain, cyclic_gust, slippery_patch]
+
+# GTA-PS default hyperparameters (overridden per-variant by the tuned: block below)
+alpha: 0.5
+beta: 1.0
+beta1: 1.0
+beta2: 0.1
+
+eta: null     # null → (1-γ)/γ at runtime
+b: 1.0
+
+arnoldi_k: 15
+slem_recompute_every: null
+
+# Per-variant tuned hyperparameters (written by misc/tuner.py — do not edit manually).
+tuned:
+  gta_base:    {alpha: null, beta: null, eta: null, b: null}
+  gta_beta:    {alpha: null, beta1: null, beta2: null, eta: null, b: null}

@@ -1,39 +1,14 @@
 """
 GARNET (Generalized Average Reward Non-stationary Environment Task) tabular MDP.
-
-Reference: Archibald et al. (1995). The MDP is parameterized by:
-  |S|, |A|, branching factor b (non-zero transitions per (s,a)),
-  reward support size, reversibility level, sparsity.
-
-Used primarily for RQ2, RQ4, RQ5, RQ6.
 """
 import numpy as np
 import scipy.sparse as sp
 from typing import Optional
 
-
-class GARNETEnv:
+class GarnetEnv:
     """
     Tabular GARNET MDP with nonstationary rewards.
-
-    Parameters
-    ----------
-    n_states : int
-        |S|
-    n_actions : int
-        |A| (>= 10 per memo)
-    branching : int
-        Number of successor states per (s, a) pair.
-    reward_support : int
-        Number of states with nonzero reward at each shift.
-        Per memo §8: fixed in {1, 2, 4, 8} regardless of |S|.
-    gamma : float
-        Discount factor.
-    reversible : float
-        0.0 = fully directed (non-reversible), 1.0 = fully reversible.
-        Interpolates: with probability `reversible`, the backward
-        transition is also reinforced.
-    seed : int
+    Supports bipartite (periodic) and reversible structures.
     """
 
     def __init__(
@@ -41,98 +16,129 @@ class GARNETEnv:
         n_states: int = 100,
         n_actions: int = 10,
         branching: int = 3,
-        reward_support: int = 4,   # fixed, not a function of |S|
-        gamma: float = 0.99,
+        reward_support: int = 4,
+        gamma: float = 0.95,
+        n_nbr_rate: float = 0.15,
         reversible: float = 0.0,
+        bipartite: bool = False,
+        reward_locality: bool = True,
         seed: int = 0,
     ):
         self.n_states = n_states
         self.n_actions = n_actions
-        self.branching = min(branching, n_states)
-        self.reward_support = min(reward_support, n_states)
+        self.branching = branching
+        self.reward_support = reward_support
         self.gamma = gamma
+        self.n_nbr = int(n_nbr_rate * n_states)
         self.reversible = reversible
-        self.rng = np.random.default_rng(seed)
+        self.bipartite = bipartite
+        self.reward_locality = reward_locality
+        self._seed = seed
+        self._rng = np.random.default_rng(seed)
 
-        self.P = self._build_transition()   # (|A|, |S|, |S|) row-stochastic
-        self.r = self._sample_reward()      # (|S|,)
+        self.P = self._build_transition()
 
-    # ------------------------------------------------------------------
-    # Construction
-    # ------------------------------------------------------------------
+        # Precompute adjacency (union across actions) for BFS-locality sampling
+        self._adj: list | None = None
+        if reward_locality:
+            adj: list = [[] for _ in range(n_states)]
+            for s in range(n_states):
+                seen: set = set()
+                for a in range(n_actions):
+                    for s2 in np.where(self.P[a, s] > 0)[0]:
+                        s2i = int(s2)
+                        if s2i not in seen:
+                            seen.add(s2i)
+                            adj[s].append(s2i)
+            self._adj = adj
+
+        self.r = self._sample_reward()
 
     def _build_transition(self) -> np.ndarray:
-        """
-        Build |A| row-stochastic transition matrices P_a of shape (|S|, |S|).
-        For each (s, a), choose `branching` successors uniformly at random
-        and assign Dirichlet-sampled probabilities.
-        """
+        """Build transition tensor (|A|, |S|, |S|)."""
         S, A, b = self.n_states, self.n_actions, self.branching
         P = np.zeros((A, S, S), dtype=np.float64)
+        
         for a in range(A):
             for s in range(S):
-                succ = self.rng.choice(S, size=b, replace=False)
-                w = self.rng.dirichlet(np.ones(b))
-                P[a, s, succ] = w
+                # successor candidates in ring-neighbourhood
+                window = np.arange(s - self.n_nbr // 2, s + self.n_nbr // 2 + 1) % S
+                
+                if self.bipartite:
+                    # Enforce parity flip: s even -> odd successors, s odd -> even
+                    target_parity = (s + 1) % 2
+                    window_list = window.tolist()
+                    window_filtered = [w for w in window_list if w % 2 == target_parity]
+                    if not window_filtered:
+                         window_filtered = [(s + 1) % S]
+                    final_window = np.array(window_filtered)
+                else:
+                    final_window = window
+
+                # sample branching b
+                successors = self._rng.choice(final_window, size=min(b, len(final_window)), replace=False)
+                for s_next in successors:
+                    P[a, s, s_next] = 1.0
+                    
                 if self.reversible > 0.0:
-                    # reinforce reverse edges with probability `reversible`
-                    for j, ns in enumerate(succ):
-                        if self.rng.random() < self.reversible:
-                            P[a, ns, s] += w[j] * self.reversible
-            # renormalize rows
-            row_sums = P[a].sum(axis=1, keepdims=True)
-            P[a] /= row_sums
+                    for s_next in successors:
+                        if self._rng.random() < self.reversible:
+                            P[a, s_next, s] = 1.0
+        
+        # Ensure row-stochastic
+        row_sums = P.sum(axis=2, keepdims=True)
+        row_sums[row_sums == 0] = 1.0 # Avoid div zero
+        P /= row_sums
         return P
 
     def _sample_reward(self) -> np.ndarray:
-        """Sparse reward: `reward_support` states get Uniform([0.5, 1.5])."""
-        r = np.zeros(self.n_states)
-        support = self.rng.choice(self.n_states, size=self.reward_support, replace=False)
-        r[support] = self.rng.uniform(0.5, 1.5, size=self.reward_support)
-        return r
+        if self._adj is not None:
+            return self._sample_reward_local()
+        r_vec = np.zeros(self.n_states)
+        goals = self._rng.choice(self.n_states, size=self.reward_support, replace=False)
+        r_vec[goals] = self._rng.uniform(0.5, 1.5)
+        return r_vec
 
-    # ------------------------------------------------------------------
-    # MDP interface
-    # ------------------------------------------------------------------
+    def _sample_reward_local(self) -> np.ndarray:
+        """BFS-neighborhood reward: reward_support connected states from a random root."""
+        r_vec = np.zeros(self.n_states)
+        root = int(self._rng.integers(self.n_states))
+        cluster: list = [root]
+        frontier: list = [root]
+        seen: set = {root}
+        while len(cluster) < self.reward_support and frontier:
+            idx = int(self._rng.integers(len(frontier)))
+            s = frontier[idx]
+            added = False
+            for nb in self._adj[s]:
+                if nb not in seen:
+                    seen.add(nb)
+                    cluster.append(nb)
+                    frontier.append(nb)
+                    added = True
+                    if len(cluster) >= self.reward_support:
+                        break
+            if not added:
+                frontier.pop(idx)
+        for s in cluster[:self.reward_support]:
+            r_vec[s] = float(self._rng.uniform(0.5, 1.5))
+        return r_vec
 
     def shift_reward(self) -> np.ndarray:
-        """Resample reward; return new r."""
         self.r = self._sample_reward()
         return self.r.copy()
 
-    def policy_transition(self, policy: np.ndarray) -> np.ndarray:
-        """
-        Given a deterministic policy (|S|,) -> action index,
-        return the induced (|S|, |S|) row-stochastic matrix P_pi.
-        """
-        S = self.n_states
-        P_pi = np.zeros((S, S))
-        for s in range(S):
-            a = int(policy[s])
-            P_pi[s] = self.P[a, s]
-        return P_pi
-
-    def value_iteration(
-        self,
-        r: Optional[np.ndarray] = None,
-        tol: float = 1e-8,
-        max_iter: int = 10_000,
-    ) -> np.ndarray:
-        """Full synchronous VI; returns V* for the given reward."""
-        if r is None:
-            r = self.r
-        gamma = self.gamma
+    def value_iteration(self, r: Optional[np.ndarray] = None) -> np.ndarray:
+        if r is None: r = self.r
         V = np.zeros(self.n_states)
-        for _ in range(max_iter):
-            Q = r[None, :] + gamma * (self.P * V[None, None, :]).sum(axis=2)  # (|A|, |S|)
-            V_new = Q.max(axis=0)  # (|S|,)
-            if np.max(np.abs(V_new - V)) < tol:
-                return V_new
+        for _ in range(1000):
+            Q = r[None, :] + self.gamma * (self.P * V[None, None, :]).sum(axis=2)
+            V_new = Q.max(axis=0)
+            if np.linalg.norm(V_new - V, ord=np.inf) < 1e-8: break
             V = V_new
         return V
 
     def greedy_policy(self, V: np.ndarray, r: Optional[np.ndarray] = None) -> np.ndarray:
-        if r is None:
-            r = self.r
-        Q = r[None, :] + self.gamma * (self.P * V[None, None, :]).sum(axis=2)  # (|A|, |S|)
+        if r is None: r = self.r
+        Q = r[None, :] + self.gamma * (self.P * V[None, None, :]).sum(axis=2)
         return Q.argmax(axis=0)

@@ -1,0 +1,24 @@
+{
+  "garnet": {
+    "gta_beta": {
+      "env": "garnet",
+      "tuned_params": [
+        "beta1",
+        "beta2",
+        "alpha",
+        "eta",
+        "b"
+      ],
+      "baseline_error": 1.409749,
+      "best_error": 1.398413,
+      "improvement_pct": 0.8,
+      "best_params": {
+        "beta1": 0.484179,
+        "beta2": 0.492854,
+        "alpha": 0.716106,
+        "eta": 0.019789,
+        "b": 3.225066
+      }
+    }
+  }
+}

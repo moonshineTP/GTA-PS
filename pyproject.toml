@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.backends.legacy:build"
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "gta-ps"
@@ -20,10 +20,39 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "pytest-cov>=4.0"]
+
+# MuJoCo Reacher: works with the default gymnasium>=1.0 + mujoco>=3.1 stack.
+reacher = ["mujoco>=3.1", "gymnasium>=1.0"]
+
+# Safety-Gymnasium CarGoal requires a pinned older stack that conflicts with
+# the default gymnasium>=1.0 env.  Install in a separate venv or via conda:
+#
+#   pip install "safety-gymnasium==1.0.0" "gymnasium==0.26.3" \
+#               "mujoco==2.3.3" "gymnasium-robotics==1.2.2" "pygame==2.1.0"
+#
+# Do NOT mix with the default environment.
+cargoal = [
+    "safety-gymnasium==1.0.0",
+    "gymnasium==0.26.3",
+    "mujoco==2.3.3",
+    "gymnasium-robotics==1.2.2",
+    "pygame==2.1.0",
+]
+
+# Install everything except CarGoal (recommended for most experiments)
+full = [
+    "mujoco>=3.1",
+    "scipy>=1.13",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "tqdm>=4.66",
+    "rich>=13.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]

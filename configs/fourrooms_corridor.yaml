@@ -1,0 +1,22 @@
+# Corridor Bottleneck Configuration
+# Total Grid: 15x15
+# room_size: 3
+# corridor_lens: [1, 3, 5, 7]
+# W + W + L + 2 = 3 + 3 + 7 + 2 = 15
+
+env: fourrooms
+room_size: 3
+gamma: 0.95
+
+default:
+  alpha: 0.5
+  beta1: 1.0
+  beta2: 0.1
+  b: 1.0
+  eta: null
+
+tuned:
+  gta_beta:
+    beta1: 0.65
+    beta2: 0.3
+    alpha: 0.8

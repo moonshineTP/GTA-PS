@@ -1,158 +1,193 @@
 """
-RQ1: Proactiveness under reward shifts.
+RQ1: Convergence rate and trajectory in stationary environments.
 
-Does GTA-PS reduce post-shift value error and K_eps relative to Dyna-PS,
-especially at small replanning budgets K < t_mix(1/4)?
-
-Protocol (memo §8):
-  - FourRooms k=1,2,3,4 + GARNET |S|=100,500
-  - K in {|S|/10, |S|/2, |S|}
-  - 1000 seeds; mean ± 95% CI
-  - Primary metric: ||V^K - V*||_inf  and  K_eps (eps=0.1)
-
-Usage:
-  python experiments/rq1_proactiveness.py --env garnet --n-states 100 --seeds 10
+This script measures the value error trajectory (L1 and L-inf norms) as a function of
+host steps (each performing K backups) under a NO reward shift scenario.
 """
+import os
 import argparse
 import json
 import sys
 from pathlib import Path
-
 import numpy as np
-from tqdm import tqdm
+
+# Pin BLAS threads
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "threads"))
+sys.path.insert(0, str(ROOT / "misc"))
 
-from gta_ps.envs.garnet import GARNETEnv
+from gta_ps.envs.garnet import GarnetEnv
 from gta_ps.envs.fourrooms import FourRoomsTabular
-from gta_ps.algorithms.dyna_ps import DynaPS
-from gta_ps.algorithms.gta_ps import GTAPS
-from gta_ps.utils.metrics import value_error_inf, steps_to_epsilon
+from gta_ps.algorithms import make_agent
+from gta_ps.utils.metrics import value_error_inf, value_error_l1
+from runner import RunManager
+from plot_academic import (
+    LABELS as AGENT_LABELS,
+    apply_style,
+    get_palette,
+    get_publication_defaults,
+    get_utility_color,
+    warn_if_nonpublication_run,
+)
 
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 
-def run_single_seed(
+PUBLICATION_DEFAULTS = get_publication_defaults()
+
+# ---------------------------------------------------------------------------
+# Worker
+# ---------------------------------------------------------------------------
+
+def run_trajectory_seed(
     env_name: str,
-    n_states: int,
-    k_fourrooms: int,
-    reward_support: int,
+    n_states: int | None,
+    k_fourrooms: int | None,
+    reward_support: int | None,
     seed: int,
     gamma: float,
-    n_shifts: int,
-    eps_metric: float,
+    n_steps: int,
+    K: int,
+    method_cfgs: dict,
+    n_actions: int = 10,
+    branching: int = 3,
+    n_nbr_rate: float = 0.15,
+    arnoldi_k: int = 15,
+    **ignored,
 ) -> dict:
-    """Run one seed; return dict of metrics."""
-    rng = np.random.default_rng(seed)
-
+    """Run convergence trajectory for one seed (no shifts)."""
     if env_name == "garnet":
-        # reward_support is fixed in {1,2,4,8} per memo §8 — NOT scaled by |S|
-        env = GARNETEnv(n_states=n_states, n_actions=10, branching=4,
-                        reward_support=reward_support,
+        env = GarnetEnv(n_states=n_states, n_actions=n_actions, branching=branching,
+                        reward_support=reward_support, n_nbr_rate=n_nbr_rate,
                         gamma=gamma, seed=seed)
     else:
         env = FourRoomsTabular(k=k_fourrooms, gamma=gamma, seed=seed)
         n_states = env.n_states
 
-    budgets = [
-        max(1, n_states // 10),
-        max(1, n_states // 2),
-        n_states,
+    variants = ["standard_ps", "gta_base", "gta_beta"]
+    r = env.r
+    V_star = env.value_iteration(r)
+    
+    agents = {}
+    for v in variants:
+        kw = {"arnoldi_k": arnoldi_k}
+        kw.update(method_cfgs.get(v, {}))
+        agents[v] = make_agent(v, host="dp", P=env.P, r=r, gamma=gamma, q=20, **kw)
+    
+    traces = {v: {"inf": [], "l1": []} for v in variants}
+    for _ in range(n_steps):
+        for v in variants:
+            V = agents[v].plan(K=K)
+            traces[v]["inf"].append(float(value_error_inf(V, V_star)))
+            traces[v]["l1"].append(float(value_error_l1(V, V_star)))
+
+    return traces
+
+# ---------------------------------------------------------------------------
+# Output
+# ---------------------------------------------------------------------------
+
+def plot_trajectory(results, K, seeds, n_steps, env_label, out_path):
+    if plt is None: return
+    apply_style()
+    colors = get_palette("line")
+    fallback_color = get_utility_color("text_main")
+    grid_color = get_utility_color("grid")
+    steps_arr = np.arange(n_steps)
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=False)
+    norm_cfg = [
+        ("l1",  r"Value Error ($L_1$, mean abs)"),
+        ("inf", r"Value Error ($L_\infty$, max abs)"),
     ]
+    for ax, (norm, ylabel) in zip(axes, norm_cfg):
+        for v in results:
+            mean = np.array(results[v][norm]["mean"])
+            ci   = np.array(results[v][norm]["ci95"])
+            label = AGENT_LABELS.get(v, v)
+            color = colors.get(v, fallback_color)
+            ax.plot(steps_arr, mean, label=label, color=color, linewidth=2)
+            ax.fill_between(steps_arr, mean - ci, mean + ci, color=color, alpha=0.15)
+        ax.set_yscale("log")
+        ax.set_xlabel(f"Host Step (K={K} backups/step)")
+        ax.set_ylabel(ylabel)
+        ax.grid(True, which="both", ls="-", color=grid_color, alpha=0.2)
+        ax.legend()
 
-    results: dict = {name: {K: [] for K in budgets}
-                     for name in ["dyna_ps", "gta_base", "gta_alpha", "gta_beta", "gta_full"]}
+    fig.suptitle(f"Convergence Trajectory: {env_label}", y=1.02)
+    fig.tight_layout()
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
-    for shift_idx in range(n_shifts):
-        r = env.shift_reward()
-        V_star = env.value_iteration(r)
-
-        for K in budgets:
-            for name, cls, kwargs in [
-                ("dyna_ps",  DynaPS, {}),
-                ("gta_base", GTAPS,  {}),
-                ("gta_alpha",GTAPS,  {"adaptive_alpha": True}),
-                ("gta_beta", GTAPS,  {"adaptive_beta":  True}),
-                ("gta_full", GTAPS,  {"adaptive_alpha": True, "adaptive_beta": True}),
-            ]:
-                if name == "dyna_ps":
-                    alg = DynaPS(env.P, env.r, gamma=gamma)
-                else:
-                    alg = GTAPS(env.P, env.r, gamma=gamma, **kwargs)
-                V = alg.plan(K=K, r=r)
-                err = value_error_inf(V, V_star)
-                results[name][K].append(err)
-
-    return results
-
-
-def aggregate(all_results: list, budgets: list) -> dict:
-    """Average across seeds; return mean and 95% CI per (method, K)."""
-    from scipy import stats
-
-    methods = list(all_results[0].keys())
-    out = {}
-    for m in methods:
-        out[m] = {}
-        for K in budgets:
-            vals = np.array([r[m][K] for r in all_results]).ravel()
-            mean = float(np.mean(vals))
-            ci = float(stats.sem(vals) * stats.t.ppf(0.975, df=len(vals) - 1))
-            out[m][K] = {"mean": mean, "ci95": ci, "n": len(vals)}
-    return out
-
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="RQ1: Convergence Trajectory in Stationary Environments")
     parser.add_argument("--env", default="garnet", choices=["garnet", "fourrooms"])
-    parser.add_argument("--n-states", type=int, default=100)
-    parser.add_argument("--k-fourrooms", type=int, default=1)
-    # GARNET reward support: fixed in {1,2,4,8}, never a function of |S| (memo §8)
-    parser.add_argument("--reward-support", type=int, default=4,
-                        choices=[1, 2, 4, 8],
-                        help="GARNET |supp(r_t)|; ignored for fourrooms")
-    parser.add_argument("--seeds", type=int, default=20)
-    parser.add_argument("--n-shifts", type=int, default=5)
-    parser.add_argument("--gamma", type=float, default=0.99)
-    parser.add_argument("--eps-metric", type=float, default=0.1)
-    parser.add_argument("--out-dir", default="results")
+    parser.add_argument("--n-states", type=int, default=75, help="GARNET only: number of states")
+    parser.add_argument("--k-fourrooms", type=int, default=1, help="FourRooms only: config k")
+    parser.add_argument("--K", type=int, default=10, help="Planning budget per step")
+    parser.add_argument("--n-steps", type=int, default=150, help="Number of host steps to record")
+    parser.add_argument("--seeds", type=int, default=PUBLICATION_DEFAULTS["seeds"])
+    parser.add_argument("--workers", default=PUBLICATION_DEFAULTS["workers"], help="Number of workers or 'auto'")
+    parser.add_argument("--out-dir", default=str(ROOT / "results"))
+    parser.add_argument("--plot-dir", default=str(ROOT / "plots"))
+
     args = parser.parse_args()
-
-    n_states = args.n_states if args.env == "garnet" else None
-    budgets = [
-        max(1, (n_states or 384) // 10),
-        max(1, (n_states or 384) // 2),
-        (n_states or 384),
-    ]
-
-    all_results = []
-    for seed in tqdm(range(args.seeds), desc="seeds"):
-        r = run_single_seed(
-            env_name=args.env,
-            n_states=args.n_states,
-            k_fourrooms=args.k_fourrooms,
-            reward_support=args.reward_support,
-            seed=seed,
-            gamma=args.gamma,
-            n_shifts=args.n_shifts,
-            eps_metric=args.eps_metric,
-        )
-        all_results.append(r)
-
-    summary = aggregate(all_results, budgets)
-
-    out_path = Path(args.out_dir) / f"rq1_{args.env}_S{args.n_states or 'fr'}_supp{args.reward_support}_k{args.k_fourrooms}.json"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w") as f:
-        json.dump(summary, f, indent=2)
-
-    print(f"\nResults saved to {out_path}")
-    print("\nValue error ||V^K - V*||_inf  (mean ± 95%CI):")
-    for method, kdict in summary.items():
-        row = "  " + f"{method:12s}"
-        for K, stats in kdict.items():
-            row += f"  K={K}: {stats['mean']:.4f}±{stats['ci95']:.4f}"
-        print(row)
-
+    warn_if_nonpublication_run(args.seeds, args.workers)
+    
+    # Load tuned hyperparameters
+    from gta_ps.utils.hyperparams import load_tuned_for_env
+    method_cfgs = load_tuned_for_env(args.env)
+    
+    env_label = f"Garnet(S={args.n_states})" if args.env == "garnet" else f"FourRooms(k={args.k_fourrooms})"
+    file_tag = f"{args.env}_S{args.n_states if args.env=='garnet' else 'FR'}"
+    
+    print(f"\n[Convergence] Mission: {env_label}  K={args.K}  seeds={args.seeds}  steps={args.n_steps}")
+    
+    runner = RunManager(n_workers=args.workers)
+    fn_kwargs = dict(
+        env_name=args.env, n_states=args.n_states, k_fourrooms=args.k_fourrooms,
+        reward_support=4, gamma=0.95, n_steps=args.n_steps, K=args.K,
+        method_cfgs=method_cfgs
+    )
+    
+    all_results = runner.run(run_trajectory_seed, range(args.seeds), fn_kwargs)
+    
+    # Aggregate stats
+    from scipy import stats
+    variants = list(all_results[0].keys())
+    summary = {}
+    for v in variants:
+        summary[v] = {}
+        for norm in ("inf", "l1"):
+            mat = np.array([r[v][norm] for r in all_results])
+            summary[v][norm] = {
+                "mean": mat.mean(axis=0).tolist(),
+                "ci95": (stats.sem(mat, axis=0) * stats.t.ppf(0.975, df=len(mat)-1)).tolist()
+            }
+    
+    # Output
+    out_dir = Path(args.out_dir).resolve()
+    json_path = out_dir / f"rq1_proactiveness_{file_tag}_K{args.K}.json"
+    with open(json_path, "w") as f:
+        json.dump({"K": args.K, "seeds": args.seeds, "results": summary}, f, indent=2)
+    
+    plot_path = Path(args.plot_dir).resolve() / f"rq1_proactiveness_{file_tag}_K{args.K}.png"
+    plot_trajectory(summary, args.K, args.seeds, args.n_steps, env_label, str(plot_path))
+    
+    print(f"Results saved to: {json_path}")
+    print(f"Plot saved to:    {plot_path}\n")
 
 if __name__ == "__main__":
     main()

@@ -40,7 +40,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
     beta  : float = 1.0                 base topology weight (adaptive_beta=False)
     beta1 : float = 1.0                 schedule amplitude
     beta2 : float = 0.1                 schedule exponent / offset
-    beta_mode : str = "clip-linear"     "power"|"linear"|"clip-linear"|"fixed"
+    beta_mode : str = "linear"          schedule mode: "fixed", "linear", "log"
     adaptive_beta  : bool = False       
     eta   : float | None = None         resolvent ε; None → ε* = (1−γ)/γ
     b     : float = 1.0                 Boltzmann temperature for π^PS

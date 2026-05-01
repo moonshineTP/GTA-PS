@@ -1,0 +1,44 @@
+env: reacher
+n_bins: 16
+n_rollout_steps: 20000
+gamma: 0.95
+n_shifts: 10
+seeds: 100
+eps_metric: 0.1
+
+# budgets: |S|/4, |S|, 4|S|
+budgets: [64, 256, 1024]
+
+# Disturbance modes (sweep in RQ4/RQ6)
+disturbance: none
+disturbance_sweep: [none, mild_torque, sticky_drag, directional_bias]
+
+# Macro-actions: 13 (9 full ± combinations + 4 diagonal half-steps)
+# Defined in src/gta_ps/envs/reacher.py
+
+arnoldi_k: 15
+slem_recompute_every: null
+
+
+default:
+  alpha: 0.5
+  beta: 1.0
+  beta1: 1.0
+  beta2: 0.1
+  eta: null
+  b: 1.0
+# Per-variant tuned hyperparameters (written by misc/tuner.py — do not edit manually).
+tuned:
+  gta_base:
+    alpha: 0.5
+    beta: 1.0
+    beta1: 1.0
+    beta2: 0.1
+    eta: null
+    b: 1.0
+  gta_beta:
+    alpha: null
+    beta1: null
+    beta2: null
+    eta: null
+    b: null

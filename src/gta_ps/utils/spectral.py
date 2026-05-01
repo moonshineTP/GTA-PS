@@ -32,7 +32,10 @@ def in_laplacian(P: np.ndarray) -> sp.csr_array:
     d_in = Pdense.sum(axis=0)          # column sums = in-degree
     n = Pdense.shape[0]
     D = sp.diags(d_in, format="csr")
-    return D - sp.csr_array(Pdense.T)
+    Psp_T = sp.csr_array(Pdense.T)
+    Psp_T.data[np.abs(Psp_T.data) < 1e-12] = 0.0
+    Psp_T.eliminate_zeros()
+    return D - Psp_T
 
 
 def operator_split(P: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -52,25 +55,77 @@ def operator_split(P: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 # SLEM via Arnoldi / ARPACK
 # ---------------------------------------------------------------------------
 
-def slem_arnoldi(P: np.ndarray, k: int = 15) -> float:
+def slem_arnoldi(
+    P: np.ndarray,
+    k: int = 15,
+    v0: "np.ndarray | None" = None,
+) -> "tuple[float, np.ndarray | None]":
     """
     Estimate SLEM(P) = max{|lambda| : lambda in sigma(P), lambda != 1}
     using ARPACK (implicitly restarted Arnoldi, k Lanczos vectors).
     Works for non-symmetric / non-reversible chains.
+
+    Parameters
+    ----------
+    v0 : ndarray or None
+        Warm-start vector for ARPACK.  Pass the leading eigenvector returned
+        from the previous call to reduce convergence iterations significantly.
+
+    Returns
+    -------
+    slem : float
+    v0_next : ndarray or None
+        Leading eigenvector for warm-starting the next call.  None when the
+        dense eigensolver is used (small n).
     """
+    import scipy.linalg as sla
+
     n = P.shape[0]
-    if not sp.issparse(P):
-        P = sp.csr_array(P)
-    k = min(k, n - 2)
-    # Request k+1 eigenvalues; the dominant one is 1 (stationary)
-    vals = spla.eigs(P, k=k + 1, which="LM", return_eigenvectors=False)
+    if sp.issparse(P):
+        Pdense = P.toarray()
+    else:
+        Pdense = np.asarray(P)
+
+    # For small n, ARPACK requires k+1 < n-1; use dense eig instead.
+    if n <= k + 3:
+        vals = sla.eig(Pdense, right=False)
+        mods = np.abs(vals)
+        mods = np.sort(mods)[::-1]
+        for v in mods:
+            if abs(v - 1.0) > 1e-8:
+                return float(v), None
+        # All eigenvalues ≈ 1 → near-periodic chain; SLEM is mods[1], not 0.
+        return float(mods[1]), None
+
+    Psp = sp.csr_array(Pdense)
+    # Eliminate near-zero fill-ins that arise when P_pi is a softmax-weighted
+    # mixture of sparse transitions.  Without this, every entry is technically
+    # nonzero (probability ~ e^{-b*gap} ≥ 1e-20) and ARPACK runs dense matvecs
+    # instead of sparse ones, inflating cost by ~n× for large b.
+    Psp.data[np.abs(Psp.data) < 1e-12] = 0.0
+    Psp.eliminate_zeros()
+    k_eff = min(k, n - 2)
+    try:
+        vals, vecs = spla.eigs(
+            Psp, k=k_eff + 1, which="LM",
+            return_eigenvectors=True, v0=v0,
+        )
+    except Exception:
+        vals, vecs = spla.eigs(
+            Psp, k=k_eff + 1, which="LM", return_eigenvectors=True,
+        )
+
     mods = np.abs(vals)
-    mods = np.sort(mods)[::-1]
-    # Skip the leading 1.0 (up to numerical tolerance)
+    order = np.argsort(mods)[::-1]
+    mods = mods[order]
+    vecs = vecs[:, order]
+    v0_next = np.real(vecs[:, 0]).astype(float)
+
     for v in mods:
         if abs(v - 1.0) > 1e-8:
-            return float(v)
-    return float(mods[1])  # fallback
+            return float(v), v0_next
+    # All eigenvalues ≈ 1 → near-periodic chain; SLEM is mods[1], not 0.
+    return float(mods[1]), v0_next
 
 
 # ---------------------------------------------------------------------------
@@ -80,13 +135,13 @@ def slem_arnoldi(P: np.ndarray, k: int = 15) -> float:
 def resolvent_forward(
     P: np.ndarray,
     r: np.ndarray,
-    eps: float,
+    eta: float,
     solver: str = "auto",
 ) -> np.ndarray:
     """
-    Compute f^out = (L^out + eps*I)^{-1} r = (I - P + eps*I)^{-1} r.
+    Compute f^out = (L^out + eta*I)^{-1} r = (I - P + eta*I)^{-1} r.
 
-    At eps = eps* = (1-gamma)/gamma this equals gamma * V^{pi^GTA}.
+    At eta = eta* = (1-gamma)/gamma this equals gamma * V^{pi^GTA}.
 
     solver: 'lu' (exact, small |S|), 'gmres' (large sparse), 'auto'.
     """
@@ -95,7 +150,7 @@ def resolvent_forward(
         Psp = sp.csr_array(P)
     else:
         Psp = P
-    A = sp.eye(n, format="csr") * (1.0 + eps) - Psp  # (1+eps)I - P
+    A = sp.eye(n, format="csr") * (1.0 + eta) - Psp  # (1+eta)I - P
 
     if solver == "auto":
         solver = "lu" if n <= 300 else "gmres"
@@ -105,8 +160,13 @@ def resolvent_forward(
         return lu.solve(r)
     else:
         # Restarted GMRES with ILU(0) preconditioner
-        ilu = spla.spilu(A.tocsc(), fill_factor=1.0)
-        M = spla.LinearOperator((n, n), ilu.solve)
+        try:
+            ilu = spla.spilu(A.tocsc(), fill_factor=10, drop_tol=1e-4)
+            M = spla.LinearOperator((n, n), ilu.solve)
+        except RuntimeError:
+            # Fallback to unpreconditioned if ILU encounters a singular pivot
+            M = None
+
         f, info = spla.gmres(A, r, M=M, restart=20, maxiter=200, atol=1e-8)
         if info != 0:
             # fallback to direct
@@ -118,17 +178,17 @@ def resolvent_forward(
 def resolvent_backward(
     P: np.ndarray,
     r: np.ndarray,
-    eps: float,
+    eta: float,
     solver: str = "auto",
 ) -> np.ndarray:
     """
-    Compute f^in = (L^in + eps*I)^{-1} r = (D^in - P^T + eps*I)^{-1} r.
+    Compute f^in = (L^in + eta*I)^{-1} r = (D^in - P^T + eta*I)^{-1} r.
 
     Captures backward attribution (left eigenvector direction).
     """
     n = P.shape[0]
     Lin = in_laplacian(P)
-    A = Lin + sp.eye(n, format="csr") * eps
+    A = Lin + sp.eye(n, format="csr") * eta
 
     if solver == "auto":
         solver = "lu" if n <= 300 else "gmres"
@@ -137,8 +197,13 @@ def resolvent_backward(
         lu = spla.splu(A.tocsc())
         return lu.solve(r)
     else:
-        ilu = spla.spilu(A.tocsc(), fill_factor=1.0)
-        M = spla.LinearOperator((n, n), ilu.solve)
+        try:
+            ilu = spla.spilu(A.tocsc(), fill_factor=10, drop_tol=1e-4)
+            M = spla.LinearOperator((n, n), ilu.solve)
+        except RuntimeError:
+            # Fallback to unpreconditioned if ILU encounters a singular pivot
+            M = None
+
         f, info = spla.gmres(A, r, M=M, restart=20, maxiter=200, atol=1e-8)
         if info != 0:
             lu = spla.splu(A.tocsc())

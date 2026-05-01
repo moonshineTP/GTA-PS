@@ -233,10 +233,10 @@ class GtaPSTuner:
                 are inferred from this object via _env_kwargs_from_env.
                 Worker processes recreate the env per seed using those kwargs.
     space     : GtaPSSearchSpace describing which params to tune
-    n_seeds   : random seeds per Optuna trial
+    seeds   : random seeds per Optuna trial
     n_shifts  : reward shifts per seed
     K         : Bellman backup budget per host step
-    n_workers : worker processes for seed-level parallelism (None → auto)
+    workers : worker processes for seed-level parallelism (None → auto)
     variant   : GTA-PS variant key (e.g. "gta_base") — determines which search space to use
     """
 
@@ -244,24 +244,24 @@ class GtaPSTuner:
         self,
         env,
         space: GtaPSSearchSpace,
-        n_seeds: int = 10,
+        seeds: int = 10,
         n_shifts: int = 10,
         K: int = 50,
         n_steps_per_shift: int = 100,
-        n_workers: int | None = None,
+        workers: int | None = None,
         variant: str = "gta_base",
         seed_offset: int = 1000,
     ):
         self.env_name, self._env_kwargs = _env_kwargs_from_env(env)
         self.gamma  = env.gamma
         self.space  = space
-        self.n_seeds  = n_seeds
+        self.seeds  = seeds
         self.n_shifts = n_shifts
         self.K        = K
         self.n_steps_per_shift = n_steps_per_shift
         self.variant  = variant
         self.seed_offset = seed_offset
-        self._runner  = RunManager(n_workers=n_workers)
+        self._runner  = RunManager(n_workers=workers)
 
         # SLEM from the provided env (already built at seed=0).
         from gta_ps.utils.spectral import slem_arnoldi
@@ -275,7 +275,7 @@ class GtaPSTuner:
         self.baseline_error = self._compute_baseline()
 
     def _compute_baseline(self) -> float:
-        seeds = list(range(self.seed_offset, self.seed_offset + self.n_seeds))
+        seeds = list(range(self.seed_offset, self.seed_offset + self.seeds))
         results = self._runner.run(
             _run_baseline_seed,
             seeds=seeds,
@@ -304,7 +304,7 @@ class GtaPSTuner:
             **self._env_kwargs,
             **cfg.to_kwargs(),
         }
-        seeds = list(range(self.seed_offset, self.seed_offset + self.n_seeds))
+        seeds = list(range(self.seed_offset, self.seed_offset + self.seeds))
         jobs = [{"seed": s, **fixed} for s in seeds]
         # verbose=False: Optuna callback handles outer progress
         results = self._runner.run_jobs(
@@ -365,16 +365,15 @@ def main():
         "--variants", nargs="+", default=list(SPACES.keys()),
         help="GTA-PS variant keys (default: all in SPACES)",
     )
-    parser.add_argument("--n-trials", type=int, default=20)
-    parser.add_argument("--n-seeds", type=int, default=30)
-    parser.add_argument("--seed-offset", type=int, default=10000)
-    parser.add_argument("--n-shifts", type=int, default=8)
+    parser.add_argument("--n-trials", type=int, default=30)
+    parser.add_argument("--seeds", type=int, default=30)
+    parser.add_argument("--seed-offset", type=int, default=100000)
+    parser.add_argument("--n-shifts", type=int, default=6)
     parser.add_argument("--K", type=int, default=None,
                         help="Bellman backup budget per host step (default: budgets[0] from config, else 20)")
-    parser.add_argument("--n-steps-per-shift", type=int, default=None,
-                        help="Host agent steps between reward shifts (default: n_steps_per_shift from config, else 100)")
+    parser.add_argument("--n-steps-per-shift", type=int, default=50)
     parser.add_argument("--gamma", type=float, default=0.95)
-    parser.add_argument("--n-workers", type=int, default=None,
+    parser.add_argument("--workers", type=int, default=None,
                         help="parallel worker processes per trial (None → auto)")
     parser.add_argument("--out", default=str(ROOT / "results/misc/tuner/tune.json"))
     parser.add_argument(
@@ -396,7 +395,7 @@ def main():
         _cfg = _load_config(str(config_path))
         # Apply YAML defaults where CLI left values at parser defaults
         _MAP = [("n_shifts", "n_shifts", 8), ("gamma", "gamma", 0.95),
-                ("n_seeds",  "seeds",    30)]
+                ("seeds",  "seeds",    30)]
         for dest, key, default in _MAP:
             if key in _cfg and getattr(args, dest) == default:
                 setattr(args, dest, _cfg[key])
@@ -434,9 +433,9 @@ def main():
             print(f"\n[{env_name}] {variant}  tuning: {space.param_names}")
             tuner = GtaPSTuner(
                 env=_env0, space=space,
-                n_seeds=args.n_seeds, n_shifts=args.n_shifts, K=args.K,
+                seeds=args.seeds, n_shifts=args.n_shifts, K=args.K,
                 n_steps_per_shift=args.n_steps_per_shift,
-                n_workers=args.n_workers,
+                workers=args.workers,
                 variant=variant,
                 seed_offset=args.seed_offset,
             )

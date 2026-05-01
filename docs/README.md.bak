@@ -1,0 +1,73 @@
+# GTA-PS Code Documentation
+
+This directory documents the `src/gta_ps` package and experiment scripts.
+
+## Index
+
+### Algorithms (`docs/algorithms/`)
+
+| File | Contents |
+|------|----------|
+| [`gta-ps.md`](algorithms/gta-ps.md) | `GtaPS` class — variants, schedules, implementation notes |
+| [`dyna-ps.md`](algorithms/dyna-ps.md) | `DynaPS` baseline + `CountModelLearner` |
+| [`spectral.md`](algorithms/spectral.md) | Laplacians, SLEM estimation, resolvent operators |
+
+### Environments (`docs/environments/`)
+
+| File | Contents |
+|------|----------|
+| [`overview.md`](environments/overview.md) | All five envs — interface, constraints, setup |
+
+### Experiments (`docs/experiments/`)
+
+| File | Contents |
+|------|----------|
+| [`rq1-proactiveness.md`](experiments/rq1-proactiveness.md) | RQ1 protocol, run commands, output format |
+| [`metrics.md`](experiments/metrics.md) | `value_error_inf`, `steps_to_epsilon`, aggregation |
+
+### Memo (`docs/memo/`)
+
+Contains the LaTeX memo copy (`GTA-PS-memo-copy.tex`) compiled alongside the main
+`GTA-PS-memo.tex` in the repo root.  The memo is the authoritative specification;
+code is derived from it.
+
+---
+
+## Quick start
+
+```bash
+# Install (default stack: GARNET, FourRooms, MiniGrid, Reacher)
+cd code/
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev,reacher]"
+
+# Smoke tests
+pytest tests/test_smoke.py -q   # ~21 tests
+
+# Quick RQ1 run
+python experiments/rq1_proactiveness.py --env garnet --n-states 100 --seeds 20 --n-shifts 5
+
+# Tune beta schedule before full run
+python experiments/tune_beta.py
+```
+
+## Source layout
+
+```
+src/gta_ps/
+├── algorithms/
+│   ├── dp_agent.py      # DPAgent base class for VI-based planners
+│   ├── dyna_agent.py    # Dyna-PS agent + CountModelLearner
+│   ├── gta_ps.py        GTA-PS planner (all four variants)
+│   ├── dyna_ps.py       Dyna-PS baseline
+│   └── dyna_model.py    Count-based model learner (Dyna hosts)
+├── envs/
+│   ├── base.py          TabularEnv interface
+│   ├── garnet.py        GARNET tabular MDP
+│   ├── fourrooms.py     FourRooms grid (no gymnasium needed)
+│   ├── reacher.py       Reacher-v5 discretised (Dyna host)
+│   └── cargoal.py       CarGoal discretised (pinned stack)
+└── utils/
+    ├── spectral.py      Laplacians, SLEM, resolvents
+    └── metrics.py       value_error_inf, steps_to_epsilon
+```

@@ -1,0 +1,72 @@
+# RQ1 Timeline — FourRooms k=2, DP+VI host, Gaussian-mixture reward
+# -----------------------------------------------------------------------
+# Experiment: per-host-step value-error traces across reward shifts.
+# 3 grid sizes x 3 K budgets x 5 PS modules x seeds seeds.
+# Runtime: ~30-60 min with workers=8.  Do not run interactively.
+
+
+# --- environment ---
+k_fourrooms: 2
+gamma: 0.95
+grid_sizes:
+  - 7     # |S| ~ 25
+  - 9     # |S| ~ 49
+  - 11    # |S| ~ 81
+
+
+# --- planning ---
+budgets:        # K backups per host step
+  - 5
+  - 10
+  - 20
+
+
+# --- timeline protocol ---
+n_shifts:          6     # reward shifts (> 8 required)
+n_steps_per_shift: 100   # host steps during each shift epoch
+tail_steps:        240   # post-last-shift convergence tail
+
+
+# --- evaluation ---
+seeds: 100
+
+
+# --- spectral ---
+arnoldi_k: 10
+
+
+# --- Gaussian-mixture reward generator ---
+# Per-room peak height ranges  [lo, hi]; rooms ordered TL, TR, BL, BR.
+# Some rooms are persistently higher-value than others.
+room_peak_ranges:
+  - [0.8, 1.5]   # Room 0 top-left     — high value
+  - [0.1, 0.6]   # Room 1 top-right    — low value
+  - [0.5, 1.2]   # Room 2 bottom-left  — medium value
+  - [0.1, 0.5]   # Room 3 bottom-right — low value
+n_peaks_per_room: 2          # Gaussian bumps placed per room per shift
+sigma_range: [0.8, 3.0]      # bump width in grid cells (uniform draw each bump)
+
+
+# --- module defaults (overridden by tuned block) ---
+default:
+  alpha: 0.5
+  beta: 1.0
+  beta1: 1.0
+  beta2: 0.1
+  eta: null
+  b: 1.0
+
+
+# --- tuned hyperparameters ---
+tuned:
+  gta_base:
+    beta: 0.259879
+    alpha: 0.83688
+    eta: 0.099978
+    b: 4.245087
+  gta_beta:
+    beta1: 0.639395
+    beta2: 0.291328
+    alpha: 0.834051
+    eta: 0.09949
+    b: 3.159536

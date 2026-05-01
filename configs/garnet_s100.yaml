@@ -1,24 +1,43 @@
 env: garnet
 n_states: 100
-n_actions: 10
-branching: 4
-# reward_support is fixed in {1,2,4,8} per memo §8 — NOT a function of |S|
-# sweep all four values; default run uses 4
+n_actions: 5
+branching: 3
+n_nbr_rate: 0.15
 reward_support: 4
-gamma: 0.99
-n_shifts: 20
-seeds: 1000
-eps_metric: 0.1
-budgets: [10, 50, 100]   # |S|/10, |S|/2, |S|
-reward_support_sweep: [1, 2, 4, 8]   # run rq1 once per support size
-
-# GTA-PS hyperparameters (grid searched per env)
-alpha: 0.5
-beta: 1.0
-beta1: 1.0
-beta2: 0.1
-alpha_exp: 1.0
-
-# SLEM estimation
+reward_locality: true
+reward_support_sweep:
+- 1
+- 2
+- 4
+- 8
+- 16
+- 32
+gamma: 0.95
+n_shifts: 10
+seeds: 30
+eps_metric: 10
+budgets:
+- 10
+- 20
+- 40
 arnoldi_k: 15
-slem_recompute_every: null   # defaults to ceil(sqrt(|S|))
+slem_recompute_every: null
+default:
+  alpha: 0.5
+  beta: 1.0
+  beta1: 1.0
+  beta2: 0.1
+  eta: null
+  b: 1.0
+tuned:
+  gta_base:
+    beta: 0.343809
+    alpha: 0.728695
+    eta: 0.017272
+    b: 2.708701
+  gta_beta:
+    beta1: 0.484179
+    beta2: 0.492854
+    alpha: 0.716106
+    eta: 0.019789
+    b: 3.225066

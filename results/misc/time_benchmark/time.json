@@ -1,0 +1,53 @@
+{
+  "fourrooms": {
+    "standard_ps": {
+      "median_ms": 4.7363,
+      "std_ms": 0.1378,
+      "n_reps": 8
+    },
+    "gta_base": {
+      "median_ms": 6.5517,
+      "std_ms": 1.0352,
+      "n_reps": 8
+    },
+    "gta_beta": {
+      "median_ms": 9.271,
+      "std_ms": 8.8901,
+      "n_reps": 8
+    }
+  },
+  "garnet_S100": {
+    "standard_ps": {
+      "median_ms": 16.2543,
+      "std_ms": 0.2575,
+      "n_reps": 8
+    },
+    "gta_base": {
+      "median_ms": 32.7369,
+      "std_ms": 2.6519,
+      "n_reps": 8
+    },
+    "gta_beta": {
+      "median_ms": 34.6254,
+      "std_ms": 5.3064,
+      "n_reps": 8
+    }
+  },
+  "garnet_S500": {
+    "standard_ps": {
+      "median_ms": 161.5345,
+      "std_ms": 15.7807,
+      "n_reps": 8
+    },
+    "gta_base": {
+      "median_ms": 257.9981,
+      "std_ms": 18.5245,
+      "n_reps": 8
+    },
+    "gta_beta": {
+      "median_ms": 286.7247,
+      "std_ms": 23.5065,
+      "n_reps": 8
+    }
+  }
+}
