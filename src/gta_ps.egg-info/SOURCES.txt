@@ -10,10 +10,9 @@ src/gta_ps/algorithms/__init__.py
 src/gta_ps/algorithms/base.py
 src/gta_ps/algorithms/dp_host.py
 src/gta_ps/algorithms/dyna_host.py
-src/gta_ps/algorithms/dyna_model.py
-src/gta_ps/algorithms/dyna_ps.py
+src/gta_ps/algorithms/empirical_model.py
 src/gta_ps/algorithms/gta_ps.py
-src/gta_ps/algorithms/gta_ps_module.py
+src/gta_ps/algorithms/oracle_model.py
 src/gta_ps/algorithms/standard_ps.py
 src/gta_ps/envs/__init__.py
 src/gta_ps/envs/base.py
@@ -25,4 +24,5 @@ src/gta_ps/utils/__init__.py
 src/gta_ps/utils/hyperparams.py
 src/gta_ps/utils/metrics.py
 src/gta_ps/utils/spectral.py
+tests/test_k_unit.py
 tests/test_smoke.py

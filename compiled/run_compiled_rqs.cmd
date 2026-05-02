@@ -72,8 +72,25 @@ echo.
 echo GTA-PS Compiled RQs Suite
 echo ======================================================
 
+:: Parse --start-from argument
+set "START_FROM=1"
+set "NEW_USER_ARGS="
+for %%a in (!USER_ARGS!) do (
+    echo %%a | findstr /r "^--start-from$" >nul 2>&1
+    if !errorlevel!==0 (
+        set "NEXT_IS_START=1"
+    ) else (
+        if defined NEXT_IS_START (
+            set "START_FROM=%%a"
+            set "NEXT_IS_START="
+        ) else (
+            set "NEW_USER_ARGS=!NEW_USER_ARGS! %%a"
+        )
+    )
+)
+set "USER_ARGS=!NEW_USER_ARGS!"
+set "INDEX=0"
 
-:: List of RQ executables to run
 call :RunRQ "RQ1 Proactiveness" "rq1_proactiveness.exe"
 call :RunRQ "RQ1 DP Timeline" "rq1_dp_timeline.exe"
 call :RunRQ "RQ1 Dyna Timeline" "rq1_dyna_timeline.exe"
@@ -91,8 +108,14 @@ exit /b 0
 :RunRQ
 set "LABEL=%~1"
 set "EXE_NAME=%~2"
+set /a "INDEX+=1"
 
-echo [%LABEL%]
+if !INDEX! LSS !START_FROM! (
+    echo [!LABEL!] - skipped ^(start-from=!START_FROM!^)
+    exit /b 0
+)
+
+echo [!INDEX!/9] !LABEL!
 
 :: Try to run executable directly from EXES_DIR
 if exist "!EXES_DIR!\!EXE_NAME!" (

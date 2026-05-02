@@ -257,6 +257,8 @@ def parse_args() -> argparse.Namespace:
                         help="Steps-per-shift override to forward when supported.")
     parser.add_argument("--n-shifts", dest="n_shifts", type=int,
                         help="Shift-count override to forward when supported.")
+    parser.add_argument("--start-from", dest="start_from", type=int, default=1,
+                        help="Start from a specific script index (1-based). Scripts before this index are skipped.")
     return parser.parse_args()
 
 
@@ -301,6 +303,9 @@ def main() -> int:
         print("Dry run enabled via GTA_PS_ORCH_DRY_RUN; commands will be printed only.")
 
     for index, spec in enumerate(scripts, start=1):
+        if index < args.start_from:
+            print(f"[{index}/{len(scripts)}] {spec.label} — skipped (start-from={args.start_from})")
+            continue
         command = build_command(spec, args)
         print(f"[{index}/{len(scripts)}] {spec.label}")
         print(f"    Raw script command: {subprocess.list2cmdline(command)}")
