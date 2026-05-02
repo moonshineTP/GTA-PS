@@ -5,6 +5,12 @@ from pathlib import Path
 
 # Add src to path
 ROOT = Path(__file__).resolve().parents[1]
+if not (ROOT / "configs").exists():
+    # Try reaching up to find the real project root (e.g. if compiled in artifacts/dist/)
+    for p in Path(__file__).resolve().parents:
+        if (p / "configs").exists() and (p / "src").exists():
+            ROOT = p
+            break
 sys.path.insert(0, str(ROOT / "src"))
 
 try:

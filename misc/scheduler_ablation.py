@@ -29,6 +29,12 @@ from typing import Dict, List, Tuple
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
+if not (ROOT / "configs").exists():
+    # Try reaching up to find the real project root (e.g. if compiled in artifacts/dist/)
+    for p in Path(__file__).resolve().parents:
+        if (p / "configs").exists() and (p / "src").exists():
+            ROOT = p
+            break
 sys.path.insert(0, str(ROOT / "src"))
 
 from gta_ps.envs.fourrooms import FourRoomsTabular
@@ -147,7 +153,7 @@ def main():
 
     for env_name in args.envs:
         all_results[env_name] = {}
-        baseline = _baseline_error(env_name, args.n_seeds, args.n_shifts, args.K, args.gamma)
+        baseline = _baseline_error(env_name, args.seeds, args.n_shifts, args.K, args.gamma)
 
         for variant in args.variants:
             all_results[env_name][variant] = []
@@ -166,7 +172,7 @@ def main():
                 for beta2 in grid:
                     row = _eval_one(
                         env_name, variant, scheduler, beta2,
-                        args.n_seeds, args.n_shifts, args.K, args.gamma,
+                        args.seeds, args.n_shifts, args.K, args.gamma,
                     )
                     row["baseline_l1"]  = baseline["l1"]
                     row["baseline_inf"] = baseline["inf"]

@@ -160,62 +160,59 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self.f_out = self._solve_out(self.r)
         self.f_in = self._solve_in(self.r)
 
-        # g is kept for backward-compat attribute access; not maintained during planning.
-        # SM f_out update uses two LU tri-solves instead of the O(n²) column cache.
-        self.g = None
-
         # SLEM and schedules
         k_arn = min(self.arnoldi_k, n - 2)
         self.slem, self._v0_arnoldi = slem_arnoldi(self.P_pi, k=k_arn)
         self.beta_t = self._beta_t(self.slem)
         self.alpha_t = self._alpha_t(self.slem)
 
-        # Observability attributes (constraint 2)
-        self._last_beta = self.beta_t
-        self._last_signal_ratio = 0.0
-        self._slem = self.slem
-
         # Priority queues and counters
         self.q_t = self.q if self.q is not None else n
         self._step_count = 0
-        self._T_arn = max(1, n)  # SLEM refresh every n backups (amortised O(1) per backup)
-        self._T_topo = 100  # Lazy topology update every 100 backups
-        self._T_tau = max(1, n)  # τ=G·ξ refresh cadence (every n backups)
+        self._T_arn = max(1, n)
+        self._T_topo = 100
+        self._T_tau = max(1, n)
         self._tau_refresh_count = 0
         self._pending_delta_pi = np.zeros((n, self.n_actions))
         self._has_pending_topo = False
         self._version_xi: dict = {}
         self._top_q: set = set()
-        self._H_q: list = []         # topology frontier: xi=0, tau>0 states
+        self._H_q: list = []
         self._version_hq: dict = {}
 
-        # Initialise xi from residuals with V=0 — vectorized O(|A||S|) numpy
-        EV_all = (self._P_model * self.V[None, None, :]).sum(axis=2)  # (|A|, |S|)
+        # Initialise xi from residuals with V=0
+        EV_all = (self._P_model * self.V[None, None, :]).sum(axis=2)
         self.xi = np.abs(
             (self._r_model[None, :] + self.gamma * EV_all).max(axis=0) - self.V
-        )  # (|S|,)
+        )
         self._refresh_tau()
+        self._predecessor_sets = [set() for _ in range(n)]
         self._build_predecessor_cache()
 
 
     def _build_predecessor_cache(self) -> None:
-        """Precompute predecessors[(s)] = list of (pred, a) with _P_model[a,pred,s]>0.
-
-        Called at init and after update_model.  Makes push_predecessors O(|preds|)
-        instead of O(|A|·|S|) via np.where scan.
-        
-        Thresholding: we ignore transitions with probability < 1e-2 to avoid
-        including 'prior-only' transitions from the CountModel which would
-        make the graph dense and explode planning complexity.
-        """
+        """Precompute predecessors with thresholding."""
         n = self.n_states
         cache: list[list[tuple[int,int]]] = [[] for _ in range(n)]
         for a in range(self.n_actions):
-            # Threshold to avoid prior-induced density
-            rows, cols = np.where(self._P_model[a] > 1e-2)  # (pred, succ) pairs
+            rows, cols = np.where(self._P_model[a] > 1e-2)
             for pred, succ in zip(rows.tolist(), cols.tolist()):
-                cache[succ].append((pred, a))
+                if (pred, a) not in self._predecessor_sets[succ]:
+                    self._predecessor_sets[succ].add((pred, a))
+                    cache[succ].append((pred, a))
         self._predecessors = cache
+
+
+    def update_model_transition(self, s: int, a: int, p_row: np.ndarray, r_s: float) -> None:
+        """Incremental model update with O(S) complexity."""
+        self._P_model[a, s] = p_row
+        self._r_model[s] = r_s
+        
+        # Incremental predecessor tracking: only sp where P(s, a, sp) > threshold
+        for sp_idx in np.where(p_row > 1e-2)[0]:
+            if (s, a) not in self._predecessor_sets[sp_idx]:
+                self._predecessor_sets[sp_idx].add((s, a))
+                self._predecessors[sp_idx].append((s, a))
 
 
 

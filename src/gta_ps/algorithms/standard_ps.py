@@ -37,12 +37,35 @@ class StandardPS(PrioritizedSweepingModule, BellmanMixin):
         self._heap: list = []
         self._version: dict = {}
 
+        self._predecessors: list[list[tuple[int, int]]] = [[] for _ in range(self.n_states)]
+        self._predecessor_sets: list[set[tuple[int, int]]] = [set() for _ in range(self.n_states)]
+        self._build_predecessor_cache()
+
         # Initialise heap from Bellman residuals with V=0
         self._rebuild_heap()
 
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    def _build_predecessor_cache(self) -> None:
+        """Precompute predecessors with thresholding."""
+        n = self.n_states
+        for a in range(self.n_actions):
+            rows, cols = np.where(self._P_model[a] > 1e-2)
+            for pred, succ in zip(rows.tolist(), cols.tolist()):
+                if (pred, a) not in self._predecessor_sets[succ]:
+                    self._predecessor_sets[succ].add((pred, a))
+                    self._predecessors[succ].append((pred, a))
+
+    def update_model_transition(self, s: int, a: int, p_row: np.ndarray, r_s: float) -> None:
+        """Incremental model update."""
+        self._P_model[a, s] = p_row
+        self._r_model[s] = r_s
+        for sp_idx in np.where(p_row > 1e-2)[0]:
+            if (s, a) not in self._predecessor_sets[sp_idx]:
+                self._predecessor_sets[sp_idx].add((s, a))
+                self._predecessors[sp_idx].append((s, a))
 
     def _rebuild_heap(self) -> None:
         """Recompute xi for all states and rebuild heap via heapify."""
@@ -77,16 +100,15 @@ class StandardPS(PrioritizedSweepingModule, BellmanMixin):
         return None
 
     def push_predecessors(self, s: int, xi_s: float) -> None:
-        for a in range(self.n_actions):
-            for pred in np.where(self._P_model[a, :, s] > 0)[0]:
-                xi_pred = self.compute_bellman_residual(
-                    pred, self._P_model, self._r_model, self.gamma, self.V
-                )
-                self.xi[pred] = xi_pred
-                if xi_pred > 0:
-                    v = self._version.get(pred, -1) + 1
-                    self._version[pred] = v
-                    heapq.heappush(self._heap, (-xi_pred, v, pred))
+        for pred, _a in self._predecessors[s]:
+            xi_pred = self.compute_bellman_residual(
+                pred, self._P_model, self._r_model, self.gamma, self.V
+            )
+            self.xi[pred] = xi_pred
+            if xi_pred > 1e-8:
+                v = self._version.get(pred, -1) + 1
+                self._version[pred] = v
+                heapq.heappush(self._heap, (-xi_pred, v, pred))
 
     def notify_backup(self, s: int, adv_PS_row: np.ndarray, xi_s: float) -> None:
         xi_new = self.compute_bellman_residual(

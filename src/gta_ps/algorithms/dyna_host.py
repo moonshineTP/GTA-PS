@@ -69,20 +69,19 @@ class DynaHost(TdMixin):
     ) -> None:
         """
         Process one real (s, a, r, s') interaction.
-        TD residual drives priority. Does NOT sync the entire model to the module
-        every step (O(A*S^2) bottleneck); instead, only updates the local state value.
+        Syncs only the affected transition row to the module (O(S) complexity).
         """
         self.model.update(s, a, s_next, r)
+        p_row = self.model.get_row(s, a)
+        r_model = self.r_oracle[s] if self.r_oracle is not None else float(r)
+        
+        self.module.update_model_transition(s, a, p_row, r_model)
         
         # TD update
         abs_delta = self.apply_td_backup(s, a, r, s_next, self.gamma, self.eta_td, self.Q)
 
         # Update local value in module
         self.module.update_value(s, float(self.Q[:, s].max()))
-
-        # Enqueue s for backup. Note: push_predecessors might use a stale 
-        # predecessor cache if real_step is called many times without plan_steps.
-        # This is acceptable for performance; plan_steps syncs the cache.
         self.module.push_predecessors(s, abs_delta)
 
 
@@ -93,27 +92,35 @@ class DynaHost(TdMixin):
         Efficient batch update for high-volume interaction bursts.
         """
         self.model.update_batch(states, actions, next_states, rewards)
+        
+        # Track which (s, a) pairs were updated to sync rows at the end
+        updated_pairs = set()
         for i in range(len(states)):
             s, a, r, sn = int(states[i]), int(actions[i]), float(rewards[i]), int(next_states[i])
+            updated_pairs.add((s, a))
             abs_delta = self.apply_td_backup(s, a, r, sn, self.gamma, self.eta_td, self.Q)
             self.module.update_value(s, float(self.Q[:, s].max()))
             self.module.push_predecessors(s, abs_delta)
+            
+        # Sync all updated rows once after the batch
+        for s, a in updated_pairs:
+            p_row = self.model.get_row(s, a)
+            r_val = self.r_oracle[s] if self.r_oracle is not None else 0.0 # simplified for batch
+            self.module.update_model_transition(s, a, p_row, r_val)
 
 
     def plan_steps(self, K: int) -> None:
         """
         Run K simulated Dyna planning steps.
-        Syncs the empirical model once before planning to ensure O(A*S^2)
-        overhead is amortised across K backups.
+        Now O(K*S) complexity: no O(A*S^2) synchronization call.
         """
-        # Sync model and rebuild predecessor cache once per planning burst
-        P_hat, r_hat = self.model.get_model()
-        reward_model = self.r_oracle if self.r_oracle is not None else r_hat
-        self.module.update_model(P_hat, reward_model)
-        
         n_states = self.n_states
         gamma = self.gamma
         eta_td = self.eta_td
+        
+        # Use existing module model (kept in sync by real_step)
+        P_hat = self.module._P_model
+        r_model = self.module._r_model
         
         for _ in range(K):
             s = self.module.pop_and_prioritize()
@@ -125,7 +132,7 @@ class DynaHost(TdMixin):
             # Sample next state from empirical model
             probs = P_hat[a, s]
             s_sim = int(np.random.choice(n_states, p=probs))
-            r_sim = reward_model[s]
+            r_sim = r_model[s]
 
             # TD update
             abs_delta = self.apply_td_backup(s, a, r_sim, s_sim, gamma, eta_td, self.Q)

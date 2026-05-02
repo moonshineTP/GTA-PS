@@ -17,6 +17,12 @@ os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 ROOT = Path(__file__).resolve().parents[1]
+if not (ROOT / "configs").exists():
+    # Try reaching up to find the real project root (e.g. if compiled in artifacts/dist/)
+    for p in Path(__file__).resolve().parents:
+        if (p / "configs").exists() and (p / "src").exists():
+            ROOT = p
+            break
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "threads"))
 sys.path.insert(0, str(ROOT / "misc"))
