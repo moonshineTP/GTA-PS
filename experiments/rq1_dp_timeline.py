@@ -326,16 +326,18 @@ def main() -> None:
     n_states_list: list = []
 
     for gs in grid_sizes:
-        _tmp = FourRoomsTabular(k=k, gamma=gamma, seed=0, room_size=gs)
+        # gs is total grid width; room_size is (gs - 3) // 2 assuming corridor_len=1 and 2 outer walls.
+        room_size = (gs - 3) // 2
+        _tmp = FourRoomsTabular(k=k, gamma=gamma, seed=0, room_size=room_size)
         n_s  = _tmp.n_states
         n_states_list.append(n_s)
-        print(f"\n── grid_size={gs}  |S|={n_s} ─────────────────────────────")
+        print(f"\n── grid_size={gs} (room={room_size})  |S|={n_s} ─────────────────────────────")
 
         seed_results = runner.run(
             fn=_run_seed,
             seeds=[s for s in range(seeds)],
             fn_kwargs=dict(
-                grid_size=gs, k=k, gamma=gamma, K_budgets=K_budgets,
+                grid_size=room_size, k=k, gamma=gamma, K_budgets=K_budgets,
                 n_shifts=n_shifts, n_steps_per_shift=n_steps_shift,
                 tail_steps=tail_steps, arnoldi_k=cfg.get("arnoldi_k", 10),
                 method_cfgs=method_cfgs, room_peak_ranges=cfg.get("room_peak_ranges"),

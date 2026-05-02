@@ -16,7 +16,14 @@ default:
   eta: null
 
 tuned:
+  gta_base:
+    beta: 0.391603
+    alpha: 0.905299
+    eta: 0.004254
+    b: 4.343374
   gta_beta:
-    beta1: 0.65
-    beta2: 0.3
-    alpha: 0.8
+    beta1: 0.423141
+    beta2: 0.42457
+    alpha: 0.915907
+    eta: 0.005288
+    b: 4.456778

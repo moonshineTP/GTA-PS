@@ -152,7 +152,7 @@ def plot_ablation(results: dict, baseline: dict, b_sweep: list,
 
     fig.suptitle(
         f"Boltzmann Temperature Ablation — Assumption 8\n"
-        f"GARNET $|S|=100$,  $N={seeds}$ seeds,  $K={K}$ backups/shift",
+        f"GARNET $|S|=75$,  $N={seeds}$ seeds,  $K={K}$ backups/shift",
         fontsize=12,
     )
     plt.tight_layout()
@@ -169,7 +169,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Ablation: Boltzmann temperature b vs GTA-PS performance (Assm 8)"
     )
-    parser.add_argument("--n-states", type=int,   default=100)
+    parser.add_argument("--n-states", type=int,   default=75)
     parser.add_argument("--n-shifts", type=int,   default=8)
     parser.add_argument("--K",        type=int,   default=40)
     parser.add_argument("--seeds",    type=int,   default=10)

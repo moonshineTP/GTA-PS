@@ -5,7 +5,7 @@ Measures backup steps needed to reach ||V - V*||_inf < epsilon after each
 reward shift, using warm V from the preceding shift (realistic replanning).
 
 Agents: dyna_ps, gta_base, gta_beta.
-Envs  : garnet (n=100), fourrooms.
+Envs  : garnet (n=75), fourrooms.
 Default epsilon = 5.0.
 
 Use --config <yaml> to load tuned hyperparameters from a YAML experiment
@@ -67,7 +67,7 @@ def _load_tuned(config_path: str | None) -> Dict[str, Dict]:
 
 def _make_env(env_name: str, gamma: float, seed: int):
     if env_name == "garnet":
-        return GarnetEnv(n_states=100, n_actions=5, branching=3,
+        return GarnetEnv(n_states=75, n_actions=5, branching=3,
                          reward_support=4, n_nbr_rate=0.15, gamma=gamma, seed=seed)
     if env_name == "fourrooms":
         return FourRooms(k=1, gamma=gamma, seed=seed)

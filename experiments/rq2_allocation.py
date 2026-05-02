@@ -5,7 +5,7 @@ Does the adaptive GTA-PS^beta schedule match or outperform the best fixed
 allocation once geometry varies across shifts?
 
 Protocol (memo §8):
-  - GARNET |S|=100,500 (generative variety)
+  - GARNET |S|=75,200 (generative variety)
   - Compare fixed beta (gta_base) vs adaptive beta_t (gta_beta)
   - Track SLEM_t and beta_t
   - Metric: Spearman rank correlation between tau and actual pop order.
@@ -90,7 +90,7 @@ def _build_method_cfgs(cfg: dict) -> dict:
 
 def resolve_run_config(args: argparse.Namespace, parser: argparse.ArgumentParser) -> dict:
     if args.env == "garnet":
-        n_states = args.n_states if args.n_states is not None else 100
+        n_states = args.n_states if args.n_states is not None else 75
         reward_support = args.reward_support if args.reward_support is not None else 4
         budgets = list(args.yaml_budgets) if getattr(args, "yaml_budgets", None) else [n_states]
         return {

@@ -4,10 +4,10 @@ misc/mixing_ablation.py
 Ablation: GTA-PS (linear scheduler) vs standard-PS across slow, medium,
 and fast-mixing GARNET environments.
 
-Environments (neighbourhood-GARNET, S=100, A=5, b=3):
+Environments (neighbourhood-GARNET, S=75, A=5, b=3):
   slow   : n_nbr=7   -> SLEM ~0.994  (comparable to FourRooms)
   medium : n_nbr=20  -> SLEM ~0.933
-  fast   : n_nbr=100 -> SLEM ~0.327  (standard random GARNET)
+  fast   : n_nbr=75  -> SLEM ~0.327  (standard random GARNET)
 
 For each mixing class we sweep beta2 over the linear-scheduler range
 (-0.05, 0.25) and also report the best log-scheduler config.
@@ -63,8 +63,8 @@ class NbrGarnetEnv:
     gamma      : discount factor
     seed       : RNG seed
     """
-    def __init__(self, n_states=100, n_actions=5, branching=3,
-                 n_nbr=100, reward_support=4, gamma=0.95, seed=0):
+    def __init__(self, n_states=75, n_actions=5, branching=3,
+                 n_nbr=75, reward_support=4, gamma=0.95, seed=0):
         self.n_states  = n_states
         self.n_actions = n_actions
         self.branching = branching
@@ -123,7 +123,7 @@ class NbrGarnetEnv:
 MIXING_CONFIGS = {
     "slow":   dict(n_nbr=7,   label="slow   (SLEM~0.994)"),
     "medium": dict(n_nbr=20,  label="medium (SLEM~0.933)"),
-    "fast":   dict(n_nbr=50, label="fast   (SLEM~0.327)"),
+    "fast":   dict(n_nbr=75, label="fast   (SLEM~0.327)"),
 }
 
 # beta2 grids for each scheduler type
@@ -144,7 +144,7 @@ GAMMA    = 0.95
 # ---------------------------------------------------------------------------
 
 def _make_env(n_nbr: int, seed: int) -> NbrGarnetEnv:
-    return NbrGarnetEnv(n_states=100, n_actions=5, branching=3,
+    return NbrGarnetEnv(n_states=75, n_actions=5, branching=3,
                         n_nbr=n_nbr, reward_support=4, gamma=GAMMA, seed=seed)
 
 

@@ -17,21 +17,31 @@ echo "======================================================"
 echo "Using artifacts from: $ARTIFACTS_DIR"
 echo ""
 
+# Add default publication flags if not provided
+ARGS=("$@")
+if [[ ! " ${ARGS[*]} " =~ " --seeds " ]]; then
+    ARGS+=("--seeds" "1000")
+fi
+if [[ ! " ${ARGS[*]} " =~ " --workers " ]]; then
+    ARGS+=("--workers" "10")
+fi
+
 # Parse --start-from argument
 START_FROM=1
 NEW_ARGS=()
-while [[ $# -gt 0 ]]; do
-    case "$1" in
+while [[ ${#ARGS[@]} -gt 0 ]]; do
+    case "${ARGS[0]}" in
         --start-from)
             shift
-            START_FROM="$1"
+            START_FROM="${ARGS[1]}"
             shift
             ;;
         *)
-            NEW_ARGS+=("$1")
+            NEW_ARGS+=("${ARGS[0]}")
             shift
             ;;
     esac
+    ARGS=("${ARGS[@]:1}")
 done
 set -- "${NEW_ARGS[@]}"
 INDEX=0

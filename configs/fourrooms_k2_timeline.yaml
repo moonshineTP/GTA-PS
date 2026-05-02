@@ -23,8 +23,8 @@ budgets:        # K backups per host step
 
 # --- timeline protocol ---
 n_shifts:          6     # reward shifts (> 8 required)
-n_steps_per_shift: 100   # host steps during each shift epoch
-tail_steps:        240   # post-last-shift convergence tail
+n_steps_per_shift: 60    # host steps during each shift epoch
+tail_steps:        120   # post-last-shift convergence tail
 
 
 # --- evaluation ---
@@ -32,7 +32,7 @@ seeds: 100
 
 
 # --- spectral ---
-arnoldi_k: 10
+arnoldi_k: 25
 
 
 # --- Gaussian-mixture reward generator ---
@@ -44,7 +44,7 @@ room_peak_ranges:
   - [0.5, 1.2]   # Room 2 bottom-left  — medium value
   - [0.1, 0.5]   # Room 3 bottom-right — low value
 n_peaks_per_room: 2          # Gaussian bumps placed per room per shift
-sigma_range: [0.8, 3.0]      # bump width in grid cells (uniform draw each bump)
+sigma_range: [0.5, 2.0]      # bump width in grid cells (uniform draw each bump)
 
 
 # --- module defaults (overridden by tuned block) ---

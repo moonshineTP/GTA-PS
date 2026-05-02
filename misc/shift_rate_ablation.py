@@ -153,7 +153,7 @@ def plot_ablation(results: dict, t_sweep: list,
 
     fig.suptitle(
         r"Shift-Rate Ablation — Assumption 4b (Ergodic Reward Shifts)"
-        f"\nGARNET $|S|=100$,  $N={seeds}$ seeds,  $K={K}$ backups/step",
+        f"\nGARNET $|S|=75$,  $N={seeds}$ seeds,  $K={K}$ backups/step",
         fontsize=12,
     )
     plt.tight_layout()
@@ -170,7 +170,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Ablation: shift-rate T vs GTA-PS advantage (Assm 4b)"
     )
-    parser.add_argument("--n-states", type=int,   default=100)
+    parser.add_argument("--n-states", type=int,   default=75)
     parser.add_argument("--n-shifts", type=int,   default=6)
     parser.add_argument("--K",        type=int,   default=15)
     parser.add_argument("--seeds",    type=int,   default=50)

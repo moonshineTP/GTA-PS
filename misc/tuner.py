@@ -77,12 +77,12 @@ def _load_config(path: str) -> dict:
 # ---------------------------------------------------------------------------
 
 # Maps tuner env_name → list of config filenames to update.
-# garnet tunes on n_states=100 → garnet_s100.yaml is the primary target.
+# garnet tunes on n_states=75 → garnet_s75.yaml is the primary target.
 # fourrooms tunes on k=1 → fourrooms_k1.yaml is the primary target.
-# Additional configs for the same env (s500, k4) inherit the same tuned params.
+# Additional configs for the same env (s200, k4) inherit the same tuned params.
 _ENV_CONFIG_MAP: Dict[str, List[str]] = {
-    "garnet":    ["garnet_s100.yaml", "garnet_s500.yaml"],
-    "fourrooms": ["fourrooms_k1.yaml", "fourrooms_k4.yaml"],
+    "garnet":    ["garnet_s75.yaml", "garnet_s200.yaml"],
+    "fourrooms": ["fourrooms_k1.yaml", "fourrooms_k4.yaml", "fourrooms_corridor.yaml", "fourrooms_k2_timeline.yaml"],
     "reacher":   ["reacher.yaml"],
     "cargoal":   ["cargoal.yaml"],
 }
@@ -151,7 +151,7 @@ def _make_env(
     gamma: float,
     seed: int,
     # garnet kwargs
-    n_states: int = 100,
+    n_states: int = 75,
     n_actions: int = 5,
     branching: int = 3,
     n_nbr_rate: float = 0.15,
@@ -192,7 +192,7 @@ def _run_baseline_seed(
     seed: int, env_name: str, gamma: float, n_shifts: int, K: int,
     n_steps_per_shift: int = 100,
     # env construction kwargs (forwarded from _env_kwargs_from_env)
-    n_states: int = 100, n_actions: int = 5, branching: int = 3,
+    n_states: int = 75, n_actions: int = 5, branching: int = 3,
     n_nbr_rate: float = 0.15, reward_support: int = 4, k: int = 1,
 ) -> float:
     env = _make_env(env_name, gamma, seed=seed, n_states=n_states,
@@ -206,7 +206,7 @@ def _run_trial_seed(
     seed: int, env_name: str, gamma: float, n_shifts: int, K: int,
     n_steps_per_shift: int = 100,
     # env construction kwargs (forwarded from _env_kwargs_from_env)
-    n_states: int = 100, n_actions: int = 5, branching: int = 3,
+    n_states: int = 75, n_actions: int = 5, branching: int = 3,
     n_nbr_rate: float = 0.15, reward_support: int = 4, k: int = 1,
     variant: str = "gta_base",
     slem_init: float = 0.0,

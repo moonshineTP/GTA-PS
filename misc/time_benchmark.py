@@ -99,16 +99,16 @@ def main():
     results["fourrooms"] = {a: safe_run(bench_fr, a, K_fr) for a in agents}
     print("-" * 70)
 
-    # 2. GARNET S100
-    bench_gr_small = TimeBenchmark(env_name="garnet", n_states=100)
+    # 2. GARNET S75
+    bench_gr_small = TimeBenchmark(env_name="garnet", n_states=75)
     K_gr_small = max(1, bench_gr_small.n_states // 4)
-    results["garnet_S100"] = {a: safe_run(bench_gr_small, a, K_gr_small) for a in agents}
+    results["garnet_S75"] = {a: safe_run(bench_gr_small, a, K_gr_small) for a in agents}
     print("-" * 70)
 
-    # 3. GARNET S500
-    bench_gr_med = TimeBenchmark(env_name="garnet", n_states=500)
+    # 3. GARNET S200
+    bench_gr_med = TimeBenchmark(env_name="garnet", n_states=200)
     K_gr_med = max(1, bench_gr_med.n_states // 4)
-    results["garnet_S500"] = {a: safe_run(bench_gr_med, a, K_gr_med) for a in agents}
+    results["garnet_S200"] = {a: safe_run(bench_gr_med, a, K_gr_med) for a in agents}
 
     out_path = (ROOT / "results" / "misc" / "time_benchmark" / "time.json").resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)

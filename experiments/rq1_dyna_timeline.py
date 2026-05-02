@@ -314,15 +314,16 @@ def main():
     n_states_list = []
 
     for gs in grid_sizes:
-        n_s = FourRoomsTabular(room_size=gs).n_states
+        room_size = (gs - 3) // 2
+        n_s = FourRoomsTabular(room_size=room_size).n_states
         n_states_list.append(n_s)
-        print(f"Starting experiment for gs={gs} (|S|={n_s})...", flush=True)
+        print(f"Starting experiment for gs={gs} (room={room_size}) (|S|={n_s})...", flush=True)
 
         seed_results = runner.run(
             fn=_run_seed,
             seeds=[s for s in range(seeds)],
             fn_kwargs=dict(
-                grid_size=gs, k=k, gamma=gamma, K_budgets=K_budgets,
+                grid_size=room_size, k=k, gamma=gamma, K_budgets=K_budgets,
                 n_shifts=n_shifts, n_steps_per_shift=n_steps_shift,
                 tail_steps=tail_steps, arnoldi_k=cfg.get("arnoldi_k", 10),
                 method_cfgs=method_cfgs, room_peak_ranges=cfg.get("room_peak_ranges"),

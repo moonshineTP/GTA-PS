@@ -5,7 +5,7 @@ pushd "%~dp0"
 set "PYTHON=.venv\Scripts\python.exe"
 if not exist "%PYTHON%" set "PYTHON=python"
 
-"%PYTHON%" "orchestrate_groups.py" ablations %*
+"%PYTHON%" "orchestrate_groups.py" ablations --seeds 1000 --workers 10 %*
 set "EXIT_CODE=%ERRORLEVEL%"
 
 popd

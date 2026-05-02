@@ -190,9 +190,9 @@ SPACES: Dict[str, GtaPSSearchSpace] = {
 # ---------------------------------------------------------------------------
 
 # Maps env_name (as used in script --envs args) to the YAML filename in configs/.
-# "garnet" tunes on n_states=100; "garnet_s500" inherits the same params.
+# "garnet" tunes on n_states=75; "garnet_s200" inherits the same params.
 ENV_DEFAULT_CONFIG: Dict[str, str] = {
-    "garnet":    "garnet_s100.yaml",
+    "garnet":    "garnet_s75.yaml",
     "fourrooms": "fourrooms_k1.yaml",
     "reacher":   "reacher.yaml",
     "cargoal":   "cargoal.yaml",

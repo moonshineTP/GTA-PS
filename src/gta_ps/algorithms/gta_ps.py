@@ -24,7 +24,7 @@ from .base import PrioritizedSweepingModule, BellmanMixin, TdMixin
 from ..utils.spectral import slem_arnoldi, in_laplacian
 
 # LU + Sherman-Morrison column cache for n ≤ threshold; GMRES above.
-_LU_THRESHOLD = 600
+_LU_THRESHOLD = 300
 
 
 class GtaPS(PrioritizedSweepingModule, BellmanMixin):
@@ -36,7 +36,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
     P : ndarray (|A|, |S|, |S|)
     r : ndarray (|S|,)
     gamma : float = 0.95
-    alpha : float = 0.5                 base forward→backward mix (adaptive_alpha=False)
+     alpha : float = 0.5                 fixed forward→backward mix
     beta  : float = 1.0                 base topology weight (adaptive_beta=False)
     beta1 : float = 1.0                 schedule amplitude
     beta2 : float = 0.1                 schedule exponent / offset
@@ -161,16 +161,19 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self.f_in = self._solve_in(self.r)
 
         # SLEM and schedules
-        k_arn = min(self.arnoldi_k, n - 2)
-        self.slem, self._v0_arnoldi = slem_arnoldi(self.P_pi, k=k_arn)
+        self.slem = 0.0
         self.beta_t = self._beta_t(self.slem)
         self.alpha_t = self._alpha_t(self.slem)
+        self._v0_arnoldi = None
+        self._refresh_slem()
 
         # Priority queues and counters
         self.q_t = self.q if self.q is not None else n
         self._step_count = 0
-        self._T_arn = max(1, n)
-        self._T_topo = 100
+        # H_ref ≈ |S| and T_arn ≈ ceil(sqrt(|S|)): dense refreshes stay amortized,
+        # while SLEM is recomputed often enough to keep beta_t from drifting.
+        self._T_arn = max(1, math.isqrt(max(1, n) - 1) + 1)
+        self._T_topo = max(1, n)
         self._T_tau = max(1, n)
         self._tau_refresh_count = 0
         self._pending_delta_pi = np.zeros((n, self.n_actions))
@@ -201,6 +204,24 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
                     self._predecessor_sets[succ].add((pred, a))
                     cache[succ].append((pred, a))
         self._predecessors = cache
+
+
+    def _refresh_slem(self) -> None:
+        """Recompute SLEM and the derived beta/alpha schedules."""
+        try:
+            if self.n_states < 3:
+                self.slem = 0.0
+            else:
+                k_arn = min(self.arnoldi_k, self.n_states - 2)
+                self.slem, self._v0_arnoldi = slem_arnoldi(
+                    self.P_pi,
+                    k=k_arn,
+                    v0=self._v0_arnoldi,
+                )
+        except Exception:
+            return
+        self.beta_t = self._beta_t(self.slem)
+        self.alpha_t = self._alpha_t(self.slem)
 
 
     def update_model_transition(self, s: int, a: int, p_row: np.ndarray, r_s: float) -> None:
@@ -374,17 +395,6 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
             self.f_out = self._solve_out(self.r, x0=self.f_out)
             self.f_in = self._solve_in(self.r, x0=self.f_in)
 
-        # Periodic SLEM refresh
-        try:
-            self.slem, self._v0_arnoldi = slem_arnoldi(
-                self.P_pi, k=min(self.arnoldi_k, n - 2),
-                v0=self._v0_arnoldi,
-            )
-        except Exception:
-            pass
-        self.beta_t = self._beta_t(self.slem)
-        self.alpha_t = self._alpha_t(self.slem)
-
         # Recompute τ = G·ξ with fresh LU factors and current Bellman residuals.
         self._refresh_tau()
 
@@ -507,7 +517,15 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self._has_pending_topo = True
         
         self._step_count += 1
-        if self._step_count % self._T_topo == 0:
+        arnoldi_step = (self._step_count % self._T_arn == 0)
+        topo_step = (self._step_count % self._T_topo == 0)
+
+        if arnoldi_step:
+            self._refresh_slem()
+            if not topo_step:
+                self._rekey_residual_queue()
+
+        if topo_step:
             self.topology_update_lazy()
 
     def update_model(self, P: np.ndarray, r: np.ndarray) -> None:
