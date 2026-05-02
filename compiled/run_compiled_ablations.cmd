@@ -17,6 +17,24 @@ echo ======================================================
 echo GTA-PS Compiled Ablations Suite
 echo ======================================================
 
+:: Parse --start-from argument
+set "START_FROM=1"
+set "NEW_USER_ARGS="
+for %%a in (!USER_ARGS!) do (
+    echo %%a | findstr /r "^--start-from$" >nul 2>&1
+    if !errorlevel!==0 (
+        set "NEXT_IS_START=1"
+    ) else (
+        if defined NEXT_IS_START (
+            set "START_FROM=%%a"
+            set "NEXT_IS_START="
+        ) else (
+            set "NEW_USER_ARGS=!NEW_USER_ARGS! %%a"
+        )
+    )
+)
+set "USER_ARGS=!NEW_USER_ARGS!"
+set "INDEX=0"
 
 call :RunAbl "Smoothness Ablation" "smoothness_ablation.exe"
 call :RunAbl "Mixing Threshold Ablation" "mixing_threshold_ablation.exe"
@@ -37,6 +55,28 @@ exit /b 0
 :RunAbl
 set "LABEL=%~1"
 set "EXE_NAME=%~2"
+set /a "INDEX+=1"
+
+if !INDEX! LSS !START_FROM! (
+    echo [!LABEL!] - skipped ^(start-from=!START_FROM!^)
+    exit /b 0
+)
+
+echo [!INDEX!/11] !LABEL!
+
+:: Try to run executable directly from EXES_DIR
+if exist "!EXES_DIR!\!EXE_NAME!" (
+    "!EXES_DIR!\!EXE_NAME!" !USER_ARGS!
+    exit /b 0
+)
+
+:: Try with .exe extension
+if exist "!EXES_DIR!\!EXE_NAME!.exe" (
+    "!EXES_DIR!\!EXE_NAME!.exe" !USER_ARGS!
+    exit /b 0
+)
+
+:: Try artifacts structure: EXES_DIR\name.dist\name.exe
 set "DIST_NAME=!EXE_NAME:.exe=.dist!"
 
 echo [!LABEL!]
