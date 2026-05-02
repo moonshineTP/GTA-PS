@@ -1,18 +1,48 @@
 {
   "garnet": {
     "standard_ps": {
-      "mean_K": 604.0,
-      "median_K": 604.0,
-      "std_K": 113.0,
+      "mean_K": 239.22,
+      "median_K": 183.0,
+      "std_K": 229.55,
       "converged_pct": 100.0,
-      "n_trials": 2
+      "n_trials": 200
+    },
+    "gta_base": {
+      "mean_K": 257.81,
+      "median_K": 195.0,
+      "std_K": 234.42,
+      "converged_pct": 100.0,
+      "n_trials": 200
     },
     "gta_beta": {
-      "mean_K": 569.5,
-      "median_K": 569.5,
-      "std_K": 124.5,
+      "mean_K": 255.28,
+      "median_K": 208.0,
+      "std_K": 232.16,
       "converged_pct": 100.0,
-      "n_trials": 2
+      "n_trials": 200
+    }
+  },
+  "fourrooms": {
+    "standard_ps": {
+      "mean_K": 716.26,
+      "median_K": 698.5,
+      "std_K": 507.22,
+      "converged_pct": 100.0,
+      "n_trials": 200
+    },
+    "gta_base": {
+      "mean_K": 536.7,
+      "median_K": 494.5,
+      "std_K": 363.44,
+      "converged_pct": 100.0,
+      "n_trials": 200
+    },
+    "gta_beta": {
+      "mean_K": 543.98,
+      "median_K": 471.0,
+      "std_K": 389.05,
+      "converged_pct": 100.0,
+      "n_trials": 200
     }
   }
 }

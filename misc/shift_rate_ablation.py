@@ -52,7 +52,7 @@ try:
 except ImportError:
     plt = None
 
-T_SWEEP  = [5, 10, 25, 50, 100]   # planning steps per reward-shift window
+T_SWEEP  = [5, 10, 25, 50, 100]   # host steps per reward shift
 VARIANTS = ["standard_ps", "gta_base", "gta_beta"]
 GAMMA    = 0.95
 
@@ -121,7 +121,7 @@ def _run_worker(
 # ---------------------------------------------------------------------------
 
 def plot_ablation(results: dict, t_sweep: list,
-                  seeds: int, K: int, out_path: str) -> None:
+                  seeds: int, K: int, n_states: int, out_path: str) -> None:
     if plt is None:
         print("matplotlib not available — skipping plot.")
         return
@@ -153,7 +153,7 @@ def plot_ablation(results: dict, t_sweep: list,
 
     fig.suptitle(
         r"Shift-Rate Ablation — Assumption 4b (Ergodic Reward Shifts)"
-        f"\nGARNET $|S|=100$,  $N={seeds}$ seeds,  $K={K}$ backups/step",
+        f"\nGARNET $|S|={n_states}$,  $N={seeds}$ seeds,  $K={K}$ backups/step",
         fontsize=12,
     )
     plt.tight_layout()
@@ -170,7 +170,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Ablation: shift-rate T vs GTA-PS advantage (Assm 4b)"
     )
-    parser.add_argument("--n-states", type=int,   default=100)
+    parser.add_argument("--n-states", type=int,   default=75)
     parser.add_argument("--n-shifts", type=int,   default=6)
     parser.add_argument("--K",        type=int,   default=15)
     parser.add_argument("--seeds",    type=int,   default=50)
@@ -233,7 +233,7 @@ def main() -> None:
     print(f"\nResults saved to {out_path}")
 
     plot_path = str(Path(args.plot_dir).resolve() / "shift_rate_ablation.png")
-    plot_ablation(all_results, T_SWEEP, args.seeds, args.K, plot_path)
+    plot_ablation(all_results, T_SWEEP, args.seeds, args.K, args.n_states, plot_path)
 
 
 if __name__ == "__main__":
