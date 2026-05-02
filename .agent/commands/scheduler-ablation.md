@@ -45,7 +45,7 @@ heap_priority = max(0.0, aggregate_s)
 ## Step 3 — Create `code/misc/scheduler_ablation.py`
 
 Protocol:
-- Environments: FourRooms k=1, GARNET |S|=100 supp=4
+- Environments: FourRooms k=1, GARNET |S|=75 supp=4
 - Seeds: 20, reward shifts: 5
 - Budgets: [|S|/4, |S|, 4|S|]
 - Variants: `fixed`, `linear`, `clip_linear`, `power`, + Dyna-PS anchor

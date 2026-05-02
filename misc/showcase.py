@@ -74,6 +74,7 @@ ABLATION_T_SHIFT = 80   # ablation reward-shift interval (real steps)
 SHOWCASE_T_SHIFT = 80   # showcase reward-shift interval (real steps)
 N_SHIFTS = 25           # total number of reward shifts (episodes) for ablation mode
 EPS      = 0.2          # epsilon-greedy exploration rate
+GAMMA    = 0.95         # discount factor
 
 VARIANTS = ["standard_ps", "gta_beta"]
 LABELS   = {v: AGENT_LABELS[v] for v in VARIANTS}
@@ -643,6 +644,32 @@ def run_ablation(args) -> None:
     plt.savefig(out_path, dpi=150, bbox_inches="tight")
     print(f"\nAblation plot saved to {out_path}")
     plt.close()
+
+    # ── Persist JSON ────────────────────────────────────────────────────────
+    out_dir_json = Path(ROOT / "results/misc/showcase")
+    out_dir_json.mkdir(parents=True, exist_ok=True)
+    json_path = out_dir_json / "ablation.json"
+
+    results_payload = {
+        "config": {
+            "mode": "ablation",
+            "host": host,
+            "K": args.K,
+            "n_shifts": args.n_shifts,
+            "seeds": seed_count,
+            "T_shift": shift_steps,
+            "env_kwargs": env_kwargs,
+        },
+        "returns": {v: {"mean": _agg(all_returns[v])[0].tolist(),
+                          "ci95": _agg(all_returns[v])[1].tolist()}
+                     for v in VARIANTS},
+        "coverage": {v: {"mean": _agg(all_coverage[v])[0].tolist(),
+                           "ci95": _agg(all_coverage[v])[1].tolist()}
+                      for v in VARIANTS},
+    }
+    with open(json_path, "w") as f:
+        json.dump(results_payload, f, indent=2)
+    print(f"Ablation results saved to {json_path}")
 
 
 # ---------------------------------------------------------------------------
