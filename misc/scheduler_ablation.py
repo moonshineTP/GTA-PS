@@ -1,19 +1,12 @@
-"""
+﻿"""
 misc/scheduler_ablation.py
 
-Ablation: three beta_t scheduler families vs standard-PS baseline.
+Ablation: two beta_t scheduler families vs standard-PS baseline.
 
   linear : beta_t = beta1 * ((1-SLEM) + beta2),  beta2 in (-0.05, 0.25)
-           Unified replacement for clip_linear / additive / linear.
-           beta2 < 0 introduces a dead-zone (dampen); beta2 > 0 adds a
-           floor (always active).  No ReLU.
-  power  : beta_t = beta1 * SLEM**beta2,          beta2 > 0 (decay exponent).
-           Always in (0, beta1]; larger beta2 -> stronger SLEM-attenuation.
   log    : beta_t = beta1 * (-log(SLEM) + beta2), beta2 in (-0.05, 0.25)
-           -log(SLEM) ~= (1-SLEM) near 1 but saturates as SLEM->0,
-           preventing topology overdrive on fast-mixing chains.
 
-Each scheduler is swept over its natural beta2 grid with beta1=1 fixed.
+Each scheduler is swept over its beta2 grid with beta1=1 fixed.
 Variants: gta_beta.  Envs: fourrooms, garnet.
 
 Output:
@@ -27,84 +20,131 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 import numpy as np
-import tqdm
 
 ROOT = Path(__file__).resolve().parents[1]
-if not (ROOT / "configs").exists():
-    # Try reaching up to find the real project root (e.g. if compiled in artifacts/dist/)
-    for p in Path(__file__).resolve().parents:
-        if (p / "configs").exists() and (p / "src").exists():
-            ROOT = p
-            break
 sys.path.insert(0, str(ROOT / "src"))
 
 from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.envs.garnet import GarnetEnv
 from gta_ps.algorithms import make_agent
+from threads.runner import RunManager
 
 # ---------------------------------------------------------------------------
 # Per-scheduler beta2 grids
 # ---------------------------------------------------------------------------
 
-# linear / log:  offset in spectral-gap space; negative damps, positive floors
-_GRID_LINEAR = [-0.05, -0.02, -0.01, 0.0, 0.01, 0.02, 0.05, 0.10, 0.20, 0.25]
+_GRID_LINEAR = [-0.05, -0.02, -0.01, 0.0, 0.01, 0.02, 0.05, 0.10, 0.20, 0.50]
 
 SCHEDULER_GRIDS = {
     "linear": _GRID_LINEAR,
-    "log":    _GRID_LINEAR,   # same offset semantics as linear
+    "log":    _GRID_LINEAR,
 }
 
 VARIANTS = ["gta_beta"]
-BETA1    = 1.0
+BETA1    = 0.5
 GAMMA    = 0.95
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Workers (must be top-level for pickling)
 # ---------------------------------------------------------------------------
 
-def _make_env(env_name: str, seed: int, gamma: float):
+def _make_env(env_name, seed, gamma):
     if env_name == "fourrooms":
         return FourRoomsTabular(k=1, gamma=gamma, seed=seed)
     return GarnetEnv(n_states=75, n_actions=5, branching=3,
                      reward_support=4, n_nbr_rate=0.15, gamma=gamma, seed=seed)
 
 
-def _eval_one(
-    env_name: str,
-    variant: str,
-    scheduler: str,
-    beta2: float,
-    n_seeds: int,
-    n_shifts: int,
-    K: int,
-    gamma: float,
-) -> Dict:
-    errors_l1:  List[float] = []
-    errors_inf: List[float] = []
-    beta_ts:    List[float] = []
+def _run_seed(job):
+    """Run one seed for a (scheduler, beta2) config."""
+    env_name  = job["env_name"]
+    variant   = job["variant"]
+    scheduler = job["scheduler"]
+    beta2     = job["beta2"]
+    n_shifts  = job["n_shifts"]
+    K         = job["K"]
+    gamma     = job["gamma"]
+    seed      = job["seed"]
 
-    for seed in tqdm.tqdm(range(n_seeds), desc=f"{scheduler} beta2={beta2}", leave=False):
-        env   = _make_env(env_name, seed, gamma)
-        agent = make_agent(
-            variant, P=env.P, r=env.r, gamma=gamma, q=20,
-            beta1=BETA1, beta2=beta2, beta_mode=scheduler,
-        )
-        mod = agent.module
+    env   = _make_env(env_name, seed, gamma)
+    agent = make_agent(
+        variant, P=env.P, r=env.r, gamma=gamma, q=20,
+        beta1=BETA1, beta2=beta2, beta_mode=scheduler,
+    )
+    mod = agent.module
+    l1_errs  = []
+    inf_errs = []
+    betas    = []
+    for _ in range(n_shifts):
+        r_new  = env.shift_reward()
+        V_star = env.value_iteration(r_new)
+        V      = agent.plan(K=K, r=r_new)
+        diff   = np.abs(V - V_star)
+        l1_errs.append(float(np.mean(diff)))
+        inf_errs.append(float(np.max(diff)))
+        betas.append(float(mod._last_beta))
+    return l1_errs, inf_errs, betas
 
-        for _ in range(n_shifts):
-            r_new  = env.shift_reward()
-            V_star = env.value_iteration(r_new)
-            V      = agent.plan(K=K, r=r_new)
-            diff = np.abs(V - V_star)
-            errors_l1.append(float(np.mean(diff)))
-            errors_inf.append(float(np.max(diff)))
-            beta_ts.append(float(mod._last_beta))
+
+def _run_baseline_seed(job):
+    """Run one seed for baseline."""
+    env_name = job["env_name"]
+    n_shifts = job["n_shifts"]
+    K        = job["K"]
+    gamma    = job["gamma"]
+    seed     = job["seed"]
+
+    env = _make_env(env_name, seed, gamma)
+    ag  = make_agent("standard_ps", P=env.P, r=env.r, gamma=gamma, q=20)
+    l1_errs  = []
+    inf_errs = []
+    for _ in range(n_shifts):
+        r_new  = env.shift_reward()
+        V_star = env.value_iteration(r_new)
+        V      = ag.plan(K=K, r=r_new)
+        diff   = np.abs(V - V_star)
+        l1_errs.append(float(np.mean(diff)))
+        inf_errs.append(float(np.max(diff)))
+    return l1_errs, inf_errs
+
+
+# ---------------------------------------------------------------------------
+# Evaluation helpers
+# ---------------------------------------------------------------------------
+
+def _eval_one(env_name, variant, scheduler, beta2, n_seeds, n_shifts, K, gamma, workers):
+    """Evaluate one (scheduler, beta2) config across seeds (parallel)."""
+    rm = RunManager(n_workers=workers)
+    seeds = list(range(n_seeds))
+    jobs = []
+    for s in seeds:
+        jobs.append({
+            "env_name":  env_name,
+            "variant":   variant,
+            "scheduler": scheduler,
+            "beta2":     beta2,
+            "n_shifts":  n_shifts,
+            "K":         K,
+            "gamma":     gamma,
+            "seed":      s,
+        })
+
+    results = rm.run_jobs(_run_seed, jobs,
+                          desc="%s beta2=%+.3f" % (scheduler, beta2))
+
+    errors_l1  = []
+    errors_inf = []
+    beta_ts    = []
+    for l1, inf, bt in results:
+        errors_l1.extend(l1)
+        errors_inf.extend(inf)
+        beta_ts.extend(bt)
 
     return {
         "scheduler":    scheduler,
         "beta2":        beta2,
-        "mean_error":   round(float(np.mean(errors_l1)),  4),   # L1 primary
+        "mean_error":   round(float(np.mean(errors_l1)),  4),
         "std_error":    round(float(np.std(errors_l1)),   4),
         "mean_error_inf": round(float(np.mean(errors_inf)), 4),
         "std_error_inf":  round(float(np.std(errors_inf)),  4),
@@ -113,19 +153,29 @@ def _eval_one(
     }
 
 
-def _baseline_error(env_name: str, n_seeds: int, n_shifts: int, K: int, gamma: float) -> dict:
-    errs_l1:  List[float] = []
-    errs_inf: List[float] = []
-    for seed in tqdm.tqdm(range(n_seeds), desc=f"Baseline {env_name}", leave=False):
-        env = _make_env(env_name, seed, gamma)
-        ag  = make_agent("standard_ps", P=env.P, r=env.r, gamma=gamma, q=20)
-        for _ in range(n_shifts):
-            r_new  = env.shift_reward()
-            V_star = env.value_iteration(r_new)
-            V      = ag.plan(K=K, r=r_new)
-            diff = np.abs(V - V_star)
-            errs_l1.append(float(np.mean(diff)))
-            errs_inf.append(float(np.max(diff)))
+def _baseline_error(env_name, n_seeds, n_shifts, K, gamma, workers):
+    """Compute baseline error across seeds (parallel)."""
+    rm = RunManager(n_workers=workers)
+    seeds = list(range(n_seeds))
+    jobs = []
+    for s in seeds:
+        jobs.append({
+            "env_name": env_name,
+            "n_shifts": n_shifts,
+            "K":        K,
+            "gamma":    gamma,
+            "seed":     s,
+        })
+
+    results = rm.run_jobs(_run_baseline_seed, jobs,
+                          desc="Baseline %s" % env_name)
+
+    errs_l1  = []
+    errs_inf = []
+    for l1, inf in results:
+        errs_l1.extend(l1)
+        errs_inf.extend(inf)
+
     return {
         "l1":  round(float(np.mean(errs_l1)),  4),
         "inf": round(float(np.mean(errs_inf)), 4),
@@ -138,12 +188,14 @@ def _baseline_error(env_name: str, n_seeds: int, n_shifts: int, K: int, gamma: f
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--envs",     nargs="+", default=["fourrooms", "garnet"])
-    parser.add_argument("--variants", nargs="+", default=VARIANTS)
-    parser.add_argument("--seeds",  type=int,  default=10)
+    parser.add_argument("--envs",      nargs="+", default=["fourrooms", "garnet"])
+    parser.add_argument("--variants",  nargs="+", default=VARIANTS)
+    parser.add_argument("--seeds",    type=int,  default=10)
     parser.add_argument("--n-shifts", type=int,  default=8)
     parser.add_argument("--K",        type=int,  default=40)
     parser.add_argument("--gamma",    type=float, default=GAMMA)
+    parser.add_argument("--workers",  type=int,  default=1,
+                        help="Number of worker processes for parallel seed evaluation")
     parser.add_argument("--out", default=str(ROOT / "results/misc/scheduler_ablation/ablation.json"))
     args = parser.parse_args()
 
@@ -151,26 +203,29 @@ def main():
 
     for env_name in args.envs:
         all_results[env_name] = {}
-        baseline = _baseline_error(env_name, args.seeds, args.n_shifts, args.K, args.gamma)
+        baseline = _baseline_error(
+            env_name, args.seeds, args.n_shifts, args.K, args.gamma, args.workers
+        )
 
         for variant in args.variants:
             all_results[env_name][variant] = []
 
-            print(f"\n{'='*90}")
-            print(f"  [{env_name.upper()}]  {variant}   "
-                  f"(baseline standard_ps  L1={baseline['l1']:.4f}  Linf={baseline['inf']:.4f})")
-            print(f"{'='*90}")
-            print(f"  {'scheduler':<8}  {'beta2':>7}  {'L1 err':>8}  {'Linf err':>9}  "
-                  f"{'DL1%':>7}  {'beta_t mean':>9}  {'%beta=0':>5}")
-            print(f"  {'-'*8}  {'-'*7}  {'-'*8}  {'-'*9}  {'-'*7}  {'-'*9}  {'-'*5}")
+            print("\n" + "=" * 90)
+            print("  [%s]  %s   (baseline standard_ps  L1=%.4f  Linf=%.4f)" %
+                  (env_name.upper(), variant, baseline["l1"], baseline["inf"]))
+            print("=" * 90)
+            print("  %-8s  %7s  %8s  %9s  %7s  %9s  %5s" %
+                  ("scheduler", "beta2", "L1 err", "Linf err", "DL1%", "beta_t mean", "%beta=0"))
+            print("  " + "-" * 8 + "  " + "-" * 7 + "  " + "-" * 8 +
+                  "  " + "-" * 9 + "  " + "-" * 7 + "  " + "-" * 9 + "  " + "-" * 5)
 
-            best_per_sched: Dict[str, Tuple] = {}  # scheduler -> (row, beta2)
+            best_per_sched: Dict[str, Tuple] = {}
 
             for scheduler, grid in SCHEDULER_GRIDS.items():
                 for beta2 in grid:
                     row = _eval_one(
                         env_name, variant, scheduler, beta2,
-                        args.seeds, args.n_shifts, args.K, args.gamma,
+                        args.seeds, args.n_shifts, args.K, args.gamma, args.workers,
                     )
                     row["baseline_l1"]  = baseline["l1"]
                     row["baseline_inf"] = baseline["inf"]
@@ -183,39 +238,33 @@ def main():
                         best_per_sched[scheduler] = (row, beta2)
 
                     marker = " *" if row["mean_error"] < baseline["l1"] else ""
-                    print(
-                        f"  {scheduler:<8}  {beta2:>7.3f}  "
-                        f"{row['mean_error']:>8.4f}  "
-                        f"{row['mean_error_inf']:>9.4f}  "
-                        f"{row['vs_baseline_pct']:>+6.1f}%  "
-                        f"{row['beta_t_mean']:>9.6f}  "
-                        f"{row['pct_zero']:>4.1f}%{marker}"
-                    )
+                    print("  %-8s  %+7.3f  %8.4f  %9.4f  %+6.1f%%  %9.6f  %4.1f%%%s" %
+                          (scheduler, beta2, row["mean_error"], row["mean_error_inf"],
+                           row["vs_baseline_pct"], row["beta_t_mean"], row["pct_zero"], marker))
 
-                print(f"  {'-'*8}  {'-'*7}  {'-'*8}  {'-'*9}  {'-'*7}  {'-'*9}  {'-'*5}")
+                print("  " + "-" * 8 + "  " + "-" * 7 + "  " + "-" * 8 +
+                      "  " + "-" * 9 + "  " + "-" * 7 + "  " + "-" * 9 + "  " + "-" * 5)
 
             print()
             for sched, (best, b2) in best_per_sched.items():
-                print(f"  * best {sched:<8}: beta2={b2:+.3f}  "
-                      f"L1={best['mean_error']:.4f}  Linf={best['mean_error_inf']:.4f}  "
-                      f"({best['vs_baseline_pct']:+.1f}% vs L1 baseline)  "
-                      f"beta_t={best['beta_t_mean']:.5f}  %zero={best['pct_zero']:.1f}%")
+                print("  * best %-8s: beta2=%+.3f  L1=%.4f  Linf=%.4f  (%.1f%% vs L1 baseline)  beta_t=%.5f  %%zero=%.1f%%" %
+                      (sched, b2, best["mean_error"], best["mean_error_inf"],
+                       best["vs_baseline_pct"], best["beta_t_mean"], best["pct_zero"]))
 
     out = Path(args.out).resolve()
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w") as f:
         json.dump(all_results, f, indent=2)
-    print(f"\nSaved to {out}")
+    print("\nSaved to %s" % out)
 
-    # -- Cross-env summary -------------------------------------------------------
-    print("\n" + "="*90)
+    # -- Cross-env summary
+    print("\n" + "=" * 90)
     print("  CROSS-ENV SUMMARY  (best beta2 per scheduler x env x variant, ranked by L1)")
-    print("="*90)
-    print(f"  {'env':<10}  {'variant':<10}  {'scheduler':<8}  "
-          f"{'best beta2':>8}  {'L1 err':>8}  {'Linf err':>9}  {'DL1%':>9}  "
-          f"{'beta_t mean':>9}  {'%beta=0':>5}")
-    print(f"  {'-'*10}  {'-'*10}  {'-'*8}  {'-'*8}  "
-          f"{'-'*8}  {'-'*9}  {'-'*9}  {'-'*9}  {'-'*5}")
+    print("=" * 90)
+    print("  %-10s  %-10s  %-8s  %8s  %8s  %9s  %9s  %9s  %5s" %
+          ("env", "variant", "scheduler", "best beta2", "L1 err", "Linf err", "DL1%", "beta_t mean", "%beta=0"))
+    print("  " + "-" * 10 + "  " + "-" * 10 + "  " + "-" * 8 + "  " + "-" * 8 +
+          "  " + "-" * 8 + "  " + "-" * 9 + "  " + "-" * 9 + "  " + "-" * 9 + "  " + "-" * 5)
     for env_name in args.envs:
         for variant in args.variants:
             rows = all_results[env_name][variant]
@@ -224,15 +273,10 @@ def main():
                 if not srows:
                     continue
                 best = min(srows, key=lambda r: r["mean_error"])
-                print(
-                    f"  {env_name:<10}  {variant:<10}  {scheduler:<8}  "
-                    f"{best['beta2']:>+8.3f}  {best['mean_error']:>8.4f}  "
-                    f"{best['mean_error_inf']:>9.4f}  "
-                    f"{best['vs_baseline_pct']:>+9.1f}%  "
-                    f"{best['beta_t_mean']:>9.5f}  {best['pct_zero']:>4.1f}%"
-                )
+                print("  %-10s  %-10s  %-8s  %+8.3f  %8.4f  %9.4f  %+9.1f%%  %9.5f  %4.1f%%" %
+                      (env_name, variant, scheduler, best["beta2"], best["mean_error"],
+                       best["mean_error_inf"], best["vs_baseline_pct"], best["beta_t_mean"], best["pct_zero"]))
 
 
 if __name__ == "__main__":
     main()
-

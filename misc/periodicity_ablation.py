@@ -106,7 +106,7 @@ def plot_periodicity(stats: Dict[str, Dict[str, dict]], seeds: int, k: int):
         means = [stats[m][label]['mean'] for m in modes]
         cis = [stats[m][label]['ci95'] for m in modes]
         ax.errorbar(x + offsets[i], means, yerr=cis, fmt='o', capsize=5, label=label, color=p_point[key])
-    ax.set_title(f"Impact of Periodicity (N={seeds}, K={k})\nGARNET Bipartite Ablation ($|S|=40, rev=0.0$)")
+    ax.set_title(f"Impact of Periodicity (N={seeds}, K={k})\nGARNET Bipartite Ablation ($|S|=40$, rev=0.0)")
     ax.set_xticks(x)
     ax.set_xticklabels([f"{m}\nSLEM={stats[m]['slem']:.3f}" for m in modes])
     ax.set_ylabel("Final L1 Error")
@@ -144,7 +144,7 @@ if __name__ == "__main__":
         res = runner.run(run_seed_worker, list(range(args.seeds)),
                          dict(env_params=params, variants=variants, n_shifts=5, 
                               n_steps_per_shift=40, k_planning=args.K),
-                         desc=f"aperiodic_{name}")
+                         desc=f"{name}")
         results[name] = get_stats(res, variant_labels)
         
     plot_periodicity(results, args.seeds, args.K)

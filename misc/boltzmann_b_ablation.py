@@ -113,13 +113,13 @@ def _run_baseline(
 # ---------------------------------------------------------------------------
 
 def plot_ablation(results: dict, baseline: dict, b_sweep: list,
-                  seeds: int, K: int, out_path: str) -> None:
+                  seeds: int, K: int, n_states: int, out_path: str) -> None:
     if plt is None:
         print("matplotlib not available — skipping plot.")
         return
 
     apply_style()
-    p_line = get_palette("line")
+    p_line = get_palette("point")
     MARKERS = {"gta_base": "o", "gta_beta": "^"}
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
@@ -152,7 +152,7 @@ def plot_ablation(results: dict, baseline: dict, b_sweep: list,
 
     fig.suptitle(
         f"Boltzmann Temperature Ablation — Assumption 8\n"
-        f"GARNET $|S|=75$,  $N={seeds}$ seeds,  $K={K}$ backups/shift",
+        f"GARNET $|S|={n_states}$,  $N={seeds}$ seeds,  $K={K}$ backups/shift",
         fontsize=12,
     )
     plt.tight_layout()
@@ -255,7 +255,7 @@ def main() -> None:
     print(f"\nResults saved to {out_path}")
 
     plot_path = str(Path(args.plot_dir).resolve() / "boltzmann_b_ablation.png")
-    plot_ablation(all_results, baseline, B_SWEEP, args.seeds, args.K, plot_path)
+    plot_ablation(all_results, baseline, B_SWEEP, args.seeds, args.K, args.n_states, plot_path)
 
 
 if __name__ == "__main__":

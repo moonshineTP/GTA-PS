@@ -59,10 +59,30 @@ echo ""
 # 2. Convergence Benchmark
 INDEX=$((INDEX+1))
 if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/2] Convergence Benchmark - skipped (start-from=$START_FROM)"
+    echo "[$INDEX/4] Convergence Benchmark - skipped (start-from=$START_FROM)"
 else
-    echo "[$INDEX/2] Convergence Benchmark (Compiled)"
+    echo "[$INDEX/4] Convergence Benchmark (Compiled)"
     "$ARTIFACTS_DIR/convergence_benchmark.dist/convergence_benchmark" "$@" || (echo "ERROR: convergence_benchmark not found in $ARTIFACTS_DIR/convergence_benchmark.dist" && exit 1)
+fi
+echo ""
+
+# 3. Showcase (ablation mode)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/4] Showcase (ablation) - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/4] Showcase (ablation) (Compiled)"
+    "$ARTIFACTS_DIR/showcase.dist/showcase" "$@" --mode ablation || (echo "ERROR: showcase not found" && exit 1)
+fi
+echo ""
+
+# 4. Showcase (showcase mode)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/4] Showcase (showcase) - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/4] Showcase (showcase) (Compiled)"
+    "$ARTIFACTS_DIR/showcase.dist/showcase" "$@" --mode showcase || (echo "ERROR: showcase not found" && exit 1)
 fi
 echo ""
 

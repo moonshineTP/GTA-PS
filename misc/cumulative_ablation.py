@@ -19,6 +19,11 @@ Protocol per seed:
 Environment: slow-mixing GARNET (n_nbr_rate=0.07, SLEM~0.99)
 so that K << t_mix(1/4) and Theorem 6.10's regime is active.
 
+IMPORTANT: Epsilon-greedy (EPS_GREEDY=0.15) is vital for cumulative reward.
+Without it, GTA-PS over-exploits high-priority states and misses reward
+opportunities elsewhere. This applies to all scripts optimizing cumulative
+reward (see docs/algorithms/gta-ps.md for details).
+
 Output:
   plots/cumulative_tracking.png
   results/misc/cumulative_tracking/tracking.json
@@ -60,7 +65,7 @@ except ImportError:
     plt = None
 
 # Slow-mixing GARNET: n_nbr_rate ≈ 0.07 → SLEM ~ 0.99 → t_mix >> K
-N_STATES    = 80
+N_STATES    = 80  # default, overridden by --n-states
 N_ACTIONS   = 5
 BRANCHING   = 3
 N_NBR_RATE  = 0.07          # slow mixing; contrast with default 0.15
@@ -71,7 +76,7 @@ N_EPISODES  = 25
 T_WARMUP    = 240           # real steps before episodes begin
 T_REAL      = 40            # real steps per episode (after shift)
 K           = 16            # planning steps per real step
-EPS_GREEDY  = 0.15
+EPS_GREEDY  = 0.15          # epsilon-greedy exploration rate
 
 VARIANTS    = ["standard_ps", "gta_beta"]
 
@@ -87,9 +92,10 @@ def _run_seed(
     K: int,
     gamma: float,
     method_cfgs: dict,
+    n_states: int = N_STATES,
     **_ignored,
 ) -> dict:
-    env      = GarnetEnv(n_states=N_STATES, n_actions=N_ACTIONS, branching=BRANCHING,
+    env      = GarnetEnv(n_states=n_states, n_actions=N_ACTIONS, branching=BRANCHING,
                          n_nbr_rate=N_NBR_RATE, reward_support=REWARD_SUP,
                          gamma=gamma, seed=seed)
     sim_rng  = np.random.default_rng(seed + 0xFACE_CAFE)
@@ -101,7 +107,7 @@ def _run_seed(
             v, host="dyna", P=env.P, r=env.r, gamma=gamma, q=20, **kw
         )
 
-    cur_s = {v: int(sim_rng.integers(N_STATES)) for v in VARIANTS}
+    cur_s = {v: int(sim_rng.integers(n_states)) for v in VARIANTS}
 
     def _real_step_plan(v: str, s: int, r_vec: np.ndarray) -> int:
         """One real step + K plan steps. Returns next state."""
@@ -110,7 +116,7 @@ def _run_seed(
         else:
             a = int(agents[v].Q[:, s].argmax())
         probs  = env.P[a, s]
-        s_next = int(sim_rng.choice(N_STATES, p=probs))
+        s_next = int(sim_rng.choice(n_states, p=probs))
         r_env  = float(r_vec[s])        # state-based reward at current state
         agents[v].real_step(s, a, r_env, s_next)
         agents[v].plan_steps(K)
@@ -123,7 +129,7 @@ def _run_seed(
             s      = cur_s[v]
             a      = int(sim_rng.integers(N_ACTIONS))
             probs  = env.P[a, s]
-            s_next = int(sim_rng.choice(N_STATES, p=probs))
+            s_next = int(sim_rng.choice(n_states, p=probs))
             agents[v].real_step(s, a, float(r0[s]), s_next)
             agents[v].plan_steps(K)
             cur_s[v] = s_next
@@ -162,15 +168,8 @@ def _run_seed(
 # ---------------------------------------------------------------------------
 
 def plot_results(
-    per_ep_mean:  dict,
-    per_ep_ci:    dict,
-    cumul_mean:   dict,
-    cumul_ci:     dict,
-    n_episodes:   int,
-    seeds:        int,
-    K:            int,
-    t_real:       int,
-    out_path:     str,
+    per_ep_mean, per_ep_ci, cumul_mean, cumul_ci,
+    n_episodes: int, seeds: int, K: int, t_real: int, n_states: int, out_path: str,
 ) -> None:
     if plt is None:
         print("matplotlib not available — skipping plot.")
@@ -243,7 +242,7 @@ def plot_results(
     ax3.legend(fontsize=8)
 
     fig.suptitle(
-        rf"Cumulative Tracking Ablation — Dyna/TD(0), GARNET $|S|={N_STATES}$, "
+        rf"Cumulative Tracking Ablation — Dyna/TD(0), GARNET $|S|={n_states}$, "
         rf"SLEM$\approx$0.99, $K={K}$, $T_{{real}}={t_real}$, $N_{{seeds}}={seeds}$",
         fontsize=11,
     )
@@ -266,6 +265,7 @@ def main() -> None:
     parser.add_argument("--t-real",     type=int,   default=T_REAL)
     parser.add_argument("--K",          type=int,   default=K)
     parser.add_argument("--gamma",      type=float, default=GAMMA)
+    parser.add_argument("--n-states",    type=int,   default=N_STATES)
     parser.add_argument("--seeds",      type=int,   default=5)
     parser.add_argument("--workers",    default="auto")
     parser.add_argument("--out-dir",
@@ -285,7 +285,7 @@ def main() -> None:
         _run_seed, range(args.seeds),
         dict(n_episodes=args.n_episodes, t_warmup=args.t_warmup,
              t_real=args.t_real, K=args.K, gamma=args.gamma,
-             method_cfgs=tuned),
+             method_cfgs=tuned, n_states=args.n_states),
         desc="cumulative_tracking",
     )
 
@@ -323,7 +323,7 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "config": {
-            "n_states":   N_STATES,
+            "n_states":   args.n_states,
             "n_nbr_rate": N_NBR_RATE,
             "gamma":      args.gamma,
             "K":          args.K,
@@ -345,7 +345,7 @@ def main() -> None:
     plot_path = str(Path(args.plot_dir).resolve() / "cumulative_ablation.png")
     plot_results(
         per_ep_mean, per_ep_ci, cumul_mean, cumul_ci,
-        args.n_episodes, args.seeds, args.K, args.t_real, plot_path,
+        args.n_episodes, args.seeds, args.K, args.t_real, args.n_states, plot_path,
     )
 
 

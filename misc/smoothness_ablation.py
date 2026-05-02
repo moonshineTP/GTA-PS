@@ -145,10 +145,11 @@ def _run_ts_seed(
     n_shifts: int,
     gamma: float,
     method_cfgs: dict,
+    n_states: int = N_STATES,
     **_ignored,
 ) -> dict:
     """Time-series worker: one seed × n_shifts shifts at NBR_RATE_TS."""
-    env = GarnetEnv(n_states=N_STATES, n_actions=N_ACTIONS,
+    env = GarnetEnv(n_states=n_states, n_actions=N_ACTIONS,
                     branching=BRANCHING, n_nbr_rate=NBR_RATE_TS,
                     reward_support=REWARD_SUP, gamma=gamma, seed=seed)
     kw = method_cfgs.get("gta_beta", {})
@@ -165,14 +166,15 @@ def _run_ts_seed(
 
 def _run_cross_seed(
     seed: int,
-    nbr_rate: float,
     n_shifts: int,
+    nbr_rate: float,
     gamma: float,
     method_cfgs: dict,
+    n_states: int = N_STATES,
     **_ignored,
 ) -> dict:
     """Cross-SLEM worker: one seed × n_shifts shifts at a given nbr_rate."""
-    env = GarnetEnv(n_states=N_STATES, n_actions=N_ACTIONS,
+    env = GarnetEnv(n_states=n_states, n_actions=N_ACTIONS,
                     branching=BRANCHING, n_nbr_rate=nbr_rate,
                     reward_support=REWARD_SUP, gamma=gamma, seed=seed)
     kw = method_cfgs.get("gta_beta", {})
@@ -225,13 +227,14 @@ def run_timeseries(
     seeds: int,
     gamma: float,
     method_cfgs: dict,
-    workers: int | str,
+    workers: int | str = 5,
+    n_states: int = N_STATES,
 ) -> dict:
     runner = RunManager(n_workers=workers)
     raw = runner.run(
         fn=_run_ts_seed,
         seeds=list(range(seeds)),
-        fn_kwargs=dict(n_shifts=n_shifts, gamma=gamma, method_cfgs=method_cfgs),
+        fn_kwargs=dict(n_shifts=n_shifts, gamma=gamma, method_cfgs=method_cfgs, n_states=n_states),
         desc="smoothness-ts",
     )
     return _agg_ts(raw)
@@ -243,6 +246,7 @@ def run_cross_slem(
     gamma: float,
     method_cfgs: dict,
     workers: int | str,
+    n_states: int = N_STATES,
 ) -> list:
     runner = RunManager(n_workers=workers)
     rows = []
@@ -251,7 +255,7 @@ def run_cross_slem(
             fn=_run_cross_seed,
             seeds=list(range(seeds)),
             fn_kwargs=dict(nbr_rate=nbr, n_shifts=n_shifts, gamma=gamma,
-                           method_cfgs=method_cfgs),
+                           method_cfgs=method_cfgs, n_states=n_states),
             desc=f"smoothness-cross-{nbr:.2f}",
         )
         slem_m, var_m, var_ci = _agg_cross(raw)
@@ -267,11 +271,8 @@ def run_cross_slem(
 # ---------------------------------------------------------------------------
 
 def plot_results(
-    ts:       dict,
-    cross:    list,
-    n_shifts: int,
-    seeds:    int,
-    gamma:    float,
+    ts: dict, cross: dict,
+    n_shifts: int, seeds: int, gamma: float, n_states: int,
     out_path: str,
 ) -> None:
     if plt is None:
@@ -363,7 +364,7 @@ def plot_results(
     ax3.legend(fontsize=8)
 
     fig.suptitle(
-        rf"Smoothness Ablation — GARNET $|S|={N_STATES}$, $\gamma={gamma}$, "
+        rf"Smoothness Ablation — GARNET $|S|={n_states}$, $\gamma={gamma}$, "
         rf"$N_\mathrm{{seeds}}={seeds}$  |  "
         rf"Rq $= \mathcal{{E}}/\mathrm{{Var}}_\mu$ (scale-invariant frequency)",
         fontsize=10,
@@ -385,6 +386,7 @@ def main() -> None:
     parser.add_argument("--n-shifts",       type=int,   default=N_SHIFTS)
     parser.add_argument("--n-shifts-cross", type=int,   default=N_SHIFTS_CROSS)
     parser.add_argument("--gamma",          type=float, default=GAMMA)
+    parser.add_argument("--n-states",      type=int,   default=N_STATES)
     parser.add_argument("--seeds",          type=int,   default=SEEDS)
     parser.add_argument("--workers",                    default=5)
     parser.add_argument("--out-dir",
@@ -406,7 +408,7 @@ def main() -> None:
     # ── Time-series ──────────────────────────────────────────────────────────
     print(f"\nTime-series: {args.seeds} seeds × {args.n_shifts} shifts "
           f"(n_nbr_rate={NBR_RATE_TS}) …")
-    ts = run_timeseries(args.n_shifts, args.seeds, args.gamma, tuned, args.workers)
+    ts = run_timeseries(args.n_shifts, args.seeds, args.gamma, tuned, args.workers, args.n_states)
 
     mean_Rq_dr  = float(np.mean(ts["Rq_dr"]["mean"]))
     mean_Rq_df  = float(np.mean(ts["Rq_df"]["mean"]))
@@ -427,7 +429,7 @@ def main() -> None:
     # ── Cross-SLEM ───────────────────────────────────────────────────────────
     print(f"\nCross-SLEM sweep: {len(NBR_SWEEP)} envs × {args.seeds} seeds "
           f"× {args.n_shifts_cross} shifts …")
-    cross = run_cross_slem(args.n_shifts_cross, args.seeds, args.gamma, tuned, args.workers)
+    cross = run_cross_slem(args.n_shifts_cross, args.seeds, args.gamma, tuned, args.workers, args.n_states)
 
     # ── Persist ──────────────────────────────────────────────────────────────
     out_dir = Path(args.out_dir).resolve()
@@ -435,7 +437,7 @@ def main() -> None:
     out_path = out_dir / "smoothness.json"
     payload = {
         "config": {
-            "n_states":      N_STATES,
+            "n_states":      args.n_states,
             "n_nbr_rate_ts": NBR_RATE_TS,
             "gamma":         args.gamma,
             "seeds":         args.seeds,
@@ -450,7 +452,7 @@ def main() -> None:
     print(f"\nResults saved to {out_path}")
 
     plot_path = str(Path(args.plot_dir).resolve() / "smoothness_ablation.png")
-    plot_results(ts, cross, args.n_shifts, args.seeds, args.gamma, plot_path)
+    plot_results(ts, cross, args.n_shifts, args.seeds, args.gamma, args.n_states, plot_path)
 
 
 if __name__ == "__main__":
