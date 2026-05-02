@@ -242,7 +242,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
             # preventing topology overdrive on fast-mixing chains.
             return self.beta1 * (-np.log(max(slem, 1e-15)) + self.beta2)
         raise ValueError(f"Invalid beta_mode: {self.beta_mode!r}. "
-                         f"Choose from: 'fixed', 'linear', 'log', 'power'.")
+                         f"Choose from: 'fixed', 'linear', 'log'.")
 
     def _alpha_t(self, slem: float) -> float:
         return self.alpha_base

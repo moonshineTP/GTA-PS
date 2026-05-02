@@ -54,14 +54,43 @@ echo "======================================================"
 echo "Using artifacts from: $ARTIFACTS_DIR"
 echo ""
 
+# Parse --start-from argument
+START_FROM=1
+NEW_ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --start-from)
+            shift
+            START_FROM="$1"
+            shift
+            ;;
+        *)
+            NEW_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+set -- "${NEW_ARGS[@]}"
+INDEX=0
+
 # 1. Time Benchmark
-echo "[1/2] Time Benchmark (Compiled)"
-"$ARTIFACTS_DIR/time_benchmark.dist/time_benchmark" "$@" || (echo "ERROR: time_benchmark not found in $ARTIFACTS_DIR/time_benchmark.dist" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/2] Time Benchmark - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/2] Time Benchmark (Compiled)"
+    "$ARTIFACTS_DIR/time_benchmark.dist/time_benchmark" "$@" || (echo "ERROR: time_benchmark not found in $ARTIFACTS_DIR/time_benchmark.dist" && exit 1)
+fi
 echo ""
 
 # 2. Convergence Benchmark
-echo "[2/2] Convergence Benchmark (Compiled)"
-"$ARTIFACTS_DIR/convergence_benchmark.dist/convergence_benchmark" "$@" || (echo "ERROR: convergence_benchmark not found in $ARTIFACTS_DIR/convergence_benchmark.dist" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/2] Convergence Benchmark - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/2] Convergence Benchmark (Compiled)"
+    "$ARTIFACTS_DIR/convergence_benchmark.dist/convergence_benchmark" "$@" || (echo "ERROR: convergence_benchmark not found in $ARTIFACTS_DIR/convergence_benchmark.dist" && exit 1)
+fi
 echo ""
 
 echo "Done."

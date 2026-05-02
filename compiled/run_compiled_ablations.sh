@@ -54,59 +54,133 @@ echo "======================================================"
 echo "Using artifacts from: $ARTIFACTS_DIR"
 echo ""
 
+# Parse --start-from argument
+START_FROM=1
+NEW_ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --start-from)
+            shift
+            START_FROM="$1"
+            shift
+            ;;
+        *)
+            NEW_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+set -- "${NEW_ARGS[@]}"
+INDEX=0
+
 # Smoothness Ablation
-echo "[1/11] Smoothness Ablation (Compiled)"
-"$ARTIFACTS_DIR/smoothness_ablation.dist/smoothness_ablation" "$@" || (echo "ERROR: smoothness_ablation not found in $ARTIFACTS_DIR/smoothness_ablation.dist" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/11] Smoothness Ablation - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/11] Smoothness Ablation (Compiled)"
+    "$ARTIFACTS_DIR/smoothness_ablation.dist/smoothness_ablation" "$@" || (echo "ERROR: smoothness_ablation not found in $ARTIFACTS_DIR/smoothness_ablation.dist" && exit 1)
+fi
 echo ""
 
 # Mixing Threshold Ablation
-echo "[2/11] Mixing Threshold Ablation (Compiled)"
-"$ARTIFACTS_DIR/mixing_threshold_ablation.dist/mixing_threshold_ablation" "$@" || (echo "ERROR: mixing_threshold_ablation not found" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/11] Mixing Threshold Ablation - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/11] Mixing Threshold Ablation (Compiled)"
+    "$ARTIFACTS_DIR/mixing_threshold_ablation.dist/mixing_threshold_ablation" "$@" || (echo "ERROR: mixing_threshold_ablation not found" && exit 1)
+fi
 echo ""
 
 # Shift-rate Ablation
-echo "[3/11] Shift-rate Ablation (Compiled)"
-"$ARTIFACTS_DIR/shift_rate_ablation.dist/shift_rate_ablation" "$@" || (echo "ERROR: shift_rate_ablation not found" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/11] Shift-rate Ablation - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/11] Shift-rate Ablation (Compiled)"
+    "$ARTIFACTS_DIR/shift_rate_ablation.dist/shift_rate_ablation" "$@" || (echo "ERROR: shift_rate_ablation not found" && exit 1)
+fi
 echo ""
 
 # Boltzmann-b Ablation
-echo "[4/11] Boltzmann-b Ablation (Compiled)"
-"$ARTIFACTS_DIR/boltzmann_b_ablation.dist/boltzmann_b_ablation" "$@" || (echo "ERROR: boltzmann_b_ablation not found" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/11] Boltzmann-b Ablation - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/11] Boltzmann-b Ablation (Compiled)"
+    "$ARTIFACTS_DIR/boltzmann_b_ablation.dist/boltzmann_b_ablation" "$@" || (echo "ERROR: boltzmann_b_ablation not found" && exit 1)
+fi
 echo ""
 
 # Scheduler Ablation
-echo "[5/11] Scheduler Ablation (Compiled)"
-"$ARTIFACTS_DIR/scheduler_ablation.dist/scheduler_ablation" "$@" || (echo "ERROR: scheduler_ablation not found" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/11] Scheduler Ablation - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/11] Scheduler Ablation (Compiled)"
+    "$ARTIFACTS_DIR/scheduler_ablation.dist/scheduler_ablation" "$@" || (echo "ERROR: scheduler_ablation not found" && exit 1)
+fi
 echo ""
 
 # Gamma Ablation
-echo "[6/11] Gamma Ablation (Compiled)"
-"$ARTIFACTS_DIR/gamma_ablation.dist/gamma_ablation" "$@" || (echo "ERROR: gamma_ablation not found" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/11] Gamma Ablation - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/11] Gamma Ablation (Compiled)"
+    "$ARTIFACTS_DIR/gamma_ablation.dist/gamma_ablation" "$@" || (echo "ERROR: gamma_ablation not found" && exit 1)
+fi
 echo ""
 
 # Mixing Ablation
-echo "[7/11] Mixing Ablation (Compiled)"
-"$ARTIFACTS_DIR/mixing_ablation.dist/mixing_ablation" "$@" || (echo "ERROR: mixing_ablation not found" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/11] Mixing Ablation - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/11] Mixing Ablation (Compiled)"
+    "$ARTIFACTS_DIR/mixing_ablation.dist/mixing_ablation" "$@" || (echo "ERROR: mixing_ablation not found" && exit 1)
+fi
 echo ""
 
 # Periodicity Ablation
-echo "[8/11] Periodicity Ablation (Compiled)"
-"$ARTIFACTS_DIR/periodicity_ablation.dist/periodicity_ablation" "$@" || (echo "ERROR: periodicity_ablation not found" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/11] Periodicity Ablation - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/11] Periodicity Ablation (Compiled)"
+    "$ARTIFACTS_DIR/periodicity_ablation.dist/periodicity_ablation" "$@" || (echo "ERROR: periodicity_ablation not found" && exit 1)
+fi
 echo ""
 
 # Reward-support Ablation
-echo "[9/11] Reward-support Ablation (Compiled)"
-"$ARTIFACTS_DIR/reward_support_ablation.dist/reward_support_ablation" "$@" || (echo "ERROR: reward_support_ablation not found" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/11] Reward-support Ablation - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/11] Reward-support Ablation (Compiled)"
+    "$ARTIFACTS_DIR/reward_support_ablation.dist/reward_support_ablation" "$@" || (echo "ERROR: reward_support_ablation not found" && exit 1)
+fi
 echo ""
 
 # Cumulative Ablation
-echo "[10/11] Cumulative Ablation (Compiled)"
-"$ARTIFACTS_DIR/cumulative_ablation.dist/cumulative_ablation" "$@" || (echo "ERROR: cumulative_ablation not found" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/11] Cumulative Ablation - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/11] Cumulative Ablation (Compiled)"
+    "$ARTIFACTS_DIR/cumulative_ablation.dist/cumulative_ablation" "$@" || (echo "ERROR: cumulative_ablation not found" && exit 1)
+fi
 echo ""
 
 # Showcase
-echo "[11/11] Showcase (Compiled)"
-"$ARTIFACTS_DIR/showcase.dist/showcase" "$@" || (echo "ERROR: showcase not found" && exit 1)
+INDEX=$((INDEX+1))
+if [ "$INDEX" -lt "$START_FROM" ]; then
+    echo "[$INDEX/11] Showcase - skipped (start-from=$START_FROM)"
+else
+    echo "[$INDEX/11] Showcase (Compiled)"
+    "$ARTIFACTS_DIR/showcase.dist/showcase" "$@" || (echo "ERROR: showcase not found" && exit 1)
+fi
 echo ""
 
 echo "Done."
