@@ -19,6 +19,11 @@ Protocol per seed:
 Environment: slow-mixing GARNET (n_nbr_rate=0.07, SLEM~0.99)
 so that K << t_mix(1/4) and Theorem 6.10's regime is active.
 
+IMPORTANT: Epsilon-greedy (EPS_GREEDY=0.15) is vital for cumulative reward.
+Without it, GTA-PS over-exploits high-priority states and misses reward
+opportunities elsewhere. This applies to all scripts optimizing cumulative
+reward (see docs/algorithms/gta-ps.md for details).
+
 Output:
   plots/cumulative_tracking.png
   results/misc/cumulative_tracking/tracking.json
@@ -71,7 +76,7 @@ N_EPISODES  = 25
 T_WARMUP    = 240           # real steps before episodes begin
 T_REAL      = 40            # real steps per episode (after shift)
 K           = 16            # planning steps per real step
-EPS_GREEDY  = 0.15
+EPS_GREEDY  = 0.15          # epsilon-greedy exploration rate
 
 VARIANTS    = ["standard_ps", "gta_beta"]
 

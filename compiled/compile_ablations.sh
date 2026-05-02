@@ -22,11 +22,9 @@ ABLS=(
     "misc/boltzmann_b_ablation.py"
     "misc/scheduler_ablation.py"
     "misc/gamma_ablation.py"
-    "misc/mixing_ablation.py"
     "misc/periodicity_ablation.py"
     "misc/reward_support_ablation.py"
     "misc/cumulative_ablation.py"
-    "misc/showcase.py"
 )
 
 # Use Zig compiler pipeline if setup exists

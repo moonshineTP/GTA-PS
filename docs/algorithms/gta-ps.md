@@ -23,6 +23,16 @@ where `ξ(s)` is the Bellman residual, `Δf^{out/in}` are changes in the forward
 | `DpHost` | Uses `GtaPS` as its PS module; the oracle kernel is fixed. | `GtaPS` remains static after construction. |
 | `DynaHost` | Calls `module.update_model(P_hat, r_hat)` and `module.update_value(s, V[s])` on each real step to sync the empirical model and values used for prefix propagation. |
 
+## Epsilon-Greedy for Cumulative Reward
+
+When cumulative reward is the primary metric, **epsilon-greedy exploration (ε ≈ 0.15–0.2) is essential** for GTA-PS to avoid overexploitation. Without it, GTA-PS can converge to a narrow set of high-priority states and miss reward opportunities elsewhere.
+
+This is particularly important in scripts where cumulative reward is tracked:
+- `misc/showcase.py` — uses `EPS = 0.2` in `IndependentAgentSession._pick_action`
+- `misc/cumulative_ablation.py` — uses `EPS_GREEDY = 0.15` in its `_real_step_plan` helper
+
+For pure value-error evaluations (e.g., `misc/tuner.py`, `misc/convergence_benchmark.py`), epsilon-greedy is not needed because the oracle behavior policy (`value_iteration`) already provides the optimal action sequence.
+
 ## Supporting Utilities
 
 `gta_ps.py` relies on `utils/spectral.py` for

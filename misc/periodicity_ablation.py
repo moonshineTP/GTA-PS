@@ -144,7 +144,7 @@ if __name__ == "__main__":
         res = runner.run(run_seed_worker, list(range(args.seeds)),
                          dict(env_params=params, variants=variants, n_shifts=5, 
                               n_steps_per_shift=40, k_planning=args.K),
-                         desc=f"aperiodic_{name}")
+                         desc=f"{name}")
         results[name] = get_stats(res, variant_labels)
         
     plot_periodicity(results, args.seeds, args.K)

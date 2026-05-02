@@ -119,7 +119,7 @@ def plot_ablation(results: dict, baseline: dict, b_sweep: list,
         return
 
     apply_style()
-    p_line = get_palette("line")
+    p_line = get_palette("point")
     MARKERS = {"gta_base": "o", "gta_beta": "^"}
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))

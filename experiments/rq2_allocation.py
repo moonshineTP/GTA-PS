@@ -5,7 +5,7 @@ Does the adaptive GTA-PS^beta schedule match or outperform the best fixed
 allocation once geometry varies across shifts?
 
 Protocol (memo §8):
-  - GARNET |S|=100,500 (generative variety)
+  - GARNET |S|=75,200 (generative variety)
   - Compare fixed beta (gta_base) vs adaptive beta_t (gta_beta)
   - Track SLEM_t and beta_t
   - Metric: Spearman rank correlation between tau and actual pop order.

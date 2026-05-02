@@ -18,6 +18,7 @@ echo ""
 SANITY=(
     "misc/time_benchmark.py"
     "misc/convergence_benchmark.py"
+    "misc/showcase.py"
 )
 
 # Use Zig compiler pipeline if setup exists

@@ -10,7 +10,7 @@ set "PYTHONPATH=%CODE_ROOT%\src;%CODE_ROOT%\threads;%CODE_ROOT%\misc"
 echo Starting Sanity Compilation (Windows)...
 echo.
 
-set "SANITY=misc\time_benchmark.py misc\convergence_benchmark.py"
+set "SANITY=misc\time_benchmark.py misc\convergence_benchmark.py misc\showcase.py"
 
 for %%f in (%SANITY%) do (
     echo --- Compiling %%f ---

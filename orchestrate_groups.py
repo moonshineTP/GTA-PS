@@ -19,14 +19,11 @@ class ScriptSpec:
 GROUPS: dict[str, tuple[ScriptSpec, ...]] = {
     "sanity": (
         ScriptSpec(
-            path="misc/tuner.py",
-            label="Tune configs",
+            path="misc/time_benchmark.py",
+            label="Time benchmark",
             forwarded_flags={
                 "workers": "--workers",
                 "seeds": "--seeds",
-                "K": "--K",
-                "n_steps_per_shift": "--n-steps-per-shift",
-                "n_shifts": "--n-shifts",
             },
         ),
         ScriptSpec(
@@ -37,6 +34,32 @@ GROUPS: dict[str, tuple[ScriptSpec, ...]] = {
                 "K": "--K",
                 "n_shifts": "--n-shifts",
             },
+        ),
+        ScriptSpec(
+            path="misc/showcase.py",
+            label="Showcase ablation (time-series + CI)",
+            forwarded_flags={
+                "workers": "--workers",
+                "seeds": "--seeds",
+                "K": "--K",
+                "n_shifts": "--n_shifts",
+                "n_steps_per_shift": "--n-steps-per-shift",
+                "host": "--host",
+            },
+            fixed_args=("--mode", "ablation"),
+        ),
+        ScriptSpec(
+            path="misc/showcase.py",
+            label="Showcase mode (single agent GIF)",
+            forwarded_flags={
+                "K": "--K",
+                "n_shifts": "--n-shifts",
+                "n_steps_per_shift": "--n-steps-per-shift",
+                "host": "--host",
+                "n_frames": "--n-frames",
+                "seeds": "--seeds",
+            },
+            fixed_args=("--mode", "showcase"),
         ),
     ),
     "rqs": (
@@ -186,16 +209,6 @@ GROUPS: dict[str, tuple[ScriptSpec, ...]] = {
             },
         ),
         ScriptSpec(
-            path="misc/mixing_ablation.py",
-            label="Mixing ablation",
-            forwarded_flags={
-                "workers": "--workers",
-                "seeds": "--seeds",
-                "K": "--K",
-                "n_shifts": "--n-shifts",
-            },
-        ),
-        ScriptSpec(
             path="misc/periodicity_ablation.py",
             label="Periodicity ablation",
             forwarded_flags={
@@ -223,18 +236,6 @@ GROUPS: dict[str, tuple[ScriptSpec, ...]] = {
                 "seeds": "--seeds",
                 "K": "--K",
             },
-        ),
-        ScriptSpec(
-            path="misc/showcase.py",
-            label="Showcase",
-            forwarded_flags={
-                "workers": "--workers",
-                "seeds": "--seeds",
-                "K": "--K",
-                "n_steps_per_shift": "--n-steps-per-shift",
-                "n_shifts": "--n-shifts",
-            },
-            fixed_args=("--mode", "showcase"),
         ),
     ),
 }

@@ -9,12 +9,18 @@ from .base import TabularEnv
 N_ACTIONS = 4
 _DELTAS = [(-1, 0), (1, 0), (0, -1), (0, 1)] # UP, DOWN, LEFT, RIGHT
 
-def _build_corridor_grid(room_size: int, corridor_len: int) -> frozenset[tuple[int, int]]:
+def _build_corridor_grid(room_size: int, corridor_len: int, window_offset: int = 0) -> frozenset[tuple[int, int]]:
     """
     Build a grid of 4 rooms connected by corridors.
     Each room is (room_size x room_size).
     Corridors are (corridor_len) cells long and 1 cell wide.
     Total grid width = 2 * room_size + corridor_len + 2 (outer walls)
+    
+    window_offset shifts the corridor window relative to the wall:
+      - window_offset=0: window centered (original behavior)
+      - window_offset>0: window shifted down/right
+      - window_offset<0: window shifted up/left
+    The window size = corridor_len, and it slides within the room boundary.
     """
     passable = set()
     
@@ -43,22 +49,26 @@ def _build_corridor_grid(room_size: int, corridor_len: int) -> frozenset[tuple[i
         for c in range(c_start_r1, c_start_r1 + room_size):
             passable.add((r, c))
             
-    # Corridors
-    mid = (room_size + 1) // 2
+    # Corridors with window_offset
+    # The wall is at room_size+1 (vertical) or c_start_r1 (horizontal)
+    # Inner room size = room_size - 2 (subtracting walls)
+    # Valid window positions: within [1, room_size] range
+    mid_base = (room_size + 1) // 2
+    mid = max(1, min(room_size, mid_base + window_offset))
     
-    # R0 <-> R1 (Horizontal)
+    # R0 <-> R1 (Horizontal corridor at row=mid)
     for c in range(room_size + 1, c_start_r1):
         passable.add((mid, c))
         
-    # R2 <-> R3 (Horizontal)
+    # R2 <-> R3 (Horizontal corridor at row=r_start_r2 + mid - 1)
     for c in range(room_size + 1, c_start_r1):
         passable.add((r_start_r2 + mid - 1, c))
         
-    # R0 <-> R2 (Vertical)
+    # R0 <-> R2 (Vertical corridor at col=mid)
     for r in range(room_size + 1, r_start_r2):
         passable.add((r, mid))
         
-    # R1 <-> R3 (Vertical)
+    # R1 <-> R3 (Vertical corridor at col=c_start_r1 + mid - 1)
     for r in range(room_size + 1, r_start_r2):
         passable.add((r, c_start_r1 + mid - 1))
         
@@ -69,6 +79,7 @@ class FourRoomsTabular(TabularEnv):
         self,
         room_size: int = 5,
         corridor_len: int = 1,
+        window_offset: int = 0,
         k: int = 1,
         gamma: float = 0.95,
         one_way_prob: float = 1.0,
@@ -80,6 +91,7 @@ class FourRoomsTabular(TabularEnv):
     ):
         self.room_size = room_size
         self.corridor_len = corridor_len
+        self.window_offset = window_offset
         self.k = k
         self.gamma = gamma
         self.one_way_prob = one_way_prob
@@ -92,7 +104,7 @@ class FourRoomsTabular(TabularEnv):
         self.sigma_range = tuple(sigma_range)
         self.room_peak_ranges = list(room_peak_ranges) if room_peak_ranges is not None else [(0.3, 1.0)] * 4
 
-        self._passable = _build_corridor_grid(room_size, corridor_len)
+        self._passable = _build_corridor_grid(room_size, corridor_len, window_offset)
         self._pos_list = sorted(list(self._passable))
         self._pos2idx = {p: i for i, p in enumerate(self._pos_list)}
         self._pos_arr  = np.array(self._pos_list, dtype=np.float64)  # cached for Gaussian

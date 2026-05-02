@@ -52,7 +52,7 @@ try:
 except ImportError:
     plt = None
 
-T_SWEEP  = [5, 10, 25, 50, 100]   # planning steps per reward-shift window
+T_SWEEP  = [5, 10, 25, 50, 100]   # host steps per reward shift
 VARIANTS = ["standard_ps", "gta_base", "gta_beta"]
 GAMMA    = 0.95
 
