@@ -63,18 +63,18 @@ Supporting audits live in `misc/`:
 - **Mixing Threshold:** `mixing_threshold_ablation.py` (Phase behavior at $K \approx t_{\text{mix}}$)
 - **Scheduler:** `scheduler_ablation.py` (Linear vs. Power vs. Log schedules)
 
-### Standard Run Configuration
-The standard production run for all experiment suites uses **1000 seeds** to ensure statistical significance. For example, to execute the full sanity benchmark suite with 8 parallel workers:
+### Benchmark Suite
+
+The standard experiment configuration uses **1000 seeds** for statistical significance. Example with 8 workers:
+
 ```cmd
 run_sanity.cmd --seeds 1000 --workers 8
 ```
 
-### Sample Benchmark Results
-A 40-seed validation run of the sanity suite (time complexity + convergence benchmarks) produces the following representative results:
+Sample results from a 40-seed validation run:
 
-#### Time Complexity Benchmark
-*40 repetitions per configuration, 9 total configs:*
-```text
+**Time Complexity Benchmark** (40 reps + 1 warmup, 9 configs):
+```
 === Time Complexity Benchmark (40 reps + 1 warmup, 9 configs) ===
 ----------------------------------------------------------------------
 [FOURROOMS_S104] standard_ps  K=26    median=3.70ms  std=1.01ms  (40 reps)
@@ -90,11 +90,10 @@ A 40-seed validation run of the sanity suite (time complexity + convergence benc
 [GARNET_S200   ] gta_beta     K=50    median=15.90ms  std=9.83ms  (40 reps)
 ----------------------------------------------------------------------
 ```
-Results are saved to `results/misc/time_benchmark/time.json`.
+Results saved to `results/misc/time_benchmark/time.json`.
 
-#### Convergence Benchmark
-*40 seeds per environment, budget cap=2000, K=50:*
-```text
+**Convergence Benchmark** (budget_cap=2000, K=50):
+```
 [garnet]  eps=4.0  budget_cap=2000  K=50
   agent           mean_K    median_K     std_K   converged
   ------------  --------  ----------  --------  ----------
@@ -109,7 +108,7 @@ Results are saved to `results/misc/time_benchmark/time.json`.
   gta_base         536.7       494.5     363.4      100.0%
   gta_beta         544.0       471.0     389.1      100.0%
 ```
-Results are saved to `results/misc/convergence_benchmark/convergence.json`.
+Results saved to `results/misc/convergence_benchmark/convergence.json`.
 
 ---
 
