@@ -190,14 +190,14 @@ if __name__ == "__main__":
     ]
     variant_labels = [v['label'] for v in variants]
     runner = RunManager(n_workers=args.workers)
-    
+
     # 1. GARNET Sweep (Directed Bottlenecks)
-    print(f"Running GARNET sweep at reversible=0.0 (Seeds: {args.seeds})...")
-    nbr_rates = [1.0, 0.75, 0.5, 0.25, 0.1, 0.05]
+    print(f"Running GARNET sweep at reversible=0.2 (Seeds: {args.seeds})...")
+    nbr_rates = [0.8, 0.4, 0.2, 0.1, 0.05]
     garnet_final = {}
     for rate in nbr_rates:
         res = runner.run(run_seed_worker, list(range(args.seeds)),
-                         dict(env_name="garnet", env_params={"n_states": 75, "n_nbr_rate": rate, "reversible": 0.0, "gamma": args.gamma},
+                         dict(env_name="garnet", env_params={"n_states": 75, "n_nbr_rate": rate, "reversible": 0.2, "gamma": args.gamma},
                               variants=variants, n_shifts=args.n_shifts, n_steps_per_shift=args.n_steps_per_shift, k_planning=args.K),
                          desc=f"garnet_nbr_{rate}")
         garnet_final[rate] = get_stats(res, variant_labels)

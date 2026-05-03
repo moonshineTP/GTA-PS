@@ -5,8 +5,8 @@ n_shifts: 10
 seeds: 30
 n_peaks_per_room: 2
 sigma_range:
-- 0.8
-- 3.0
+- 0.5
+- 2.0
 room_peak_ranges:
 - - 0.3
   - 1.0
@@ -18,9 +18,9 @@ room_peak_ranges:
   - 1.0
 eps_metric: 10
 budgets:
+- 10
 - 20
-- 50
-- 200
+- 500
 arnoldi_k: 10
 slem_recompute_every: null
 default:

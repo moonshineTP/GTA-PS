@@ -30,7 +30,7 @@ Panels:
   3. Scatter: Var_mu(delta_f^out) vs spectral gap (1-SLEM) across GARNET
      environments + Lemma 6.9 theoretical upper-bound curve.
 
-Environments: GARNET n_states=100, oracle model (DpHost), varying n_nbr_rate.
+Environments: GARNET n_states=75, oracle model (DpHost), varying n_nbr_rate.
 
 Output:
   plots/smoothness_ablation.png
@@ -78,7 +78,7 @@ except ImportError:
 # Configuration
 # ---------------------------------------------------------------------------
 
-N_STATES    = 100
+N_STATES    = 75
 N_ACTIONS   = 5
 BRANCHING   = 3
 REWARD_SUP  = 4

@@ -136,7 +136,7 @@ def plot_ablation(agg_results, gammas, K, seeds, n_steps, env_label, out_path):
 def main():
     parser = argparse.ArgumentParser(description="Ablation: Effect of Gamma on GTA-PS Convergence")
     parser.add_argument("--env", default="garnet", choices=["garnet", "fourrooms"])
-    parser.add_argument("--n-states", type=int, default=100)
+    parser.add_argument("--n-states", type=int, default=75)
     parser.add_argument("--k-fourrooms", type=int, default=1)
     parser.add_argument("--K", type=int, default=10)
     parser.add_argument("--n-steps", type=int, default=100)

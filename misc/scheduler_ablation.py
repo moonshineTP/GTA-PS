@@ -52,7 +52,7 @@ GAMMA    = 0.95
 def _make_env(env_name, seed, gamma):
     if env_name == "fourrooms":
         return FourRoomsTabular(k=1, gamma=gamma, seed=seed)
-    return GarnetEnv(n_states=100, n_actions=5, branching=3,
+    return GarnetEnv(n_states=75, n_actions=5, branching=3,
                      reward_support=4, n_nbr_rate=0.15, gamma=gamma, seed=seed)
 
 

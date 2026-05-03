@@ -87,7 +87,7 @@ def get_stats(seed_results: List[Dict[str, any]], labels: List[str]):
         stats[label] = {"mean": np.mean(vals), "ci95": 1.96 * np.std(vals, ddof=1) / np.sqrt(len(vals))}
     return stats
 
-def plot_periodicity(stats: Dict[str, Dict[str, dict]], seeds: int, k: int):
+def plot_periodicity(stats: Dict[str, Dict[str, dict]], seeds: int, k: int, n_states: int = 40):
     apply_style()
     fig, ax = plt.subplots(figsize=(8, 5))
     
@@ -106,7 +106,7 @@ def plot_periodicity(stats: Dict[str, Dict[str, dict]], seeds: int, k: int):
         means = [stats[m][label]['mean'] for m in modes]
         cis = [stats[m][label]['ci95'] for m in modes]
         ax.errorbar(x + offsets[i], means, yerr=cis, fmt='o', capsize=5, label=label, color=p_point[key])
-    ax.set_title(f"Impact of Periodicity (N={seeds}, K={k})\nGARNET Bipartite Ablation ($|S|=40$, rev=0.0)")
+    ax.set_title(f"Impact of Periodicity (N={seeds}, K={k})\nGARNET Bipartite Ablation ($|S|={n_states}$, rev=0.0)")
     ax.set_xticks(x)
     ax.set_xticklabels([f"{m}\nSLEM={stats[m]['slem']:.3f}" for m in modes])
     ax.set_ylabel("Final L1 Error")
@@ -147,7 +147,7 @@ if __name__ == "__main__":
                          desc=f"{name}")
         results[name] = get_stats(res, variant_labels)
         
-    plot_periodicity(results, args.seeds, args.K)
+    plot_periodicity(results, args.seeds, args.K, n_states=40)
     
     # Save JSON
     os.makedirs(ROOT / "results", exist_ok=True)

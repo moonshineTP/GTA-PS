@@ -114,9 +114,9 @@ def main():
     beta_vals = [0.0, 0.005, 0.02, 0.1, 0.5, 1.0, 2.5, 10.0, 20.0]
     
     if args.env == "garnet":
-        env_kwargs = {"n_states": 100, "n_actions": 10, "branching": 3, "reward_support": 4}
+        env_kwargs = {"n_states": 75, "n_actions": 10, "branching": 3, "reward_support": 4}
         K = 25 # budget
-        tag = "garnet_s100"
+        tag = "garnet_s75"
     else:
         env_kwargs = {"n_states": 104, "k_fourrooms": 4}
         K = 25

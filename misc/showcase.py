@@ -578,7 +578,7 @@ def run_ablation(args) -> None:
 
     # Plots: 2x3 grid (one row per agent, one column per metric)
     apply_style()
-    colors = {v: get_palette("line")[i] for i, v in enumerate(VARIANTS)}
+    colors = {v: get_palette("line")[v] for v in VARIANTS}
     env_disp = FourRoomsTabular(seed=seed_count - 1, **env_kwargs)
 
     fig = plt.figure(figsize=(18, 10), layout="constrained")
