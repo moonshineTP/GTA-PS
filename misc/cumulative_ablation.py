@@ -65,18 +65,18 @@ except ImportError:
     plt = None
 
 # Slow-mixing GARNET: n_nbr_rate ≈ 0.07 → SLEM ~ 0.99 → t_mix >> K
-N_STATES    = 80  # default, overridden by --n-states
-N_ACTIONS   = 5
+N_STATES    = 75  # default, overridden by --n-states
+N_ACTIONS   = 4
 BRANCHING   = 3
-N_NBR_RATE  = 0.07          # slow mixing; contrast with default 0.15
+N_NBR_RATE  = 0.07          # slow mixing;
 REWARD_SUP  = 4
 GAMMA       = 0.95
 
-N_EPISODES  = 25
-T_WARMUP    = 240           # real steps before episodes begin
-T_REAL      = 40            # real steps per episode (after shift)
-K           = 16            # planning steps per real step
-EPS_GREEDY  = 0.15          # epsilon-greedy exploration rate
+N_EPISODES  = 20
+T_WARMUP    = 200           # real steps before episodes begin
+T_REAL      = 50            # real steps per episode (after shift)
+K           = 20            # planning steps per real step
+EPS_GREEDY  = 0.2    # epsilon-greedy exploration rate
 
 VARIANTS    = ["standard_ps", "gta_beta"]
 

@@ -72,9 +72,9 @@ from plot_academic import apply_style, get_palette, LABELS as AGENT_LABELS
 K        = 100          # planning budget per host step
 ABLATION_T_SHIFT = 80   # ablation reward-shift interval (real steps)
 SHOWCASE_T_SHIFT = 80   # showcase reward-shift interval (real steps)
-N_SHIFTS = 25           # total number of reward shifts (episodes) for ablation mode
-EPS      = 0.2          # epsilon-greedy exploration rate
-GAMMA    = 0.95         # discount factor
+N_SHIFTS = 20           # total number of reward shifts (episodes) for ablation mode
+EPS      = 0.2   # epsilon-greedy exploration rate
+GAMMA    = 0.95  # discount factor
 
 VARIANTS = ["standard_ps", "gta_beta"]
 LABELS   = {v: AGENT_LABELS[v] for v in VARIANTS}
@@ -545,7 +545,7 @@ def run_ablation(args) -> None:
     env_kwargs = _fourrooms_env_kwargs_from_config(cfg)
 
     print("=" * 62)
-    print("  FourRooms ablation: Standard-PS vs GTA-PS^β")
+    print("  FourRooms ablation: Standard-PS vs GTA-PS^beta")
     print("=" * 62)
     print(f"  seeds={seed_count}  n_shifts={args.n_shifts}  K={args.K}")
     print(f"  T_shift={shift_steps}  host={host}  workers={args.workers}")
@@ -578,7 +578,7 @@ def run_ablation(args) -> None:
 
     # Plots: 2x3 grid (one row per agent, one column per metric)
     apply_style()
-    colors = {v: get_palette("line")[i] for i, v in enumerate(VARIANTS)}
+    colors = get_palette("line")
     env_disp = FourRoomsTabular(seed=seed_count - 1, **env_kwargs)
 
     fig = plt.figure(figsize=(18, 10), layout="constrained")
@@ -837,7 +837,7 @@ def run_showcase(args) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="FourRooms: Standard-PS vs GTA-PS^β (2×3 showcase/ablation)"
+        description="FourRooms: Standard-PS vs GTA-PS^beta (2x3 showcase/ablation)"
     )
     parser.add_argument("--config", default=None,
                         help="YAML config path (FourRooms configs supported)")

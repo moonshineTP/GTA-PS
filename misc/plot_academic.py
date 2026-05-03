@@ -145,8 +145,8 @@ PALETTE = PALETTE_LINE
 
 LABELS: dict[str, str] = {
     "standard_ps": "Standard-PS",
-    "gta_base":    "Forward-GTA",
-    "gta_beta":    "Full-GTA",
+    "gta_base":    "GTA-base",
+    "gta_beta":    "GTA-beta",
     "forward_gta": "Forward-GTA",
     "full_gta":    "Full-GTA",
 }

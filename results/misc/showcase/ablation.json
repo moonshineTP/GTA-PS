@@ -1,0 +1,49 @@
+{
+  "config": {
+    "mode": "ablation",
+    "host": "dyna",
+    "K": 5,
+    "n_shifts": 1,
+    "seeds": 1,
+    "T_shift": 2,
+    "env_kwargs": {
+      "gamma": 0.95
+    }
+  },
+  "returns": {
+    "standard_ps": {
+      "mean": [
+        9.597346757635189e-06
+      ],
+      "ci95": [
+        0.0
+      ]
+    },
+    "gta_beta": {
+      "mean": [
+        9.597346757635189e-06
+      ],
+      "ci95": [
+        0.0
+      ]
+    }
+  },
+  "coverage": {
+    "standard_ps": {
+      "mean": [
+        2.0
+      ],
+      "ci95": [
+        0.0
+      ]
+    },
+    "gta_beta": {
+      "mean": [
+        2.0
+      ],
+      "ci95": [
+        0.0
+      ]
+    }
+  }
+}
