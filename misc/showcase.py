@@ -70,15 +70,15 @@ from plot_academic import apply_style, get_palette, LABELS as AGENT_LABELS
 # Configuration
 # ---------------------------------------------------------------------------
 
-K = 80                  # planning budget per host step
-ABLATION_T_SHIFT = 50   # ablation reward-shift interval (real steps)
-SHOWCASE_T_SHIFT = 50   # showcase reward-shift interval (real steps)
-    ABLATION_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
+K = 60                  # planning budget per host step
+ABLATION_T_SHIFT = 90   # ablation reward-shift interval (real steps)
+SHOWCASE_T_SHIFT = 90   # showcase reward-shift interval (real steps)
+ABLATION_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
 ABLATION_CORRIDOR_LEN = 1
 SHOWCASE_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
 SHOWCASE_CORRIDOR_LEN = 1
-N_SHIFTS = 20           # total number of reward shifts (episodes) for ablation mode
-EPS      = 0.15  # epsilon-greedy exploration rate
+N_SHIFTS = 30           # total number of reward shifts (episodes) for ablation mode
+EPS      = 0.1   # epsilon-greedy exploration rate
 GAMMA    = 0.95  # discount factor
 
 VARIANTS = ["standard_ps", "gta_beta"]

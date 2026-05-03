@@ -71,7 +71,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 K_SWEEP            = [20, 50, 100]  # planning budget sweep (GTA needs K>=100 for topology)
-N_SHIFTS            = 5              # number of reward-shift episodes per seed
+N_SHIFTS            = 10              # number of reward-shift episodes per seed
 N_STEPS_PER_SHIFT   = 100            # env steps between shifts (monitors error over time)
 
 # Fixed room_size=3 -> 9x9 grid (2*3 + 1 + 2 = 9), ~40 passable states.
