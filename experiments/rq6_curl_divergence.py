@@ -41,12 +41,8 @@ from runner import RunManager
 from plot_academic import (
     apply_style,
     get_palette,
-    get_publication_defaults,
     get_utility_color,
-    warn_if_nonpublication_run,
 )
-
-PUBLICATION_DEFAULTS = get_publication_defaults()
 
 FLOW_FAMILIES = (
     ("Path-wise flow", "path"),
@@ -55,9 +51,9 @@ FLOW_FAMILIES = (
 
 FLOW_ENV_KWARGS = {
     "n_states": 75,
-    "n_actions": 10,
-    "branching": 1,
-    "reward_support": 1,
+    "n_actions": 4,
+    "branching": 2,
+    "reward_support": 3,
     "reward_locality": False,
 }
 
@@ -267,14 +263,13 @@ def plot_rq6_results(flow_stats: dict, geometry_stats: dict):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default=None)
-    parser.add_argument("--workers", default=PUBLICATION_DEFAULTS["workers"])
-    parser.add_argument("--seeds", type=int, default=PUBLICATION_DEFAULTS["seeds"])
+    parser.add_argument("--workers", type=int, default=5)
+    parser.add_argument("--seeds", type=int, default=30)
     parser.add_argument("--K", type=int, default=20)
     parser.add_argument("--n-shifts", type=int, default=4)
     parser.add_argument("--n-steps-per-shift", type=int, default=50)
     parser.add_argument("--gamma", type=float, default=0.95)
     args = parser.parse_args()
-    warn_if_nonpublication_run(args.seeds, args.workers)
 
     if args.config:
         method_cfgs = _build_method_cfgs(_load_config(args.config))

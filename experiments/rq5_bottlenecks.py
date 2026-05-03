@@ -46,12 +46,8 @@ from plot_academic import (
     LABELS as AGENT_LABELS,
     apply_style,
     get_palette,
-    get_publication_defaults,
     get_utility_color,
-    warn_if_nonpublication_run,
 )
-
-PUBLICATION_DEFAULTS = get_publication_defaults()
 
 def _load_config(path: str) -> dict:
     import yaml
@@ -186,14 +182,13 @@ def get_stats(seed_results: List[Dict[str, float]], labels: List[str]):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default=None)
-    parser.add_argument("--workers", default=PUBLICATION_DEFAULTS["workers"])
-    parser.add_argument("--seeds", type=int, default=PUBLICATION_DEFAULTS["seeds"])
+    parser.add_argument("--workers", type=int, default=5)
+    parser.add_argument("--seeds", type=int, default=30)
     parser.add_argument("--K", type=int, default=20)
     parser.add_argument("--n-shifts", type=int, default=4)
     parser.add_argument("--n-steps-per-shift", type=int, default=40)
     parser.add_argument("--gamma", type=float, default=0.95)
     args = parser.parse_args()
-    warn_if_nonpublication_run(args.seeds, args.workers)
 
     if args.config:
         method_cfgs = _build_method_cfgs(_load_config(args.config))

@@ -36,17 +36,13 @@ from plot_academic import (
     LABELS as AGENT_LABELS,
     apply_style,
     get_palette,
-    get_publication_defaults,
     get_utility_color,
-    warn_if_nonpublication_run,
 )
 
 try:
     import matplotlib.pyplot as plt
 except ImportError:
     plt = None
-
-PUBLICATION_DEFAULTS = get_publication_defaults()
 
 # ---------------------------------------------------------------------------
 # Worker
@@ -144,13 +140,12 @@ def main():
     parser.add_argument("--k-fourrooms", type=int, default=1, help="FourRooms only: config k")
     parser.add_argument("--K", type=int, default=10, help="Planning budget per step")
     parser.add_argument("--n-steps", type=int, default=150, help="Number of host steps to record")
-    parser.add_argument("--seeds", type=int, default=PUBLICATION_DEFAULTS["seeds"])
-    parser.add_argument("--workers", default=PUBLICATION_DEFAULTS["workers"], help="Number of workers or 'auto'")
+    parser.add_argument("--seeds", type=int, default=30)
+    parser.add_argument("--workers", type=int, default=5, help="Number of workers or 'auto'")
     parser.add_argument("--out-dir", default=str(ROOT / "results"))
     parser.add_argument("--plot-dir", default=str(ROOT / "plots"))
 
     args = parser.parse_args()
-    warn_if_nonpublication_run(args.seeds, args.workers)
     
     # Load tuned hyperparameters
     from gta_ps.utils.hyperparams import load_tuned_for_env

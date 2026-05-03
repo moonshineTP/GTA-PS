@@ -44,9 +44,7 @@ from plot_academic import (
     LABELS as AGENT_LABELS,
     apply_style,
     get_palette,
-    get_publication_defaults,
     get_utility_color,
-    warn_if_nonpublication_run,
 )
 
 
@@ -56,7 +54,6 @@ from plot_academic import (
 
 VARIANTS = ["standard_ps", "gta_base", "gta_beta"]
 DEFAULT_METRIC_NAMES = ["l1", "inf"]
-PUBLICATION_DEFAULTS = get_publication_defaults()
 
 
 # ---------------------------------------------------------------------------
@@ -285,15 +282,14 @@ def _build_method_cfgs(cfg: dict) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--config", default=str(ROOT / "configs/fourrooms_k2_timeline.yaml"))
-    parser.add_argument("--workers", default=PUBLICATION_DEFAULTS["workers"])
-    parser.add_argument("--seeds", type=int, default=PUBLICATION_DEFAULTS["seeds"])
+    parser.add_argument("--workers", type=int, default=5)
+    parser.add_argument("--seeds", type=int, default=30)
     parser.add_argument("--n-steps", type=int, help="Override steps per shift")
     parser.add_argument("--n-shifts", type=int, help="Override number of shifts")
     parser.add_argument("--metrics", nargs="+", default=DEFAULT_METRIC_NAMES, help="Metrics from REGISTRY")
     parser.add_argument("--out-dir", default=str(ROOT / "results"))
     parser.add_argument("--no-plot", action="store_true")
     args = parser.parse_args()
-    warn_if_nonpublication_run(args.seeds, args.workers)
 
     # Validate metrics
     for m in args.metrics:

@@ -11,3 +11,4 @@ venv/
 env/
 docs/memo
 compiled/artifacts/
+.mplconfig

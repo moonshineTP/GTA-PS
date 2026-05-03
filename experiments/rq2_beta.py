@@ -34,9 +34,7 @@ from gta_ps.envs.garnet import GarnetEnv
 from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.algorithms import make_agent
 from runner import RunManager
-from plot_academic import get_publication_defaults, warn_if_nonpublication_run
-
-PUBLICATION_DEFAULTS = get_publication_defaults()
+from plot_academic import apply_style, get_palette
 
 def run_beta_sweep(
     env_name: str,
@@ -106,10 +104,9 @@ def run_beta_sweep(
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--env", default="garnet", choices=["garnet", "fourrooms"])
-    parser.add_argument("--seeds", type=int, default=PUBLICATION_DEFAULTS["seeds"])
-    parser.add_argument("--workers", default=PUBLICATION_DEFAULTS["workers"])
+    parser.add_argument("--seeds", type=int, default=30)
+    parser.add_argument("--workers", type=int, default=5)
     args = parser.parse_args()
-    warn_if_nonpublication_run(args.seeds, args.workers)
 
     beta_vals = [0.0, 0.005, 0.02, 0.1, 0.5, 1.0, 2.5, 10.0, 20.0]
     

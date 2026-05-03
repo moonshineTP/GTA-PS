@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -104,11 +103,6 @@ UTILITY_COLORS: dict[str, str] = {
     "text_main":  mcolors.to_hex("darkslategray"),
 }
 
-PUBLICATION_DEFAULTS: dict[str, int] = {
-    "seeds": 1000,
-    "workers": 10,
-}
-
 def get_palette(style: str = "line", extra_keys: list[str] | tuple[str, ...] | None = None) -> dict[str, str]:
     extras = list(extra_keys or [])
     if style == "line":
@@ -118,27 +112,6 @@ def get_palette(style: str = "line", extra_keys: list[str] | tuple[str, ...] | N
 def get_utility_color(key: str) -> str:
     return UTILITY_COLORS.get(key, mcolors.to_hex("black"))
 
-
-def get_publication_defaults() -> dict[str, int]:
-    return dict(PUBLICATION_DEFAULTS)
-
-
-def warn_if_nonpublication_run(seeds: int, workers: object) -> None:
-    issues: list[str] = []
-    if seeds < PUBLICATION_DEFAULTS["seeds"]:
-        issues.append(f"seeds={seeds} < {PUBLICATION_DEFAULTS['seeds']}")
-
-    worker_text = str(workers).strip().lower()
-    worker_count = int(worker_text) if worker_text.isdigit() else None
-
-    if worker_count != PUBLICATION_DEFAULTS["workers"]:
-        issues.append(f"workers={workers} != {PUBLICATION_DEFAULTS['workers']}")
-
-    if issues:
-        warnings.warn(
-            "Exploratory run detected; final publication figures require 1000 seeds and >10 workers (" + "; ".join(issues) + ").",
-            stacklevel=2,
-        )
 
 # Back-compat alias
 PALETTE = PALETTE_LINE

@@ -40,9 +40,7 @@ from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.algorithms import make_agent
 from gta_ps.utils.metrics import value_error_inf, value_error_l1
 from runner import RunManager
-from plot_academic import get_publication_defaults, warn_if_nonpublication_run
-
-PUBLICATION_DEFAULTS = get_publication_defaults()
+from plot_academic import apply_style, get_palette
 
 # ---------------------------------------------------------------------------
 # Config & Factory
@@ -277,15 +275,14 @@ def main():
     parser.add_argument("--n-states", type=int, help="GARNET only: number of states")
     parser.add_argument("--k-fourrooms", type=int, help="FourRooms only: config k")
     parser.add_argument("--reward-support", type=int, choices=[1, 2, 4, 8, 16], help="GARNET only: |supp(r)|")
-    parser.add_argument("--seeds", type=int, default=PUBLICATION_DEFAULTS["seeds"])
+    parser.add_argument("--seeds", type=int, default=30)
     parser.add_argument("--n-shifts", type=int, default=10)
     parser.add_argument("--gamma", type=float, default=0.95)
     parser.add_argument("--config", default=None, help="YAML config path")
-    parser.add_argument("--workers", default=PUBLICATION_DEFAULTS["workers"])
+    parser.add_argument("--workers", type=int, default=5)
     parser.add_argument("--out-dir", default=str(ROOT / "results"))
 
     args = parser.parse_args()
-    warn_if_nonpublication_run(args.seeds, args.workers)
     _cfg = _load_config(str(Path(args.config).resolve())) if args.config else {}
     _apply_yaml_defaults(args, _cfg)
     run_config = resolve_run_config(args, parser)
