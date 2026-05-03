@@ -552,7 +552,7 @@ def run_ablation(args) -> None:
     env_kwargs.setdefault("corridor_len", ABLATION_CORRIDOR_LEN)
 
     print("=" * 62)
-    print("  FourRooms ablation: Standard-PS vs GTA-PS^beta")
+    print("  FourRooms ablation: Standard-PS vs GTA-PS^β")
     print("=" * 62)
     print(f"  seeds={seed_count}  n_shifts={args.n_shifts}  K={args.K}")
     print(f"  T_shift={shift_steps}  host={host}  workers={args.workers}")
@@ -585,7 +585,7 @@ def run_ablation(args) -> None:
 
     # Plots: 2x3 grid (one row per agent, one column per metric)
     apply_style()
-    colors = get_palette("line")
+    colors = {v: get_palette("line")[v] for v in VARIANTS}
     env_disp = FourRoomsTabular(seed=seed_count - 1, **env_kwargs)
 
     fig = plt.figure(figsize=(18, 10), layout="constrained")
@@ -874,7 +874,7 @@ def run_showcase(args) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="FourRooms: Standard-PS vs GTA-PS^beta (2x3 showcase/ablation)"
+        description="FourRooms: Standard-PS vs GTA-PS^β (2×3 showcase/ablation)"
     )
     parser.add_argument("--config", default=None,
                         help="YAML config path (FourRooms configs supported)")

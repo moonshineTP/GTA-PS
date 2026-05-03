@@ -8,18 +8,16 @@ non-empty, and GTA-PS's full-support resolvent signal yields a cumulative
 tracking-error advantage over Standard-PS (Thm. thm:tracking).
 
 Protocol:
-  Fix K=20 planning steps per reward shift.
-  Fix room_size=11 (inner rooms ~4x4 states).
-  Sweep corridor_len ∈ [1,2,3] — this moves t_mix(1/4) across K=20:
-    corridor_len=1 -> narrow window -> slow mixing -> t_mix >> K
-    corridor_len=3 -> wide window -> fast mixing -> t_mix ≈ K
-  For each corridor_len × seed:
+  Fix room_size=3 (9x9 grid, ~40 passable states).
+  Sweep K ∈ [50, 100, 200] — planning budget per shift.
+  Sweep corridor_width ∈ [1, 2, 3] — controls connectivity/mixing.
+  For each (K, corridor_width) × seed:
     1. Build FourRoomsTabular with DpHost (oracle transitions).
     2. Measure SLEM after first plan -> compute K/t_mix analytically.
-    3. Run N_EPISODES reward-shift episodes:
-        shift reward, agent.plan(K=K, r=r_new), record L1 error vs V*.
+    3. Run N_SHIFTS reward-shift episodes:
+       shift reward, agent.plan(K=K, r=r_new), record L1 error vs V*.
     4. Compute cumulative TE(N) = sum_{t=1}^{N} err_t per variant.
-  Aggregate across seeds; report advantage ΔTE = TE^PS - TE^GTA per corridor_len.
+  Aggregate across seeds; report advantage ΔTE = TE^PS - TE^GTA.
 
 Why DpHost (not Dyna):
   Dyna confounds the threshold test: fast-mixing environments are also
@@ -57,7 +55,6 @@ sys.path.insert(0, str(ROOT / "misc"))
 from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.algorithms import make_agent
 from gta_ps.utils.metrics import value_error_l1
-from gta_ps.utils.hyperparams import load_tuned_for_env
 from runner import RunManager
 from plot_academic import apply_style, get_palette, LABELS as AGENT_LABELS
 
@@ -69,26 +66,23 @@ try:
 except ImportError:
     plt = None
 
-GAMMA       = 0.95
-
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
-K           = 20            # fixed planning budget per shift
-N_EPISODES  = 30            # reward-shift episodes per seed
+K_SWEEP            = [20, 50, 100]  # planning budget sweep (GTA needs K>=100 for topology)
+N_SHIFTS            = 5              # number of reward-shift episodes per seed
+N_STEPS_PER_SHIFT   = 100            # env steps between shifts (monitors error over time)
 
-# Fix room_size=11, sweep corridor_len (window size) to control mixing.
-# room_size=11 -> inner rooms ~4x4 states, total ~64 passable states.
-# corridor_len=1 -> narrow bottleneck (slow mixing, large t_mix)
-# corridor_len=3 -> wide window (faster mixing, small t_mix)
-ROOM_SIZE     = 11
-CORRIDOR_SWEEP = [1, 2, 3]  # corridor_len values for FourRooms
+# Fixed room_size=3 -> 9x9 grid (2*3 + 1 + 2 = 9), ~40 passable states.
+# Sweep corridor_width to vary SLEM/t_mix.
+ROOM_SIZE          = 3
+CORRIDOR_SWEEP     = [1, 2, 3]      # corridor_width values (max = room_size)
 
 VARIANTS    = ["standard_ps", "gta_beta"]
 LABELS      = {v: AGENT_LABELS[v] for v in VARIANTS}
 
-# Colormap for corridor_len lines
+# Colormap for corridor_width lines
 C_CMAP    = plt.cm.viridis if plt is not None else None
 
 
@@ -99,30 +93,33 @@ def _tmix(slem: float, n_states: int, eps: float = 0.25) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Worker: one (corridor_len, seed) pair
+# Worker: one (K, corridor_width, seed) pair
 # ---------------------------------------------------------------------------
 
 def _run_seed(
     seed: int,
-    corridor_len: int,
-    n_episodes: int,
     K: int,
+    corridor_width: int,
+    n_shifts: int,
     gamma: float,
+    n_steps_per_shift: int,
     method_cfgs: dict,
     **_ignored,
 ) -> dict:
-    env = FourRoomsTabular(room_size=ROOM_SIZE, corridor_len=corridor_len,
+    env = FourRoomsTabular(room_size=ROOM_SIZE, corridor_len=1,
+                           corridor_width=corridor_width,
                            gamma=gamma, seed=seed)
     n_states = env.P.shape[0]  # actual state count
 
     agents = {}
     for v in VARIANTS:
-        kw = method_cfgs.get(v, {}).copy() if v != "standard_ps" else {}
+        # Use default params for dp host (tuned params are optimized for dyna, not dp)
+        kw = {}
         agents[v] = make_agent(
             v, host="dp", P=env.P, r=env.r, gamma=gamma, q=20, **kw
         )
 
-    # Warm-up plan with initial reward to stabilise topology and measure SLEM
+    # Warm-up plan with initial reward to stabilize topology and measure SLEM
     for v in VARIANTS:
         agents[v].plan(K=K, r=env.r)
 
@@ -131,38 +128,38 @@ def _run_seed(
     tmix_val  = _tmix(slem_val, n_states)
     k_tmix    = K / tmix_val
 
-    per_ep: dict[str, list[float]] = {v: [] for v in VARIANTS}
-    cumul:  dict[str, list[float]] = {v: [0.0] for v in VARIANTS}
+    per_shift: dict[str, list[float]] = {v: [] for v in VARIANTS}
+    cumul:     dict[str, list[float]] = {v: [0.0] for v in VARIANTS}
 
-    for _ in range(n_episodes):
+    for _ in range(n_shifts):
         r_new  = env.shift_reward()
         V_star = env.value_iteration(r_new)
 
         for v in VARIANTS:
             V_out = agents[v].plan(K=K, r=r_new)
             err   = value_error_l1(V_out, V_star)
-            per_ep[v].append(err)
+            per_shift[v].append(err)
             cumul[v].append(cumul[v][-1] + err)
 
     return {
-        "slem":   slem_val,
-        "tmix":   tmix_val,
-        "k_tmix": k_tmix,
-        "per_ep": per_ep,
-        "cumul":  cumul,
+        "slem":      slem_val,
+        "tmix":      tmix_val,
+        "k_tmix":    k_tmix,
+        "per_shift": per_shift,
+        "cumul":     cumul,
     }
 
 
 # ---------------------------------------------------------------------------
-# Plotting
+# Plotting: 3×3 grid (K × corridor_width)
 # ---------------------------------------------------------------------------
 
 def plot_results(
     agg:           dict,
+    K_sweep:      list,
     corridor_sweep: list,
-    n_episodes: int,
+    n_shifts:    int,
     seeds:      int,
-    K:          int,
     out_path:   str,
 ) -> None:
     if plt is None:
@@ -170,78 +167,74 @@ def plot_results(
         return
 
     apply_style()
-    episodes = np.arange(1, n_episodes + 1)
-    cumul_ep = np.arange(0, n_episodes + 1)
+    
+    # 3×3 grid: rows=K values, cols=corridor_width values
+    n_rows = len(K_sweep)
+    n_cols = len(corridor_sweep)
+    fig = plt.figure(figsize=(5 * n_cols, 4 * n_rows), layout="constrained")
+    gs  = gridspec.GridSpec(n_rows, n_cols, figure=fig)
+    
+    # Colors for variants
+    variant_colors = {"standard_ps": "steelblue", "gta_beta": "darkorange"}
+    variant_ls    = {"standard_ps": "--", "gta_beta": "-"}
+    variant_lw    = {"standard_ps": 1.2, "gta_beta": 1.8}
 
-    k_tmix_vals  = [agg[str(c)]["k_tmix_mean"]  for c in corridor_sweep]
-    diff_end     = [agg[str(c)]["diff_end_mean"] for c in corridor_sweep]
-    diff_end_ci  = [agg[str(c)]["diff_end_ci"]   for c in corridor_sweep]
+    shifts = np.arange(1, n_shifts + 1)
+    cumul_shifts = np.arange(0, n_shifts + 1)
 
-    c_min, c_max = min(corridor_sweep), max(corridor_sweep)
-    colors = [C_CMAP((c - c_min) / max(c_max - c_min, 1e-10)) for c in corridor_sweep]
-
-    fig = plt.figure(figsize=(16, 4.5), layout="constrained")
-    gs  = gridspec.GridSpec(1, 3, figure=fig)
-
-    # -- Panel 1: cumulative advantage DTE(N) vs episode, one line per corridor_len --
-    ax1 = fig.add_subplot(gs[0])
-    for i, c in enumerate(corridor_sweep):
-        ratio  = agg[str(c)]["k_tmix_mean"]
-        m_diff = np.array(agg[str(c)]["diff_cumul_mean"])
-        c_diff = np.array(agg[str(c)]["diff_cumul_ci"])
-        lbl    = f"Ratio {ratio:.2f}"
-        ax1.plot(cumul_ep, m_diff, color=colors[i], lw=1.6, label=lbl)
-        ax1.fill_between(cumul_ep, m_diff - c_diff, m_diff + c_diff,
-                          color=colors[i], alpha=0.12)
-    ax1.axhline(0, color="gray", ls=":", lw=1)
-    ax1.set_xlabel("Episode $N$")
-    ax1.set_ylabel(r"$\mathrm{TE}^{\mathrm{PS}}(N) - \mathrm{TE}^{\mathrm{GTA}}(N)$")
-    ax1.set_title("Cumulative advantage vs episode\n(one line per mixing regime)")
-    ax1.grid(True, ls="--", alpha=0.25)
-    ax1.legend(fontsize=7, loc="upper left")
-
-    # -- Panel 2: end-of-run DTE vs K/t_mix ratio --
-    ax2 = fig.add_subplot(gs[1])
-    for i, (kt, dm, dc) in enumerate(zip(k_tmix_vals, diff_end, diff_end_ci)):
-        ax2.errorbar(kt, dm, yerr=dc, fmt="o", capsize=4,
-                     color=colors[i], markersize=7)
-    ax2.axvline(1.0, color="#ff7f0e", ls="--", lw=1.5,
-                label="Threshold")
-    ax2.axhline(0, color="gray", ls=":", lw=1)
-    ax2.set_xlabel(r"$K / t_{\mathrm{mix}}(1/4)$")
-    ax2.set_ylabel(rf"$\Delta\mathrm{{TE}}(N={n_episodes})$")
-    ax2.set_title("Advantage vs Mixing Ratio")
-    ax2.grid(True, ls="--", alpha=0.25)
-    ax2.legend(fontsize=9)
-
-    # -- Panel 3: per-episode L1 error, all variants, one line per corridor_len --
-    ax3 = fig.add_subplot(gs[2])
-    for v in VARIANTS:
-        for i, c in enumerate(corridor_sweep):
-            m = np.array(agg[str(c)]["per_ep_mean"][v])
-            ci = np.array(agg[str(c)]["per_ep_ci"][v])
-            ls = "-" if v == "gta_beta" else "--"
-            lw = 1.5 if v == "gta_beta" else 1.1
-            ax3.plot(episodes, m, color=colors[i], ls=ls, lw=lw,
-                     alpha=0.85)
-            ax3.fill_between(episodes, m - ci, m + ci, color=colors[i], alpha=0.08)
-    # Legend proxies
-    from matplotlib.lines import Line2D
-    proxy = [
-        Line2D([0], [0], color="k", ls="-",  lw=1.5, label=LABELS["gta_beta"]),
-        Line2D([0], [0], color="k", ls="--", lw=1.1, label=LABELS["standard_ps"]),
-    ]
-    ax3.legend(handles=proxy, fontsize=8, loc="upper right")
-    ax3.set_xlabel("Episode (reward-shift index)")
-    ax3.set_ylabel(r"Per-episode $L_1$ error")
-    ax3.set_title("Per-episode error by mixing regime\n(darker = faster mixing)")
-    ax3.set_yscale("log")
-    ax3.grid(True, which="both", ls="--", alpha=0.25)
+    for row, K in enumerate(K_sweep):
+        for col, cw in enumerate(corridor_sweep):
+            ax = fig.add_subplot(gs[row, col])
+            
+            k_str = str(K)
+            cw_str = str(cw)
+            
+            if k_str in agg and cw_str in agg[k_str]:
+                data = agg[k_str][cw_str]
+                
+                # Plot per-shift L1 error for each variant
+                for v in VARIANTS:
+                    if v in data["per_shift_mean"]:
+                        m = np.array(data["per_shift_mean"][v])
+                        ci = np.array(data["per_shift_ci"][v])
+                        ax.plot(shifts, m, color=variant_colors[v], 
+                                ls=variant_ls[v], lw=variant_lw[v],
+                                label=LABELS[v])
+                        ax.fill_between(shifts, m - ci, m + ci, 
+                                    color=variant_colors[v], alpha=0.15)
+                
+                # Plot cumulative DTE
+                if "diff_cumul_mean" in data:
+                    diff_mean = np.array(data["diff_cumul_mean"])
+                    diff_ci   = np.array(data["diff_cumul_ci"])
+                    ax_twin = ax.twinx()
+                    ax_twin.plot(cumul_shifts, diff_mean, color="gray", 
+                                ls=":", lw=1.0, label="ΔTE")
+                    ax_twin.fill_between(cumul_shifts, diff_mean - diff_ci, 
+                                        diff_mean + diff_ci, color="gray", alpha=0.1)
+                    ax_twin.set_ylabel("ΔTE", fontsize=8, color="gray")
+                    ax_twin.tick_params(labelsize=7, colors="gray")
+                
+                # Title with K/t_mix
+                k_tmix = data.get("k_tmix_mean", 0)
+                regime = ("K<<t_mix" if k_tmix < 0.4 
+                         else ("K~t_mix" if k_tmix < 1.2 else "K>t_mix"))
+                ax.set_title(f"K={K}, cw={cw}\nK/t_mix={k_tmix:.3f} ({regime})", 
+                           fontsize=8)
+                
+                ax.set_xlabel("Shift", fontsize=7)
+                ax.set_ylabel("L1 error", fontsize=7)
+                ax.set_yscale("log")
+                ax.grid(True, which="both", ls="--", alpha=0.25)
+                ax.tick_params(labelsize=6)
+                
+                if row == 0 and col == 0:
+                    ax.legend(fontsize=6, loc="upper right")
+                    if 'ax_twin' in locals():
+                        ax_twin.legend(fontsize=6, loc="lower right")
 
     fig.suptitle(
-        rf"$K$-vs-$t_\mathrm{{mix}}$ Threshold Ablation — "
-        rf"FourRooms, DpHost, $K={K}$, $N_\mathrm{{seeds}}={seeds}$  "
-        rf"(Prop.~\texttt{{prop:mfpt}}(i))",
+        rf"$K$-vs-$t_\mathrm{{mix}}$ Threshold Ablation (9×9 Grid, $N_{{\mathrm{{seeds}}}}={seeds}$)",
         fontsize=10,
     )
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
@@ -258,9 +251,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="K-vs-t_mix threshold ablation — validates Prop. prop:mfpt(i)"
     )
-    parser.add_argument("--n-episodes", type=int,   default=N_EPISODES)
-    parser.add_argument("--K",          type=int,   default=K)
-    parser.add_argument("--gamma",      type=float, default=GAMMA)
+    parser.add_argument("--n-shifts",        dest="n_shifts",        type=int,   default=N_SHIFTS)
+    parser.add_argument("--n-steps-per-shift", dest="n_steps_per_shift", type=int,   default=N_STEPS_PER_SHIFT)
+    parser.add_argument("--K",          type=int,   default=None)  # Override for single K
+    parser.add_argument("--gamma",      type=float, default=0.95)
     parser.add_argument("--seeds",      type=int,   default=5)
     parser.add_argument("--workers",    default="auto")
     parser.add_argument("--out-dir",
@@ -270,77 +264,99 @@ def main() -> None:
 
     from scipy import stats as sp_stats
 
-    tuned  = load_tuned_for_env("fourrooms")
     runner = RunManager(n_workers=args.workers)
 
     print("=" * 62)
     print("  K-vs-t_mix threshold ablation — Prop. prop:mfpt(i)")
     print("=" * 62)
-    print(f"  seeds={args.seeds}  K={args.K}  n_episodes={args.n_episodes}"
+    print(f"  seeds={args.seeds}  n_shifts={args.n_shifts}"
+          f"  n_steps_per_shift={args.n_steps_per_shift}"
           f"  gamma={args.gamma}  workers={args.workers}")
-    print(f"  room_size={ROOM_SIZE}  corridor_sweep={CORRIDOR_SWEEP}")
+    print(f"  room_size={ROOM_SIZE}  K_sweep={K_SWEEP}  corridor_sweep={CORRIDOR_SWEEP}")
     print("-" * 62)
 
-    all_agg: dict = {}
+    # Determine K values to sweep
+    K_values = [args.K] if args.K is not None else K_SWEEP
 
-    print(f"\n{'c':>6}  {'SLEM':>6}  {'K/t_mix':>8}  "
-          f"{'DTE_PS-GTA':>12}  {'regime'}")
-    print("-" * 60)
+    all_agg: dict = {}  # all_agg[K][cw] = data
 
-    for corridor_len in CORRIDOR_SWEEP:
-        raw = runner.run(
-            _run_seed, range(args.seeds),
-            dict(corridor_len=corridor_len, n_episodes=args.n_episodes, K=args.K,
-                 gamma=args.gamma, method_cfgs=tuned),
-            desc=f"c{corridor_len}",
-        )
+    for K in K_values:
+        all_agg[str(K)] = {}
+        print(f"\n{'K='+str(K):<12} {'cw':>4}  {'SLEM':>6}  {'K/t_mix':>8}  {'regime':>12}")
+        print("-" * 62)
 
-        # Per-seed scalar summaries
-        slems   = np.array([r["slem"]   for r in raw])
-        k_tmixs = np.array([r["k_tmix"] for r in raw])
+        for cw in CORRIDOR_SWEEP:
+            # Pre-compute mixing stats from a single seed before the full trial
+            pre = _run_seed(
+                seed=0,
+                K=K,
+                corridor_width=cw,
+                n_shifts=args.n_shifts,
+                gamma=args.gamma,
+                n_steps_per_shift=args.n_steps_per_shift,
+                method_cfgs={},  # Use default params for DpHost
+            )
+            slem_pre = pre["slem"]
+            k_tm_pre = pre["k_tmix"]
+            regime_pre = ("K << t_mix" if k_tm_pre < 0.4
+                          else ("K ~ t_mix" if k_tm_pre < 1.2 else "K > t_mix"))
+            print(f"{' ':<12} {cw:>4d}  {slem_pre:>6.4f}  {k_tm_pre:>8.3f}  {regime_pre:>12}")
 
-        # Cumulative difference curves (seeds x episodes+1)
-        diff_mat = np.array([
-            np.array(r["cumul"]["standard_ps"]) - np.array(r["cumul"]["gta_beta"])
-            for r in raw
-        ])
-        diff_mean = diff_mat.mean(axis=0)
-        diff_ci   = (sp_stats.sem(diff_mat, axis=0)
-                     * sp_stats.t.ppf(0.975, df=len(raw) - 1))
+            raw = runner.run(
+                _run_seed, range(args.seeds),
+                dict(K=K,
+                     corridor_width=cw,
+                     n_shifts=args.n_shifts,
+                     gamma=args.gamma,
+                     n_steps_per_shift=args.n_steps_per_shift,
+                     method_cfgs={}),  # Use default params for DpHost
+                desc=f"K{K}_cw{cw}",
+            )
 
-        diff_end      = float(diff_mean[-1])
-        diff_end_ci_v = float(diff_ci[-1])
+            # Per-seed scalar summaries
+            slems   = np.array([r["slem"]   for r in raw])
+            k_tmixs = np.array([r["k_tmix"] for r in raw])
 
-        # Per-episode error curves
-        def _agg_ep(key: str, v: str):
-            mat  = np.array([r[key][v] for r in raw])  # (seeds, n_episodes)
-            mean = mat.mean(axis=0)
-            ci   = sp_stats.sem(mat, axis=0) * sp_stats.t.ppf(0.975, df=len(mat) - 1)
-            return mean.tolist(), ci.tolist()
+            # Cumulative difference curves (seeds x shifts+1)
+            diff_mat = np.array([
+                np.array(r["cumul"]["standard_ps"]) - np.array(r["cumul"]["gta_beta"])
+                for r in raw
+            ])
+            diff_mean = diff_mat.mean(axis=0)
+            diff_ci   = (sp_stats.sem(diff_mat, axis=0)
+                         * sp_stats.t.ppf(0.975, df=len(raw) - 1))
 
-        per_ep_mean: dict = {}
-        per_ep_ci:   dict = {}
-        for v in VARIANTS:
-            per_ep_mean[v], per_ep_ci[v] = _agg_ep("per_ep", v)
+            diff_end      = float(diff_mean[-1])
+            diff_end_ci_v = float(diff_ci[-1])
 
-        all_agg[str(corridor_len)] = {
-            "slem_mean":       float(slems.mean()),
-            "k_tmix_mean":     float(k_tmixs.mean()),
-            "diff_cumul_mean": diff_mean.tolist(),
-            "diff_cumul_ci":   diff_ci.tolist(),
-            "diff_end_mean":   diff_end,
-            "diff_end_ci":     diff_end_ci_v,
-            "per_ep_mean":     per_ep_mean,
-            "per_ep_ci":       per_ep_ci,
-        }
+            # Per-shift error curves
+            def _agg_ep(key: str, v: str):
+                mat  = np.array([r[key][v] for r in raw])  # (seeds, n_shifts)
+                mean = mat.mean(axis=0)
+                ci   = sp_stats.sem(mat, axis=0) * sp_stats.t.ppf(0.975, df=len(mat) - 1)
+                return mean.tolist(), ci.tolist()
 
-        slem_m  = float(slems.mean())
-        k_tm    = float(k_tmixs.mean())
-        regime  = ("K << t_mix" if k_tm < 0.4
-                   else ("K ~ t_mix" if k_tm < 1.2 else "K > t_mix"))
-        sign    = "+ GROWING" if diff_end > 0 else "- SHRINKING"
-        print(f"{corridor_len:>6d}  {slem_m:>6.4f}  {k_tm:>8.3f}  "
-              f"{diff_end:>12.4f}  {regime} {sign}")
+            per_shift_mean: dict = {}
+            per_shift_ci:   dict = {}
+            for v in VARIANTS:
+                per_shift_mean[v], per_shift_ci[v] = _agg_ep("per_shift", v)
+
+            all_agg[str(K)][str(cw)] = {
+                "slem_mean":        float(slems.mean()),
+                "k_tmix_mean":      float(k_tmixs.mean()),
+                "diff_cumul_mean":  diff_mean.tolist(),
+                "diff_cumul_ci":    diff_ci.tolist(),
+                "diff_end_mean":    diff_end,
+                "diff_end_ci":      diff_end_ci_v,
+                "per_shift_mean":   per_shift_mean,
+                "per_shift_ci":     per_shift_ci,
+            }
+
+            sign    = "+ GROWING" if diff_end > 0 else "- SHRINKING"
+            regime  = ("K << t_mix" if k_tm_pre < 0.4
+                      else ("K ~ t_mix" if k_tm_pre < 1.2 else "K > t_mix"))
+            print(f"{' ':<12} {' ':>4}  {' ':>6}  {' ':>8}  "
+                  f"{diff_end:>12.4f}  {regime} {sign}")
 
     # -- Persist --
     out_dir = Path(args.out_dir).resolve()
@@ -348,12 +364,13 @@ def main() -> None:
     out_path = out_dir / "threshold.json"
     payload = {
         "config": {
-            "room_size":      ROOM_SIZE,
-            "gamma":          args.gamma,
-            "K":              args.K,
-            "n_episodes":     args.n_episodes,
-            "seeds":          args.seeds,
-            "corridor_sweep": CORRIDOR_SWEEP,
+            "room_size":         ROOM_SIZE,
+            "gamma":             args.gamma,
+            "K_sweep":          K_values,
+            "n_shifts":          args.n_shifts,
+            "n_steps_per_shift": args.n_steps_per_shift,
+            "seeds":             args.seeds,
+            "corridor_sweep":    CORRIDOR_SWEEP,
         },
         "agg": all_agg,
     }
@@ -362,7 +379,7 @@ def main() -> None:
     print(f"\nResults saved to {out_path}")
 
     plot_path = str(Path(args.plot_dir).resolve() / "mixing_threshold_ablation.png")
-    plot_results(all_agg, CORRIDOR_SWEEP, args.n_episodes, args.seeds, args.K, plot_path)
+    plot_results(all_agg, K_values, CORRIDOR_SWEEP, args.n_shifts, args.seeds, plot_path)
 
 
 if __name__ == "__main__":
