@@ -76,7 +76,7 @@ N_EPISODES  = 20
 T_WARMUP    = 200           # real steps before episodes begin
 T_REAL      = 50            # real steps per episode (after shift)
 K           = 20            # planning steps per real step
-EPS_GREEDY  = 0.1           # epsilon-greedy exploration rate
+EPS_GREEDY  = 0.11   # epsilon-greedy exploration rate
 
 VARIANTS    = ["standard_ps", "gta_beta"]
 

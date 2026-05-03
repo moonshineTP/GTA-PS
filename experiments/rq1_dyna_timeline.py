@@ -150,8 +150,9 @@ def _run_seed(
                     if sim_rng.random() < 0.1:
                         a = sim_rng.integers(env.n_actions)
                     else:
-                        # GtaPS provides V, use greedy policy
-                        a = env.greedy_policy(agent.module.V, agent.module._r_model)[s]
+                        # Use the host Q-table for behavior; module.V is only the planner's
+                        # internal cache and can lag behind on unvisited states.
+                        a = int(agent.Q[:, s].argmax())
                     
                     # 2. Step environment
                     probs = env.P[a, s]
@@ -181,7 +182,7 @@ def _run_seed(
                 if sim_rng.random() < 0.1:
                     a = sim_rng.integers(env.n_actions)
                 else:
-                    a = env.greedy_policy(agent.module.V, agent.module._r_model)[s]
+                    a = int(agent.Q[:, s].argmax())
                 
                 # 2. Step environment
                 probs = env.P[a, s]
