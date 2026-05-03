@@ -5,7 +5,7 @@ pushd "%~dp0"
 set "PYTHON=.venv\Scripts\python.exe"
 if not exist "%PYTHON%" set "PYTHON=python"
 
-"%PYTHON%" "orchestrate_groups.py" rqs %*
+"%PYTHON%" "orchestrate_groups.py" rqs --seeds 1000 --workers 10 %*
 set "EXIT_CODE=%ERRORLEVEL%"
 
 popd

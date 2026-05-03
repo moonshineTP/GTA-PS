@@ -105,8 +105,8 @@ UTILITY_COLORS: dict[str, str] = {
 }
 
 PUBLICATION_DEFAULTS: dict[str, int] = {
-    "seeds": 30,
-    "workers": 3,
+    "seeds": 1000,
+    "workers": 10,
 }
 
 def get_palette(style: str = "line", extra_keys: list[str] | tuple[str, ...] | None = None) -> dict[str, str]:
@@ -136,7 +136,7 @@ def warn_if_nonpublication_run(seeds: int, workers: object) -> None:
 
     if issues:
         warnings.warn(
-            "Exploratory run detected; final publication figures require 30 seeds and 3 workers (" + "; ".join(issues) + ").",
+            "Exploratory run detected; final publication figures require 1000 seeds and >10 workers (" + "; ".join(issues) + ").",
             stacklevel=2,
         )
 
@@ -145,8 +145,8 @@ PALETTE = PALETTE_LINE
 
 LABELS: dict[str, str] = {
     "standard_ps": "Standard-PS",
-    "gta_base":    "Forward-GTA",
-    "gta_beta":    "Full-GTA",
+    "gta_base":    "GTA-base",
+    "gta_beta":    "GTA-beta",
     "forward_gta": "Forward-GTA",
     "full_gta":    "Full-GTA",
 }
@@ -162,7 +162,7 @@ PLOTS_DIR   = ROOT / "plots"
 def plot_rq2() -> None:
     apply_style()
     try:
-        with open(RESULTS_DIR / "rq2_ablation_garnet_s100.json") as f:
+        with open(RESULTS_DIR / "rq2_ablation_garnet_s75.json") as f:
             garnet_data = json.load(f)
         with open(RESULTS_DIR / "rq2_ablation_fourrooms_k4.json") as f:
             fr_data = json.load(f)

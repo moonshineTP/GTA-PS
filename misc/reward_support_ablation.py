@@ -7,7 +7,7 @@ relative advantage of GTA-augmented priority signals over Standard-PS.
 Measures convergence consistency at the end of each reward shift.
 
 Setup:
-- Environment: GARNET (|S|=60 default, configurable via --n-states)
+- Environment: GARNET (|S|=75 default)
 - Support Sweep: {1, 2, 4, 8, 16} active reward states.
 - Agent: Dyna host with Count-Based Model learning.
 - Metric: L1 Value Error at shift-end.

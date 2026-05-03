@@ -42,7 +42,7 @@ GROUPS: dict[str, tuple[ScriptSpec, ...]] = {
                 "workers": "--workers",
                 "seeds": "--seeds",
                 "K": "--K",
-                "n_shifts": "--n_shifts",
+                "n_shifts": "--n-shifts",
                 "n_steps_per_shift": "--n-steps-per-shift",
                 "host": "--host",
             },
@@ -258,6 +258,8 @@ def parse_args() -> argparse.Namespace:
                         help="Steps-per-shift override to forward when supported.")
     parser.add_argument("--n-shifts", dest="n_shifts", type=int,
                         help="Shift-count override to forward when supported.")
+    parser.add_argument("--n-frames", dest="n_frames", type=int,
+                        help="Animation-frame override to forward when supported.")
     parser.add_argument("--host", type=str, default=None,
                         help="Host override to forward when supported.")
     parser.add_argument("--start-from", dest="start_from", type=int, default=1,
@@ -282,7 +284,7 @@ def build_command(spec: ScriptSpec, args: argparse.Namespace) -> list[str]:
     script_path = str(Path(spec.path))
     command = [sys.executable, script_path, *spec.fixed_args]
     for dest, cli_flag in spec.forwarded_flags.items():
-        value = getattr(args, dest)
+        value = getattr(args, dest, None)
         if value is None:
             continue
         if dest == "workers" and spec.path == "misc/tuner.py":
@@ -298,6 +300,13 @@ def main() -> int:
     # Use the parent directory of this script as the working directory for sub-scripts.
     # We keep it relative to the caller to avoid issues with absolute path resolution in some environments.
     code_root = Path(__file__).parent
+    mpl_cache_dir = code_root / ".mplconfig"
+    mpl_cache_dir.mkdir(parents=True, exist_ok=True)
+    run_env = os.environ.copy()
+    run_env.setdefault("MPLCONFIGDIR", str(mpl_cache_dir))
+    run_env.setdefault("TMPDIR", str(mpl_cache_dir))
+    run_env.setdefault("TEMP", str(mpl_cache_dir))
+    run_env.setdefault("TMP", str(mpl_cache_dir))
     dry_run = is_truthy_env(os.environ.get("GTA_PS_ORCH_DRY_RUN"))
     scripts = GROUPS[args.group]
 
@@ -307,14 +316,14 @@ def main() -> int:
 
     for index, spec in enumerate(scripts, start=1):
         if index < args.start_from:
-            print(f"[{index}/{len(scripts)}] {spec.label} — skipped (start-from={args.start_from})")
+            print(f"[{index}/{len(scripts)}] {spec.label} - skipped (start-from={args.start_from})")
             continue
         command = build_command(spec, args)
         print(f"[{index}/{len(scripts)}] {spec.label}")
         print(f"    Raw script command: {subprocess.list2cmdline(command)}")
         if dry_run:
             continue
-        completed = subprocess.run(command, cwd=code_root)
+        completed = subprocess.run(command, cwd=code_root, env=run_env)
         if completed.returncode != 0:
             print(f"Stopping group '{args.group}' after failure in {spec.path}.", file=sys.stderr)
             return completed.returncode

@@ -2,7 +2,7 @@
   "experiment": "reward_support_ablation",
   "config": {
     "seeds": 10,
-    "env": "garnet_S100",
+    "env": "garnet_S75",
     "K": 100
   },
   "results": {
