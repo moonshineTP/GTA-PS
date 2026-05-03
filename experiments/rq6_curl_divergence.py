@@ -172,8 +172,8 @@ if __name__ == "__main__":
     parser.add_argument("--workers", default=PUBLICATION_DEFAULTS["workers"])
     parser.add_argument("--seeds", type=int, default=PUBLICATION_DEFAULTS["seeds"])
     parser.add_argument("--K", type=int, default=20)
-    parser.add_argument("--n-shifts", type=int, default=5)
-    parser.add_argument("--n-steps-per-shift", type=int, default=40)
+    parser.add_argument("--n-shifts", type=int, default=4)
+    parser.add_argument("--n-steps-per-shift", type=int, default=50)
     parser.add_argument("--gamma", type=float, default=0.95)
     args = parser.parse_args()
     warn_if_nonpublication_run(args.seeds, args.workers)
@@ -190,9 +190,9 @@ if __name__ == "__main__":
     ]
     variant_labels = [v['label'] for v in variants]
     runner = RunManager(n_workers=args.workers)
-    
+
     # 1. GARNET Sweep (Directed Bottlenecks)
-    print(f"Running GARNET sweep at reversible=0.0 (Seeds: {args.seeds})...")
+    print(f"Running GARNET sweep at reversible=0.2 (Seeds: {args.seeds})...")
     nbr_rates = [0.8, 0.4, 0.2, 0.1, 0.05]
     garnet_final = {}
     for rate in nbr_rates:
