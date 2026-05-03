@@ -36,7 +36,6 @@ for %%a in (!USER_ARGS!) do (
 set "USER_ARGS=!NEW_USER_ARGS!"
 set "INDEX=0"
 
-call :RunAbl "Smoothness Ablation" "smoothness_ablation.exe"
 call :RunAbl "Mixing Threshold Ablation" "mixing_threshold_ablation.exe"
 call :RunAbl "Shift-rate Ablation" "shift_rate_ablation.exe"
 call :RunAbl "Boltzmann-b Ablation" "boltzmann_b_ablation.exe"
@@ -60,7 +59,7 @@ if !INDEX! LSS !START_FROM! (
     exit /b 0
 )
 
-echo [!INDEX!/11] !LABEL!
+echo [!INDEX!/8] !LABEL!
 
 :: Try to run executable directly from EXES_DIR
 if exist "!EXES_DIR!\!EXE_NAME!" (

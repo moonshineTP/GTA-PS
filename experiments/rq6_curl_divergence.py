@@ -79,6 +79,7 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
         for shift in range(n_shifts):
             r_new = env.shift_reward()
             V_star = env.value_iteration(r_new)
+            agent.reward_update(r_new)
             
             for step in range(n_steps_per_shift):
                 burst_size = 5 * n_states if step == 0 else 1

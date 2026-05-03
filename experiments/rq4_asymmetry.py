@@ -91,6 +91,7 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
         for shift in range(n_shifts):
             r_new = env.shift_reward()
             V_star = env.value_iteration(r_new)
+            agent.reward_update(r_new)
             
             for step in range(n_steps_per_shift):
                 # Dyna interaction
@@ -132,11 +133,13 @@ def plot_rq4_schema(garnet_stats: Dict[float, Dict[str, dict]], fourrooms_stats:
     p_point = get_palette("point")
     grid_color = get_utility_color("grid")
     
-    # Map display labels to variant keys for color lookup
+    # Robust mapping from display label back to palette keys for color lookup
     label_to_key = {
-        "Standard-PS": "standard_ps",
-        "Forward-GTA": "forward_gta",
-        "Full-GTA":    "full_gta"
+        AGENT_LABELS["standard_ps"]: "standard_ps",
+        AGENT_LABELS["forward_gta"]: "forward_gta",
+        AGENT_LABELS["full_gta"]:    "full_gta",
+        AGENT_LABELS["gta_base"]:    "gta_base",
+        AGENT_LABELS["gta_beta"]:    "gta_beta",
     }
     
     # --- 1. GARNET Plot (Connected Line) ---
@@ -147,7 +150,7 @@ def plot_rq4_schema(garnet_stats: Dict[float, Dict[str, dict]], fourrooms_stats:
         means = [garnet_stats[rev][label]['mean'] for rev in rev_levels]
         cis = [garnet_stats[rev][label]['ci95'] for rev in rev_levels]
         ax1.errorbar(rev_levels, means, yerr=cis, marker='o', capsize=4, 
-                     label=label, color=p_line[key], linewidth=1.5, markersize=5)
+                     label=label, color=p_point[key], linewidth=1.5, markersize=5)
     
     ax1.set_title("GARNET Asymmetry Sweep")
     ax1.set_xlabel("Reversibility (0.0=Directed, 1.0=Symmetric)")

@@ -93,6 +93,7 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
         for shift in range(n_shifts):
             r_new = env.shift_reward()
             V_star = env.value_iteration(r_new)
+            agent.reward_update(r_new)
             
             for step in range(n_steps_per_shift):
                 burst_size = 5 * n_states if step == 0 else 1
@@ -122,11 +123,13 @@ def plot_rq5_schema(garnet_stats: Dict[float, Dict[str, dict]], fourrooms_stats:
     apply_style()
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
     
-    p_line = get_palette("line")
+    colors = get_palette("point")
     grid_color = get_utility_color("grid")
+    # Robust mapping from display label back to palette keys
     label_to_key = {
-        "Standard-PS": "standard_ps",
-        "Full-GTA":    "full_gta"
+        AGENT_LABELS["standard_ps"]: "standard_ps",
+        AGENT_LABELS["gta_beta"]:    "gta_beta",
+        AGENT_LABELS["full_gta"]:    "full_gta",
     }
     
     # --- 1. GARNET Plot ---
@@ -136,7 +139,7 @@ def plot_rq5_schema(garnet_stats: Dict[float, Dict[str, dict]], fourrooms_stats:
         key = label_to_key.get(label, "standard_ps")
         means = [garnet_stats[rate][label]['mean'] for rate in nbr_rates]
         cis = [garnet_stats[rate][label]['ci95'] for rate in nbr_rates]
-        ax1.errorbar(nbr_rates, means, yerr=cis, marker='o', capsize=4, label=label, color=p_line[key])
+        ax1.errorbar(nbr_rates, means, yerr=cis, marker='o', capsize=4, label=label, color=colors[key])
     
     ax1.set_title("GARNET Connectivity Sweep")
     ax1.set_xlabel("n_nbr_rate (1.0=Global, 0.05=Localized)")
@@ -151,7 +154,7 @@ def plot_rq5_schema(garnet_stats: Dict[float, Dict[str, dict]], fourrooms_stats:
         key = label_to_key.get(label, "standard_ps")
         means = [fourrooms_stats[cl][label]['mean'] for cl in corridor_lens]
         cis = [fourrooms_stats[cl][label]['ci95'] for cl in corridor_lens]
-        ax2.errorbar(corridor_lens, means, yerr=cis, marker='s', capsize=4, label=label, color=p_line[key])
+        ax2.errorbar(corridor_lens, means, yerr=cis, marker='s', capsize=4, label=label, color=colors[key])
         
     ax2.set_title("FourRooms Corridor Sweep")
     ax2.set_xlabel("Corridor Length (Number of cells between rooms)")
@@ -208,7 +211,7 @@ if __name__ == "__main__":
     
     # 1. GARNET
     print(f"Running GARNET sweep...")
-    nbr_rates = [1.0, 0.5, 0.25, 0.1, 0.05]
+    nbr_rates = [0.8, 0.4, 0.2, 0.1, 0.05]
     garnet_final_stats = {}
     for rate in nbr_rates:
         seed_results = runner.run(fn=run_seed_worker, seeds=list(range(args.seeds)), 

@@ -62,6 +62,7 @@ def run_seed_worker(support: int, n_states: int, variants: List[dict], n_shifts:
         for shift in range(n_shifts):
             r_new = env.shift_reward()
             V_star = env.value_iteration(r_new)
+            agent.reward_update(r_new)
             
             for step in range(n_steps_per_shift):
                 # Dyna interaction

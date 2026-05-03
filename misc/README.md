@@ -23,25 +23,6 @@ python misc/cumulative_tracking.py --seeds 10 --n-episodes 25 --K 40
 
 ---
 
-### `smoothness_ablation.py`
-**Theory:** Lemma 6.9 (Poincaré / graph smoothness)  
-**Claim:** The resolvent (L^out + η\*I)^{-1} acts as a graph low-pass filter: δf^out has lower graph-frequency content than δr; Var\_μ(δV^π) ≤ 8γ²Δ\_r² / ((1−γ)²·(1−SLEM)).
-
-**Metric note:** Raw reward δr is highly sparse (only `reward_support` = 4 out of 100 states nonzero). Comparing absolute Dirichlet energy E(δr) vs E(δf) is therefore misleading — the resolvent diffuses a sparse signal to all states, necessarily increasing absolute amplitude. The **Rayleigh quotient** Rq(f) = E(f,f)/Var\_μ(f) is scale-invariant and directly measures graph frequency independent of sparsity or amplitude.
-
-**Setup:** Oracle DpHost on GARNET (n=100). Time-series at n\_nbr\_rate=0.10 (SLEM≈0.98); cross-SLEM sweep over n\_nbr\_rate ∈ {0.05, 0.07, 0.10, 0.15, 0.25, 0.40}.
-
-**Key outputs:**
-- Panel 1: Rq(δr) vs Rq(δf) per shift — Rq(δf) << Rq(δr) confirms low-pass filtering (4× frequency reduction at SLEM≈0.98)
-- Panel 2: Var\_μ(δf^out) per shift vs per-shift Lemma 6.9 bound using measured SLEM and ‖δr‖\_∞
-- Panel 3: Var\_μ(δf^out) vs spectral gap (1−SLEM) across GARNET configs + 1/gap bound curve (Lemma 6.9 shape)
-
-```bash
-python misc/smoothness_ablation.py --seeds 10 --n-shifts 20 --n-shifts-cross 15 --workers auto
-```
-
----
-
 ## Assumption Coverage Scripts
 
 ### `mixing_threshold_ablation.py`
@@ -179,7 +160,4 @@ All statistical scripts follow:
 ```bash
 # Example: run the Thm 6.10 validation with 10 seeds
 python misc/cumulative_tracking.py --seeds 10 --workers auto
-
-# Example: run Lemma 6.9 smoothness ablation
-python misc/smoothness_ablation.py --seeds 10 --n-shifts 20 --n-shifts-cross 15 --workers auto
 ```

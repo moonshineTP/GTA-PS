@@ -10,7 +10,7 @@ Protocol per seed:
   Warm-up : T_WARMUP real steps with random policy to populate P_hat ~= P.
   Episodes: for t in 1..N_EPISODES:
     1. env.shift_reward() -> r_new
-    2. Signal update: module.reward_update(delta_r) so topology refreshes.
+    2. Signal update: host.reward_update(r_new) so topology refreshes and the host cache stays aligned.
     3. Run T_REAL real steps (epsilon-greedy) + K planning steps per step.
     4. V_est = max_a Q[:, s]  ;  V* = env.value_iteration(r_new)
     5. err_t = L1(V_est, V*)
@@ -76,7 +76,7 @@ N_EPISODES  = 20
 T_WARMUP    = 200           # real steps before episodes begin
 T_REAL      = 50            # real steps per episode (after shift)
 K           = 20            # planning steps per real step
-EPS_GREEDY  = 0.2    # epsilon-greedy exploration rate
+EPS_GREEDY  = 0.15    # epsilon-greedy exploration rate
 
 VARIANTS    = ["standard_ps", "gta_beta"]
 
@@ -142,11 +142,9 @@ def _run_seed(
         r_new  = env.shift_reward()
         V_star = env.value_iteration(r_new)
 
-        # Notify topology signal for GTA variants
-        for v in VARIANTS:
-            if v != "standard_ps":
-                delta_r = r_new - agents[v].module.r
-                agents[v].module.reward_update(delta_r)
+        # Notify the host so its reward cache stays aligned with the module.
+        for agent in agents.values():
+            agent.reward_update(r_new)
 
         # T_REAL real steps in new environment
         for _ in range(t_real):
@@ -172,7 +170,7 @@ def plot_results(
     n_episodes: int, seeds: int, K: int, t_real: int, n_states: int, out_path: str,
 ) -> None:
     if plt is None:
-        print("matplotlib not available — skipping plot.")
+        print("matplotlib not available - skipping plot.")
         return
 
     apply_style()
@@ -258,7 +256,7 @@ def plot_results(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Cumulative Dyna tracking ablation — validates Thm 6.10(ii)"
+        description="Cumulative Dyna tracking ablation - validates Thm 6.10(ii)"
     )
     parser.add_argument("--n-episodes", type=int,   default=N_EPISODES)
     parser.add_argument("--t-warmup",   type=int,   default=T_WARMUP)
@@ -278,8 +276,8 @@ def main() -> None:
     tuned  = load_tuned_for_env("garnet")
     runner = RunManager(n_workers=args.workers)
 
-    print(f"Running {args.seeds} seeds × {args.n_episodes} episodes "
-          f"(warm={args.t_warmup}, T_real={args.t_real}, K={args.K}) …")
+    print(f"Running {args.seeds} seeds x {args.n_episodes} episodes "
+          f"(warm={args.t_warmup}, T_real={args.t_real}, K={args.K}) ...")
 
     raw = runner.run(
         _run_seed, range(args.seeds),
@@ -316,7 +314,7 @@ def main() -> None:
 
     diff_end = ps_cumul_end - cumul_mean["gta_beta"][-1]
     print(f"\n  TE^PS(N) - TE^GTA(N) at N={args.n_episodes}: {diff_end:.4f} "
-          f"({'GROWING ✓' if diff_end > 0 else 'NOT GROWING — CHECK'})")
+          f"({'GROWING' if diff_end > 0 else 'NOT GROWING - CHECK'})")
 
     # ── Persist ────────────────────────────────────────────────────────────
     out_dir = Path(args.out_dir).resolve()

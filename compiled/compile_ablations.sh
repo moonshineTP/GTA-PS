@@ -16,7 +16,6 @@ echo "Starting Ablations Compilation (Linux)..."
 echo ""
 
 ABLS=(
-    "misc/smoothness_ablation.py"
     "misc/mixing_threshold_ablation.py"
     "misc/shift_rate_ablation.py"
     "misc/boltzmann_b_ablation.py"

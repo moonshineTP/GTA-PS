@@ -153,15 +153,6 @@ GROUPS: dict[str, tuple[ScriptSpec, ...]] = {
     ),
     "ablations": (
         ScriptSpec(
-            path="misc/smoothness_ablation.py",
-            label="Smoothness ablation",
-            forwarded_flags={
-                "workers": "--workers",
-                "seeds": "--seeds",
-                "n_shifts": "--n-shifts",
-            },
-        ),
-        ScriptSpec(
             path="misc/mixing_threshold_ablation.py",
             label="Mixing threshold ablation",
             forwarded_flags={

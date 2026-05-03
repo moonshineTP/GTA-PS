@@ -130,18 +130,20 @@ def _run_seed(
     r_new = env.r.copy()
     V_star = env.value_iteration(r_new)
 
-    # Simulation state
-    current_states = {(K, v): int(sim_rng.integers(env.n_states)) for K in K_budgets for v in VARIANTS}
+    # Start all compared agents from the same state so early-step differences
+    # come from the planner, not from mismatched initial conditions.
+    start_state = int(sim_rng.integers(env.n_states))
+    current_states = {(K, v): start_state for K in K_budgets for v in VARIANTS}
 
     # -- Shift phase --
     for shift_i in range(n_shifts):
         r_new = env.shift_reward()
         V_star = env.value_iteration(r_new)
         shift_steps.append(len(traces[f"standard_ps_K{K_budgets[0]}_{metrics[0].name}"]))
+        for agent in agents.values():
+            agent.reward_update(r_new)
 
         for step in range(n_steps_per_shift):
-            r_arg = r_new if step == 0 else None
-            
             for K in K_budgets:
                 for v in VARIANTS:
                     agent = agents[(K, v)]
@@ -157,13 +159,11 @@ def _run_seed(
                     # 2. Step environment
                     probs = env.P[a, s]
                     s_next = int(sim_rng.choice(len(probs), p=probs))
-                    r_env = float(r_new[s_next])
+                    # FourRoomsTabular uses state-based rewards r[s].
+                    r_env = float(r_new[s])
                     current_states[(K, v)] = s_next
                     
                     # 3. Dyna Process: real step -> planning steps
-                    if r_arg is not None:
-                        agent.module.reward_update(r_arg - agent.module.r)
-                        
                     agent.real_step(s, a, r_env, s_next)
                     agent.plan_steps(K=K)
                     
@@ -189,7 +189,8 @@ def _run_seed(
                 # 2. Step environment
                 probs = env.P[a, s]
                 s_next = int(sim_rng.choice(len(probs), p=probs))
-                r_env = float(r_new[s_next]) # Still uses last r_new
+                # FourRoomsTabular uses state-based rewards r[s].
+                r_env = float(r_new[s]) # Still uses last r_new
                 current_states[(K, v)] = s_next
                 
                 # 3. Dyna Process

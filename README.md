@@ -59,7 +59,6 @@ All primary experiments live in `experiments/`:
 
 ### Ablation Studies
 Supporting audits live in `misc/`:
-- **Smoothness:** `smoothness_ablation.py` (Resolvent as low-pass filter)
 - **Mixing Threshold:** `mixing_threshold_ablation.py` (Phase behavior at $K \approx t_{\text{mix}}$)
 - **Scheduler:** `scheduler_ablation.py` (Linear vs. Power vs. Log schedules)
 

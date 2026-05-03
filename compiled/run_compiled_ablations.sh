@@ -46,22 +46,12 @@ done
 set -- "${NEW_ARGS[@]}"
 INDEX=0
 
-# Smoothness Ablation
-INDEX=$((INDEX+1))
-if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/10] Smoothness Ablation - skipped (start-from=$START_FROM)"
-else
-    echo "[$INDEX/10] Smoothness Ablation (Compiled)"
-    "$ARTIFACTS_DIR/smoothness_ablation.dist/smoothness_ablation" "$@" || (echo "ERROR: smoothness_ablation not found" && exit 1)
-fi
-echo ""
-
 # Mixing Threshold Ablation
 INDEX=$((INDEX+1))
 if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/10] Mixing Threshold Ablation - skipped (start-from=$START_FROM)"
+    echo "[$INDEX/8] Mixing Threshold Ablation - skipped (start-from=$START_FROM)"
 else
-    echo "[$INDEX/10] Mixing Threshold Ablation (Compiled)"
+    echo "[$INDEX/8] Mixing Threshold Ablation (Compiled)"
     "$ARTIFACTS_DIR/mixing_threshold_ablation.dist/mixing_threshold_ablation" "$@" || (echo "ERROR: mixing_threshold_ablation not found" && exit 1)
 fi
 echo ""
@@ -69,9 +59,9 @@ echo ""
 # Shift-rate Ablation
 INDEX=$((INDEX+1))
 if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/10] Shift-rate Ablation - skipped (start-from=$START_FROM)"
+    echo "[$INDEX/8] Shift-rate Ablation - skipped (start-from=$START_FROM)"
 else
-    echo "[$INDEX/10] Shift-rate Ablation (Compiled)"
+    echo "[$INDEX/8] Shift-rate Ablation (Compiled)"
     "$ARTIFACTS_DIR/shift_rate_ablation.dist/shift_rate_ablation" "$@" || (echo "ERROR: shift_rate_ablation not found" && exit 1)
 fi
 echo ""
@@ -79,9 +69,9 @@ echo ""
 # Boltzmann-b Ablation
 INDEX=$((INDEX+1))
 if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/10] Boltzmann-b Ablation - skipped (start-from=$START_FROM)"
+    echo "[$INDEX/8] Boltzmann-b Ablation - skipped (start-from=$START_FROM)"
 else
-    echo "[$INDEX/10] Boltzmann-b Ablation (Compiled)"
+    echo "[$INDEX/8] Boltzmann-b Ablation (Compiled)"
     "$ARTIFACTS_DIR/boltzmann_b_ablation.dist/boltzmann_b_ablation" "$@" || (echo "ERROR: boltzmann_b_ablation not found" && exit 1)
 fi
 echo ""
@@ -89,9 +79,9 @@ echo ""
 # Scheduler Ablation
 INDEX=$((INDEX+1))
 if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/10] Scheduler Ablation - skipped (start-from=$START_FROM)"
+    echo "[$INDEX/8] Scheduler Ablation - skipped (start-from=$START_FROM)"
 else
-    echo "[$INDEX/10] Scheduler Ablation (Compiled)"
+    echo "[$INDEX/8] Scheduler Ablation (Compiled)"
     "$ARTIFACTS_DIR/scheduler_ablation.dist/scheduler_ablation" "$@" || (echo "ERROR: scheduler_ablation not found" && exit 1)
 fi
 echo ""
@@ -99,9 +89,9 @@ echo ""
 # Gamma Ablation
 INDEX=$((INDEX+1))
 if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/10] Gamma Ablation - skipped (start-from=$START_FROM)"
+    echo "[$INDEX/8] Gamma Ablation - skipped (start-from=$START_FROM)"
 else
-    echo "[$INDEX/10] Gamma Ablation (Compiled)"
+    echo "[$INDEX/8] Gamma Ablation (Compiled)"
     "$ARTIFACTS_DIR/gamma_ablation.dist/gamma_ablation" "$@" || (echo "ERROR: gamma_ablation not found" && exit 1)
 fi
 echo ""
@@ -109,9 +99,9 @@ echo ""
 # Periodicity Ablation
 INDEX=$((INDEX+1))
 if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/10] Periodicity Ablation - skipped (start-from=$START_FROM)"
+    echo "[$INDEX/8] Periodicity Ablation - skipped (start-from=$START_FROM)"
 else
-    echo "[$INDEX/10] Periodicity Ablation (Compiled)"
+    echo "[$INDEX/8] Periodicity Ablation (Compiled)"
     "$ARTIFACTS_DIR/periodicity_ablation.dist/periodicity_ablation" "$@" || (echo "ERROR: periodicity_ablation not found" && exit 1)
 fi
 echo ""
@@ -119,9 +109,9 @@ echo ""
 # Reward-support Ablation
 INDEX=$((INDEX+1))
 if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/10] Reward-support Ablation - skipped (start-from=$START_FROM)"
+    echo "[$INDEX/8] Reward-support Ablation - skipped (start-from=$START_FROM)"
 else
-    echo "[$INDEX/10] Reward-support Ablation (Compiled)"
+    echo "[$INDEX/8] Reward-support Ablation (Compiled)"
     "$ARTIFACTS_DIR/reward_support_ablation.dist/reward_support_ablation" "$@" || (echo "ERROR: reward_support_ablation not found" && exit 1)
 fi
 echo ""
@@ -129,9 +119,9 @@ echo ""
 # Cumulative Ablation
 INDEX=$((INDEX+1))
 if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/10] Cumulative Ablation - skipped (start-from=$START_FROM)"
+    echo "[$INDEX/8] Cumulative Ablation - skipped (start-from=$START_FROM)"
 else
-    echo "[$INDEX/10] Cumulative Ablation (Compiled)"
+    echo "[$INDEX/8] Cumulative Ablation (Compiled)"
     "$ARTIFACTS_DIR/cumulative_ablation.dist/cumulative_ablation" "$@" || (echo "ERROR: cumulative_ablation not found" && exit 1)
 fi
 echo ""

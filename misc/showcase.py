@@ -12,7 +12,7 @@ Modes
     Col 2: Final V(s) + queue heatmaps for each agent
 
 --mode showcase
-    Single-seed animation saved as GIF (pillow writer, Agg backend).
+    Single-seed animation saved as GIF (Pillow, Agg backend).
     2x3 grid:
     Col 0: Standard-PS env | GTA-PS env (two independent instances)
     Col 1: Standard-PS V(s) | GTA-PS V(s)
@@ -31,6 +31,7 @@ import argparse
 import json
 import numpy as np
 from pathlib import Path
+from tqdm import tqdm
 
 # Agg must be set before importing pyplot
 import matplotlib
@@ -69,11 +70,15 @@ from plot_academic import apply_style, get_palette, LABELS as AGENT_LABELS
 # Configuration
 # ---------------------------------------------------------------------------
 
-K        = 100          # planning budget per host step
-ABLATION_T_SHIFT = 80   # ablation reward-shift interval (real steps)
-SHOWCASE_T_SHIFT = 80   # showcase reward-shift interval (real steps)
+K = 80                  # planning budget per host step
+ABLATION_T_SHIFT = 50   # ablation reward-shift interval (real steps)
+SHOWCASE_T_SHIFT = 50   # showcase reward-shift interval (real steps)
+ABLATION_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
+ABLATION_CORRIDOR_LEN = 1
+SHOWCASE_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
+SHOWCASE_CORRIDOR_LEN = 1
 N_SHIFTS = 20           # total number of reward shifts (episodes) for ablation mode
-EPS      = 0.2   # epsilon-greedy exploration rate
+EPS      = 0.15  # epsilon-greedy exploration rate
 GAMMA    = 0.95  # discount factor
 
 VARIANTS = ["standard_ps", "gta_beta"]
@@ -384,7 +389,7 @@ class IndependentAgentSession:
 
         # History
         self.err_history: list[float] = []
-        self.cumul_te:   list[float] = [0.0]
+        self.cumul_l1:   list[float] = [0.0]
         self.return_history: list[float] = []
         self.cumul_reward: list[float] = [0.0]
         self.coverage_history: list[int] = []  # unique states visited per episode
@@ -457,7 +462,7 @@ class IndependentAgentSession:
         self.return_history.append(ep_reward)
         self.cumul_reward.append(self.cumul_reward[-1] + ep_reward)
         self.err_history.append(mean_err)
-        self.cumul_te.append(self.cumul_te[-1] + mean_err)
+        self.cumul_l1.append(self.cumul_l1[-1] + mean_err)
         self.coverage_history.append(coverage)
         self._visited.clear()
         return ep_reward, mean_err, coverage
@@ -519,7 +524,7 @@ def _run_seed_ablation(
     return {
         "return_history": {v: list(sessions[v].return_history) for v in VARIANTS},
         "cumul_reward":  {v: list(sessions[v].cumul_reward) for v in VARIANTS},
-        "cumul_te":      {v: list(sessions[v].cumul_te) for v in VARIANTS},
+        "cumul_l1":      {v: list(sessions[v].cumul_l1) for v in VARIANTS},
         "coverage":      {v: list(sessions[v].coverage_history) for v in VARIANTS},
         "final_V":       {v: sessions[v].agent.Q.max(axis=0).tolist() for v in VARIANTS},
         "final_queue": {
@@ -543,6 +548,8 @@ def run_ablation(args) -> None:
     cfg = _load_config(args.config)
     tuned = _build_method_cfgs(cfg)
     env_kwargs = _fourrooms_env_kwargs_from_config(cfg)
+    env_kwargs.setdefault("room_size", ABLATION_ROOM_SIZE)
+    env_kwargs.setdefault("corridor_len", ABLATION_CORRIDOR_LEN)
 
     print("=" * 62)
     print("  FourRooms ablation: Standard-PS vs GTA-PS^beta")
@@ -606,14 +613,14 @@ def run_ablation(args) -> None:
         if row == 1:
             ax.set_xlabel("Episode $N$")
 
-    # Column 1: L1 error (cumulative TE)
+    # Column 1: cumulative L1 error
     for row, v in enumerate(VARIANTS):
         ax = fig.add_subplot(gs[row, 1])
-        m, c = _agg([r["cumul_te"][v] for r in raw])
+        m, c = _agg([r["cumul_l1"][v] for r in raw])
         ax.plot(cumul_ep, m, color=colors[v], lw=2, label=LABELS[v])
         ax.fill_between(cumul_ep, m - c, m + c, color=colors[v], alpha=0.18)
         ax.axhline(0, color="gray", ls=":", lw=1)
-        ax.set_ylabel(r"$\mathrm{TE}(N)$")
+        ax.set_ylabel("Cumulative L1 error")
         ax.set_title(f"{LABELS[v]}\nCumulative L1 error")
         ax.grid(True, ls="--", alpha=0.3)
         if row == 1:
@@ -683,6 +690,8 @@ def run_showcase(args) -> None:
     cfg = _load_config(args.config)
     tuned = _build_method_cfgs(cfg)
     env_kwargs = _fourrooms_env_kwargs_from_config(cfg)
+    env_kwargs.setdefault("room_size", SHOWCASE_ROOM_SIZE)
+    env_kwargs.setdefault("corridor_len", SHOWCASE_CORRIDOR_LEN)
 
     sessions = {
         v: IndependentAgentSession(
@@ -712,39 +721,47 @@ def run_showcase(args) -> None:
     ep_reward = {v: 0.0 for v in VARIANTS}
 
     print(f"Simulating {total_steps} steps...")
-    for step in range(total_steps):
-        shift_idx = step // shift_steps
-        if step > 0 and step % shift_steps == 0:
-            for s in sessions.values():
-                s.shift_reward()
-            ep_reward = {v: 0.0 for v in VARIANTS}
+    with tqdm(
+        total=total_steps,
+        desc="showcase-sim",
+        unit="step",
+        dynamic_ncols=True,
+        ascii=True,
+    ) as sim_pbar:
+        for step in range(total_steps):
+            shift_idx = step // shift_steps
+            if step > 0 and step % shift_steps == 0:
+                for s in sessions.values():
+                    s.shift_reward()
+                ep_reward = {v: 0.0 for v in VARIANTS}
 
-        for v in VARIANTS:
-            r_val, err = sessions[v].step_once()
-            ep_reward[v] += r_val
+            for v in VARIANTS:
+                r_val, err = sessions[v].step_once()
+                ep_reward[v] += r_val
 
-        if step >= total_steps - n_to_show:
-            captured_data.append({
-                "step": step + 1,
-                "shift": shift_idx + 1,
-                "ep_reward": dict(ep_reward),
-                "sps": {
-                    "env": sessions["standard_ps"].env,
-                    "state": sessions["standard_ps"].state,
-                    "agent_dir": sessions["standard_ps"].agent_dir,
-                    "r_current": sessions["standard_ps"].r_current.copy(),
-                    "V": sessions["standard_ps"].agent.Q.max(axis=0).copy(),
-                    "queue": sessions["standard_ps"].get_queue_scores().copy(),
-                },
-                "gta": {
-                    "env": sessions["gta_beta"].env,
-                    "state": sessions["gta_beta"].state,
-                    "agent_dir": sessions["gta_beta"].agent_dir,
-                    "r_current": sessions["gta_beta"].r_current.copy(),
-                    "V": sessions["gta_beta"].agent.Q.max(axis=0).copy(),
-                    "queue": sessions["gta_beta"].get_combined_queue().copy(),
-                },
-            })
+            if step >= total_steps - n_to_show:
+                captured_data.append({
+                    "step": step + 1,
+                    "shift": shift_idx + 1,
+                    "ep_reward": dict(ep_reward),
+                    "sps": {
+                        "env": sessions["standard_ps"].env,
+                        "state": sessions["standard_ps"].state,
+                        "agent_dir": sessions["standard_ps"].agent_dir,
+                        "r_current": sessions["standard_ps"].r_current.copy(),
+                        "V": sessions["standard_ps"].agent.Q.max(axis=0).copy(),
+                        "queue": sessions["standard_ps"].get_queue_scores().copy(),
+                    },
+                    "gta": {
+                        "env": sessions["gta_beta"].env,
+                        "state": sessions["gta_beta"].state,
+                        "agent_dir": sessions["gta_beta"].agent_dir,
+                        "r_current": sessions["gta_beta"].r_current.copy(),
+                        "V": sessions["gta_beta"].agent.Q.max(axis=0).copy(),
+                        "queue": sessions["gta_beta"].get_combined_queue().copy(),
+                    },
+                })
+            sim_pbar.update(1)
 
     apply_style()
     fig = plt.figure(figsize=(18, 8), layout="constrained")
@@ -821,12 +838,32 @@ def run_showcase(args) -> None:
 
     print(f"Animating {len(captured_data)} frames...")
     anim = animation.FuncAnimation(
-        fig, update, frames=len(captured_data), interval=120, blit=False
+        fig,
+        update,
+        frames=len(captured_data),
+        interval=120,
+        blit=False,
+        cache_frame_data=False,
     )
     out_dir = Path(ROOT / "plots")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "fourrooms_showcase.gif"
-    anim.save(str(out_path), writer="pillow", fps=8)
+    with tqdm(
+        total=len(captured_data),
+        desc="showcase-gif",
+        unit="frame",
+        dynamic_ncols=True,
+        ascii=True,
+    ) as gif_pbar:
+        last_frame = -1
+
+        def _on_save_progress(frame_idx: int, _total: int) -> None:
+            nonlocal last_frame
+            if frame_idx > last_frame:
+                gif_pbar.update(frame_idx - last_frame)
+                last_frame = frame_idx
+
+        anim.save(str(out_path), writer="pillow", fps=8, progress_callback=_on_save_progress)
     print(f"Showcase GIF saved to {out_path}")
     plt.close()
 
@@ -852,7 +889,7 @@ def main() -> None:
                         help="Seed count in ablation mode; fixed seed value in showcase mode")
     parser.add_argument("--n-shifts", type=int,   default=N_SHIFTS,
                         help="Reward-shift episodes (ablation mode)")
-    parser.add_argument("--n-frames", type=int,   default=None,
+    parser.add_argument("--n-frames", type=int,   default=200,
                         help="Animation frames (showcase mode); defaults to entire navigation")
     parser.add_argument("--host",      choices=["dyna", "dp"], default="dyna",
                         help="Host algorithm for both agents")
