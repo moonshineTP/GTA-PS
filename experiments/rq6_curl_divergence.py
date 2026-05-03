@@ -1,11 +1,14 @@
 """
-RQ6: Mutual Curl / Divergence Analysis (Redesigned).
+RQ6: Mutual Curl / Divergence Analysis.
 
 Mission:
-Disentangle the performance contributions of Curl (circulation) and 
-Divergence (source-sink structure) by sweeping bottleneck severity
-under directed dynamics (reversible=0.0).
-Measures convergence consistency (L1 error at shift-end).
+Compare two directed GARNET families that separate source-sink flow from
+cyclic circulation:
+- a tight path-wise kernel with one-way forward motion
+- a cyclic kernel with the same directional bias on a ring
+
+This is meant to isolate curl/divergence geometry, not bottleneck severity.
+Measures convergence consistency via end-of-shift L1 error.
 """
 import sys
 import os
@@ -31,12 +34,11 @@ sys.path.insert(0, str(ROOT / "misc"))
 
 from gta_ps.algorithms import make_agent
 from gta_ps.envs.garnet import GarnetEnv
-from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.utils.metrics import value_error_l1
 from gta_ps.utils.hyperparams import load_tuned_for_env
+from gta_ps.utils.spectral import operator_split, slem_arnoldi
 from runner import RunManager
 from plot_academic import (
-    LABELS as AGENT_LABELS,
     apply_style,
     get_palette,
     get_publication_defaults,
@@ -45,6 +47,19 @@ from plot_academic import (
 )
 
 PUBLICATION_DEFAULTS = get_publication_defaults()
+
+FLOW_FAMILIES = (
+    ("Path-wise flow", "path"),
+    ("Cyclic flow", "cycle"),
+)
+
+FLOW_ENV_KWARGS = {
+    "n_states": 75,
+    "n_actions": 10,
+    "branching": 1,
+    "reward_support": 1,
+    "reward_locality": False,
+}
 
 def _load_config(path: str) -> dict:
     import yaml
@@ -63,24 +78,90 @@ def _build_method_cfgs(cfg: dict) -> dict:
         result[variant] = {**variant_cfg, **overrides}
     return result
 
-def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shifts: int, n_steps_per_shift: int, k_planning: int, seed: int):
-    if env_name == "garnet":
-        env = GarnetEnv(**env_params, seed=seed)
-    else:
-        env = FourRoomsTabular(**env_params, seed=seed)
-        
+
+def _build_directed_kernel(kind: str, n_states: int, n_actions: int) -> np.ndarray:
+    """
+    Build a directed transition tensor with a consistent forward bias.
+
+    ``kind='path'`` makes the terminal state absorbing so flow remains path-wise.
+    ``kind='cycle'`` wraps the same bias around a ring to create circulation.
+    """
+    if kind not in ("path", "cycle"):
+        raise ValueError(f"Unknown directed kernel kind {kind!r}")
+
+    P = np.zeros((n_actions, n_states, n_states), dtype=np.float64)
+    forward_biases = np.linspace(0.90, 0.78, n_actions)
+    reverse_mass = 0.05
+
+    for a, fwd in enumerate(forward_biases):
+        stay = 1.0 - fwd - reverse_mass
+        if stay < 0.0:
+            raise ValueError("Forward and reverse masses must sum to at most 1.")
+
+        for s in range(n_states):
+            if kind == "path":
+                if s < n_states - 1:
+                    P[a, s, s + 1] += fwd
+                else:
+                    P[a, s, s] += fwd
+
+                if s > 0:
+                    P[a, s, s - 1] += reverse_mass
+                else:
+                    P[a, s, s] += reverse_mass
+            else:
+                P[a, s, (s + 1) % n_states] += fwd
+                P[a, s, (s - 1) % n_states] += reverse_mass
+
+            P[a, s, s] += stay
+
+    return P
+
+
+def _make_directed_garnet_env(kind: str, seed: int, gamma: float) -> GarnetEnv:
+    env = GarnetEnv(
+        seed=seed,
+        gamma=gamma,
+        **FLOW_ENV_KWARGS,
+    )
+    env.P = _build_directed_kernel(kind, env.n_states, env.n_actions)
+    return env
+
+
+def _geometry_stats(env: GarnetEnv) -> dict:
+    P_mean = env.P.mean(axis=0)
+    S, A = operator_split(P_mean)
+    curl_norm = float(np.linalg.norm(A, ord="fro"))
+    div_norm = float(np.linalg.norm(np.eye(P_mean.shape[0]) - S, ord="fro"))
+    slem, _ = slem_arnoldi(P_mean)
+    return {
+        "curl_norm": curl_norm,
+        "div_norm": div_norm,
+        "curl_over_div": float(curl_norm / max(div_norm, 1e-12)),
+        "slem": float(slem),
+    }
+
+def run_seed_worker(kind: str, gamma: float, variants: List[dict], n_shifts: int, n_steps_per_shift: int, k_planning: int, seed: int):
+    env = _make_directed_garnet_env(kind, seed=seed, gamma=gamma)
     n_states = env.n_states
-    
+
     seed_results = {}
     for var in variants:
-        agent = make_agent(variant=var['variant'], host="dyna", P=env.P, r=env.r, gamma=env.gamma, **var.get('kwargs', {}))
-        
+        agent = make_agent(
+            variant=var["variant"],
+            host="dyna",
+            P=env.P,
+            r=env.r,
+            gamma=env.gamma,
+            **var.get("kwargs", {}),
+        )
+
         shift_end_errors = []
-        for shift in range(n_shifts):
+        for _ in range(n_shifts):
             r_new = env.shift_reward()
             V_star = env.value_iteration(r_new)
             agent.reward_update(r_new)
-            
+
             for step in range(n_steps_per_shift):
                 burst_size = 5 * n_states if step == 0 else 1
                 if burst_size > 1:
@@ -95,23 +176,28 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
                     s_next_rand = np.random.choice(n_states, p=env.P[a_rand, s_rand])
                     r_rand = r_new[s_rand]
                     agent.real_step(s_rand, a_rand, r_rand, s_next_rand)
-                
+
                 agent.plan_steps(K=k_planning)
                 if step == n_steps_per_shift - 1:
                     V_after = agent.Q.max(axis=0)
                     shift_end_errors.append(value_error_l1(V_after, V_star))
-            
-        seed_results[var['label']] = np.mean(shift_end_errors)
+
+        seed_results[var["label"]] = np.mean(shift_end_errors)
     return seed_results
 
 def get_stats(seed_results: List[Dict[str, float]], labels: List[str]):
     stats = {}
     for label in labels:
         vals = [res[label] for res in seed_results]
-        stats[label] = {"mean": np.mean(vals), "ci95": 1.96 * np.std(vals, ddof=1) / np.sqrt(len(vals))}
+        mean = float(np.mean(vals))
+        if len(vals) < 2:
+            ci95 = 0.0
+        else:
+            ci95 = float(1.96 * np.std(vals, ddof=1) / np.sqrt(len(vals)))
+        stats[label] = {"mean": mean, "ci95": ci95}
     return stats
 
-def plot_rq6_results(garnet_stats: dict, fr_results: dict, seeds: int, k: int, steps: int):
+def plot_rq6_results(flow_stats: dict, geometry_stats: dict):
     apply_style()
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
 
@@ -126,41 +212,52 @@ def plot_rq6_results(garnet_stats: dict, fr_results: dict, seeds: int, k: int, s
     }
 
     labels = ["Standard-PS", "Forward-GTA", "Full-GTA"]
-    markers = ['o', '^', 's']
-    offsets = [-0.15, 0, 0.15]
+    family_order = [name for name, _ in FLOW_FAMILIES]
+    offsets = [-0.25, 0.0, 0.25]
+    bar_width = 0.22
 
-    # 1. GARNET Plot: Sweep n_nbr_rate at reversible=0.0 (Line plot)
-    nbr_rates = sorted(garnet_stats.keys(), reverse=True)
+    # 1. Directed GARNET families: path vs cycle
+    x = np.arange(len(family_order))
     for i, label in enumerate(labels):
         key = label_to_key.get(label, "standard_ps")
-        means = [garnet_stats[rate][label]['mean'] for rate in nbr_rates]
-        cis = [garnet_stats[rate][label]['ci95'] for rate in nbr_rates]
-        ax1.errorbar(nbr_rates, means, yerr=cis, marker=markers[i], capsize=5,
-                     label=label, color=p_line[key], linewidth=2)
+        means = [flow_stats[fam][label]['mean'] for fam in family_order]
+        cis = [flow_stats[fam][label]['ci95'] for fam in family_order]
+        ax1.bar(x + offsets[i], means, width=bar_width, yerr=cis, capsize=4,
+                label=label, color=p_point[key], alpha=0.95)
 
-    ax1.set_title("GARNET Bottleneck Sweep")
-    ax1.set_xlabel("n_nbr_rate (1.0=Global, 0.05=Localized)")
-    ax1.set_ylabel(r"Final $L_1$ Error")
-    ax1.invert_xaxis()
+    ax1.set_title("Directed GARNET Families")
+    ax1.set_xlabel("Transition family")
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(family_order)
+    ax1.set_ylabel(r"End-of-shift $L_1$ Error")
     ax1.legend()
     ax1.grid(True, alpha=0.3, color=grid_color)
 
-    # 2. FourRooms Plot: Mechanism Comparison (Point-wise plot)
-    f_modes = list(fr_results.keys())
-    fx = np.arange(len(f_modes))
-    for i, label in enumerate(labels):
-        key = label_to_key.get(label, "standard_ps")
-        means = [fr_results[m][label]['mean'] for m in f_modes]
-        cis = [fr_results[m][label]['ci95'] for m in f_modes]
-        ax2.errorbar(fx + offsets[i], means, yerr=cis, fmt=markers[i], capsize=5,
-                     label=label, color=p_point[key], markersize=7)
-    ax2.set_title("FourRooms Mechanism Sweep")
-    ax2.set_xticks(fx)
-    ax2.set_xticklabels(f_modes)
-    ax2.set_ylabel(r"Final $L_1$ Error")
+    # 2. Geometry diagnostics for the same kernels
+    curl_vals = [geometry_stats[fam]["curl_norm"] for fam in family_order]
+    div_vals = [geometry_stats[fam]["div_norm"] for fam in family_order]
+    ratio_vals = [geometry_stats[fam]["curl_over_div"] for fam in family_order]
+    width = 0.32
+    ax2.bar(x - width / 2, curl_vals, width=width, label=r"$\|A\|_F$", color=p_line["gta_base"], alpha=0.9)
+    ax2.bar(x + width / 2, div_vals, width=width, label=r"$\|I-S\|_F$", color=p_line["standard_ps"], alpha=0.9)
+    for i, fam in enumerate(family_order):
+        top = max(curl_vals[i], div_vals[i])
+        ax2.text(
+            x[i],
+            top * 1.04,
+            f"ratio={ratio_vals[i]:.2f}\nSLEM={geometry_stats[fam]['slem']:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+    ax2.set_title("Curl / Divergence Geometry")
+    ax2.set_xlabel("Transition family")
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(family_order)
+    ax2.set_ylabel("Frobenius norm")
     ax2.legend()
     ax2.grid(True, alpha=0.3, linestyle='--', color=grid_color)
-    
+
     plt.tight_layout()
     plot_path = ROOT / "plots" / "rq6_curl_divergence.png"
     plot_path.parent.mkdir(parents=True, exist_ok=True)
@@ -189,36 +286,55 @@ if __name__ == "__main__":
         {"label": "Forward-GTA",  "variant": "gta_base",    "kwargs": {**method_cfgs.get("gta_base", {}), "alpha": 0.0}},
         {"label": "Full-GTA",     "variant": "gta_beta",    "kwargs": method_cfgs.get("gta_beta", {})},
     ]
-    variant_labels = [v['label'] for v in variants]
     runner = RunManager(n_workers=args.workers)
-    
-    # 1. GARNET Sweep (Directed Bottlenecks)
-    print(f"Running GARNET sweep at reversible=0.0 (Seeds: {args.seeds})...")
-    nbr_rates = [0.8, 0.4, 0.2, 0.1, 0.05]
-    garnet_final = {}
-    for rate in nbr_rates:
-        res = runner.run(run_seed_worker, list(range(args.seeds)),
-                         dict(env_name="garnet", env_params={"n_states": 75, "n_nbr_rate": rate, "reversible": 0.2, "gamma": args.gamma},
-                              variants=variants, n_shifts=args.n_shifts, n_steps_per_shift=args.n_steps_per_shift, k_planning=args.K),
-                         desc=f"garnet_nbr_{rate}")
-        garnet_final[rate] = get_stats(res, variant_labels)
-            
-    # 2. FourRooms Mechanism Isolation
-    print(f"Running FourRooms mechanism isolation (Seeds: {args.seeds})...")
-    fr_results = {}
-    modes = [("Symmetric", {}), ("Windy (Div)", {"drift": (0, 1)}), ("Cyclic (Curl)", {"one_way_prob": 0.05}), ("Mixed", {"drift": (0, 1), "one_way_prob": 0.05})]
-    for mode_name, p in modes:
-        res = runner.run(run_seed_worker, list(range(args.seeds)),
-                         dict(env_name="fourrooms", env_params={**p, "gamma": args.gamma},
-                              variants=variants, n_shifts=args.n_shifts, n_steps_per_shift=args.n_steps_per_shift, k_planning=args.K),
-                         desc=f"fr_{mode_name}")
-        fr_results[mode_name] = get_stats(res, variant_labels)
-        
-    plot_rq6_results(garnet_final, fr_results, args.seeds, args.K, args.n_steps_per_shift)
-    
-    # Save JSON
+
+    family_stats = {}
+    geometry_stats = {}
+    variant_labels = [v["label"] for v in variants]
+
+    for family_name, kind in FLOW_FAMILIES:
+        print(f"Running {family_name.lower()} family (Seeds: {args.seeds})...")
+        env = _make_directed_garnet_env(kind, seed=0, gamma=args.gamma)
+        geometry_stats[family_name] = _geometry_stats(env)
+        geom = geometry_stats[family_name]
+        print(
+            f"  geometry: curl={geom['curl_norm']:.4f}, div={geom['div_norm']:.4f}, "
+            f"ratio={geom['curl_over_div']:.4f}, slem={geom['slem']:.4f}"
+        )
+        res = runner.run(
+            run_seed_worker,
+            list(range(args.seeds)),
+            dict(
+                kind=kind,
+                gamma=args.gamma,
+                variants=variants,
+                n_shifts=args.n_shifts,
+                n_steps_per_shift=args.n_steps_per_shift,
+                k_planning=args.K,
+            ),
+            desc=f"rq6_{kind}",
+        )
+        family_stats[family_name] = get_stats(res, variant_labels)
+
+    plot_rq6_results(family_stats, geometry_stats)
+
     os.makedirs(ROOT / "results", exist_ok=True)
     with open(ROOT / "results" / "rq6_curl_divergence.json", "w") as f:
-        json.dump({"garnet": {str(k): v for k, v in garnet_final.items()}, "fourrooms": fr_results, "config": vars(args)}, f, indent=2)
+        json.dump(
+            {
+                "families": family_stats,
+                "geometry": geometry_stats,
+                "config": {
+                    **vars(args),
+                    "flow_families": [
+                        {"label": label, "kind": kind}
+                        for label, kind in FLOW_FAMILIES
+                    ],
+                    "flow_env_kwargs": FLOW_ENV_KWARGS,
+                },
+            },
+            f,
+            indent=2,
+        )
     
-    print("\nRQ6 Redesigned Audit Complete.")
+    print("\nRQ6 Directed Flow Audit Complete.")

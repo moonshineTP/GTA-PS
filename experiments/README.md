@@ -23,7 +23,7 @@ This directory contains the core implementation of the GTA-PS Research Questions
 - **Mission:** Benchmarks the computational overhead of spectral calculations vs. planning speedup across state-space scales.
 
 ### RQ6: Curl & Divergence (`rq6_curl_divergence.py`)
-- **Mission:** Analyzes performance under high-curl (circular) transition dynamics.
+- **Mission:** Compares a directed path-flow GARNET against a directed cyclic GARNET to isolate curl/divergence geometry.
 
 ---
 

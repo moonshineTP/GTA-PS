@@ -1,4 +1,6 @@
 {
+  "status": "legacy_stale_pre_redesign",
+  "message": "This artifact comes from the old n_nbr_rate / FourRooms rq6 design. Regenerate it by rerunning code/experiments/rq6_curl_divergence.py after the directed path-flow vs cyclic-flow rewrite.",
   "garnet": {
     "1.0": {
       "Standard-PS": {
