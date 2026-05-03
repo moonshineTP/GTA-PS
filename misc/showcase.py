@@ -70,15 +70,18 @@ from plot_academic import apply_style, get_palette, LABELS as AGENT_LABELS
 # Configuration
 # ---------------------------------------------------------------------------
 
-K = 60                  # planning budget per host step
-ABLATION_T_SHIFT = 90   # ablation reward-shift interval (real steps)
-SHOWCASE_T_SHIFT = 90   # showcase reward-shift interval (real steps)
+K = 50                  # planning budget per host step
+ABLATION_T_SHIFT = 80   # ablation reward-shift interval (real steps)
+SHOWCASE_T_SHIFT = 80   # showcase reward-shift interval (real steps)
 ABLATION_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
 ABLATION_CORRIDOR_LEN = 1
 SHOWCASE_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
 SHOWCASE_CORRIDOR_LEN = 1
-N_SHIFTS = 30           # total number of reward shifts (episodes) for ablation mode
-EPS      = 0.1   # epsilon-greedy exploration rate
+SHOWCASE_ACTIVE_ROOMS = 2
+SHOWCASE_PEAKS_PER_ROOM = 1
+SHOWCASE_SIGMA_RANGE = (0.15, 0.35)
+N_SHIFTS = 25           # total number of reward shifts (episodes) for ablation mode
+EPS      = 0.11  # epsilon-greedy exploration rate
 GAMMA    = 0.95  # discount factor
 
 VARIANTS = ["standard_ps", "gta_beta"]
@@ -692,6 +695,9 @@ def run_showcase(args) -> None:
     env_kwargs = _fourrooms_env_kwargs_from_config(cfg)
     env_kwargs.setdefault("room_size", SHOWCASE_ROOM_SIZE)
     env_kwargs.setdefault("corridor_len", SHOWCASE_CORRIDOR_LEN)
+    env_kwargs["k"] = SHOWCASE_ACTIVE_ROOMS
+    env_kwargs["n_peaks_per_room"] = SHOWCASE_PEAKS_PER_ROOM
+    env_kwargs["sigma_range"] = SHOWCASE_SIGMA_RANGE
 
     sessions = {
         v: IndependentAgentSession(
