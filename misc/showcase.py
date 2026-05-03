@@ -73,7 +73,7 @@ from plot_academic import apply_style, get_palette, LABELS as AGENT_LABELS
 K = 80                  # planning budget per host step
 ABLATION_T_SHIFT = 50   # ablation reward-shift interval (real steps)
 SHOWCASE_T_SHIFT = 50   # showcase reward-shift interval (real steps)
-ABLATION_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
+    ABLATION_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
 ABLATION_CORRIDOR_LEN = 1
 SHOWCASE_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
 SHOWCASE_CORRIDOR_LEN = 1
