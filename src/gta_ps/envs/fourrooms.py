@@ -12,18 +12,16 @@ import numpy as np
 
 from .base import TabularEnv
 
-N_ACTIONS = 5
+N_ACTIONS = 4
 ACTION_LEFT = 0
 ACTION_UP = 1
 ACTION_RIGHT = 2
 ACTION_DOWN = 3
-ACTION_STAY = 4
 _DELTAS = [
     (0, -1),  # left
     (-1, 0),  # up
     (0, 1),   # right
     (1, 0),   # down
-    (0, 0),   # stay
 ]
 
 
@@ -121,11 +119,10 @@ class FourRoomsTabular(TabularEnv):
     ACTION_UP = ACTION_UP
     ACTION_RIGHT = ACTION_RIGHT
     ACTION_DOWN = ACTION_DOWN
-    ACTION_STAY = ACTION_STAY
 
     def __init__(
         self,
-        room_size: int = 5,
+        room_size: int = 3,
         corridor_len: int = 1,
         corridor_width: int = 1,
         window_offset: int = 0,
@@ -135,7 +132,7 @@ class FourRoomsTabular(TabularEnv):
         drift: Optional[tuple[int, int]] = None,
         seed: int = 0,
         n_peaks_per_room: int = 2,
-        sigma_range: tuple = (0.3, 0.8),
+        sigma_range: tuple = (0.3, 0.9),
         room_peak_ranges: Optional[List] = None,
     ):
         self.room_size = room_size
@@ -211,31 +208,14 @@ class FourRoomsTabular(TabularEnv):
         dr, dc = _DELTAS[action]
         nr, nc = row + dr, col + dc
 
-        if action != ACTION_STAY and self.drift is not None and self._rng.random() < 0.2:
-            nr, nc = row + self.drift[0], col + self.drift[1]
-
-        is_blocked = False
-        if action != ACTION_STAY and self.one_way_prob < 1.0:
-            in_room = any(pos in room for room in self._rooms)
-            next_pos_idx = self._pos2idx.get((nr, nc))
-            if next_pos_idx is not None:
-                next_in_room = any(next_pos_idx in room for room in self._rooms)
-                if in_room and not next_in_room and self._rng.random() > self.one_way_prob:
-                    is_blocked = True
-
         next_pos = self._pos2idx.get((nr, nc), pos)
-        if is_blocked:
-            next_pos = pos
         return next_pos
 
     def _build_transition(self) -> np.ndarray:
         P = np.zeros((self.n_actions, self.n_states, self.n_states), dtype=np.float64)
         for pos in range(self.n_positions):
             for action in range(self.n_actions):
-                if action == ACTION_STAY:
-                    next_pos = pos
-                else:
-                    next_pos = self._next_position(pos, action)
+                next_pos = self._next_position(pos, action)
                 P[action, pos, next_pos] = 1.0
         P /= P.sum(axis=2, keepdims=True)
         return P

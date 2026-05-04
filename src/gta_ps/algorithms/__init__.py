@@ -2,7 +2,7 @@ import numpy as np
 
 from .base import PrioritizedSweepingModule, BellmanMixin, TdMixin, PlanningModel
 from .oracle_model import OracleModel
-from .standard_ps import StandardPS, DynaPS
+from .standard_ps import StandardPS
 from .gta_ps import GtaPS
 from .dp_host import DpHost
 from .dyna_host import DynaHost

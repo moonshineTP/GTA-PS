@@ -191,16 +191,16 @@ def main():
     )
     parser.add_argument("--envs",       nargs="+", default=ENVS)
     parser.add_argument("--agents",     nargs="+", default=AGENTS)
-    parser.add_argument("--epsilon",    type=float, default=4.0,
+    parser.add_argument("--epsilon",    type=float, default=1.0,
                         help="Absolute inf-norm convergence threshold (default: 4.0)")
     parser.add_argument("--budget-cap", type=int,   default=2000,
                         help="Total backup ceiling across all host steps (default: 2000)")
-    parser.add_argument("--K",          type=int,   default=50,
-                        help="Bellman backups per host step (default: 50)")
-    parser.add_argument("--seeds",    type=int,   default=50)
+    parser.add_argument("--K",          type=int,   default=20,
+                        help="Bellman backups per host step (default: 20)")
+    parser.add_argument("--seeds",    type=int,   default=30)
     parser.add_argument("--n-shifts",   type=int,   default=5)
     parser.add_argument("--gamma",      type=float, default=0.95)
-    parser.add_argument("--workers",    type=int,   default=1)
+    parser.add_argument("--workers",    type=int,   default=5)
     parser.add_argument("--out",        default=str(ROOT / "results/misc/convergence_benchmark/convergence.json"))
     parser.add_argument(
         "--config", default=None, metavar="YAML",

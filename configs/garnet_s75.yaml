@@ -3,7 +3,7 @@ n_states: 75
 n_actions: 4
 branching: 3
 n_nbr_rate: 0.15
-reward_support: 4
+reward_support: 3
 reward_locality: true
 reward_support_sweep:
 - 1
@@ -13,9 +13,8 @@ reward_support_sweep:
 - 16
 - 32
 gamma: 0.95
-n_shifts: 10
+n_shifts: 5
 seeds: 30
-eps_metric: 10
 budgets:
 - 10
 - 20
@@ -31,13 +30,13 @@ default:
   b: 1.0
 tuned:
   gta_base:
-    beta: 0.343809
-    alpha: 0.728695
-    eta: 0.017272
-    b: 2.708701
+    beta: 0.09377
+    alpha: 0.533959
+    eta: 0.00293
+    b: 3.236061
   gta_beta:
-    beta1: 0.484179
-    beta2: 0.492854
-    alpha: 0.716106
-    eta: 0.019789
-    b: 3.225066
+    beta1: 0.259669
+    beta2: 0.280532
+    alpha: 0.442632
+    eta: 0.000525
+    b: 3.140771

@@ -167,6 +167,3 @@ class StandardPS(PrioritizedSweepingModule, BellmanMixin):
             self.push_predecessors(s, self.xi[s])
         return self.V.copy()
 
-
-# Backward-compat alias — experiments import DynaPS from dyna_ps.py (forwarded)
-DynaPS = StandardPS

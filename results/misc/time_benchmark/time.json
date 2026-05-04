@@ -1,61 +1,61 @@
 {
-  "fourrooms_S104": {
+  "fourrooms_S40": {
     "standard_ps": {
-      "median_ms": 3.6983,
-      "std_ms": 1.0138,
-      "n_reps": 40,
-      "K": 26
+      "median_ms": 1.4555,
+      "std_ms": 0.1156,
+      "n_reps": 8,
+      "K": 10
     },
     "gta_base": {
-      "median_ms": 4.1281,
-      "std_ms": 1.2257,
-      "n_reps": 40,
-      "K": 26
+      "median_ms": 6.5376,
+      "std_ms": 0.4957,
+      "n_reps": 8,
+      "K": 10
     },
     "gta_beta": {
-      "median_ms": 4.6078,
-      "std_ms": 1.1012,
-      "n_reps": 40,
-      "K": 26
+      "median_ms": 6.7651,
+      "std_ms": 0.7297,
+      "n_reps": 8,
+      "K": 10
     }
   },
   "garnet_S75": {
     "standard_ps": {
-      "median_ms": 8.3493,
-      "std_ms": 3.4465,
-      "n_reps": 40,
+      "median_ms": 12.1485,
+      "std_ms": 0.2221,
+      "n_reps": 8,
       "K": 18
     },
     "gta_base": {
-      "median_ms": 9.1754,
-      "std_ms": 4.0395,
-      "n_reps": 40,
+      "median_ms": 34.694,
+      "std_ms": 3.27,
+      "n_reps": 8,
       "K": 18
     },
     "gta_beta": {
-      "median_ms": 6.9074,
-      "std_ms": 3.9001,
-      "n_reps": 40,
+      "median_ms": 36.8615,
+      "std_ms": 2.2843,
+      "n_reps": 8,
       "K": 18
     }
   },
   "garnet_S200": {
     "standard_ps": {
-      "median_ms": 17.3636,
-      "std_ms": 9.2155,
-      "n_reps": 40,
+      "median_ms": 37.9625,
+      "std_ms": 0.5337,
+      "n_reps": 8,
       "K": 50
     },
     "gta_base": {
-      "median_ms": 17.5449,
-      "std_ms": 8.9384,
-      "n_reps": 40,
+      "median_ms": 106.2414,
+      "std_ms": 22.8493,
+      "n_reps": 8,
       "K": 50
     },
     "gta_beta": {
-      "median_ms": 15.9017,
-      "std_ms": 9.8252,
-      "n_reps": 40,
+      "median_ms": 103.6381,
+      "std_ms": 21.2013,
+      "n_reps": 8,
       "K": 50
     }
   }

@@ -2,7 +2,7 @@
 DynaHost — empirical-model (one-step TD) host, module-agnostic.
 
 Uses P_hat built from experience. TD errors drive residuals — NOT
-distributional Bellman. Syncs P_hat and V into the module after every
+distributional Bellman. Syncs P_hat and Q into the module after every
 real_step so the module's predecessor lookup uses empirical data.
 """
 from __future__ import annotations

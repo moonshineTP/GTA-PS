@@ -11,8 +11,9 @@ see code/threads/tuner.py (TuningEngine + RunManager).
 import sys
 import json
 import importlib.util
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
 import optuna
@@ -49,7 +50,7 @@ from gta_ps.envs.garnet import GarnetEnv                          # noqa: E402
 from gta_ps.envs.fourrooms import FourRoomsTabular                # noqa: E402
 from gta_ps.algorithms import make_agent                                      # noqa: E402
 from gta_ps.utils.hyperparams import (                            # noqa: E402
-    GtaPSConfig, GtaPSSearchSpace, SPACES, compute_reward_scale,
+    ENV_DEFAULT_CONFIG, GtaPSSearchSpace, SPACES, compute_reward_scale,
 )
 
 # threads/runner.py is outside the gta_ps package — use _direct_import.
@@ -70,6 +71,25 @@ def _load_config(path: str) -> dict:
         raise SystemExit("PyYAML required for --config: pip install pyyaml")
     with open(path) as f:
         return yaml.safe_load(f) or {}
+
+
+def _resolve_config_for_env(
+    env_name: str,
+    configs_dir: Path,
+    explicit_config: str | None,
+) -> tuple[dict, Path | None]:
+    if explicit_config is not None:
+        cfg_path = Path(explicit_config).resolve()
+        return _load_config(str(cfg_path)), cfg_path
+
+    filename = ENV_DEFAULT_CONFIG.get(env_name)
+    if filename is None:
+        return {}, None
+
+    cfg_path = configs_dir / filename
+    if not cfg_path.exists():
+        return {}, None
+    return _load_config(str(cfg_path)), cfg_path
 
 
 # ---------------------------------------------------------------------------
@@ -125,58 +145,95 @@ def _update_config_tuned(
 # Environment / agent helpers
 # ---------------------------------------------------------------------------
 
-def _env_kwargs_from_env(env) -> tuple:
-    """Extract (env_name, flat_kwargs) from a built env instance.
+@dataclass(frozen=True)
+class TunerRunConfig:
+    env_name: str
+    gamma: float
+    seeds: int
+    seed_offset: int
+    n_shifts: int
+    K: int
+    n_steps_per_shift: int
+    workers: int | str | None
+    config_path: str | None
+    env_kwargs: Dict[str, Any]
 
-    The returned flat_kwargs are the constructor keyword arguments needed to
-    recreate the same env for a different seed, excluding `seed` itself.
-    These kwargs are picklable and can be spread into worker fn_kwargs dicts.
-    """
-    if isinstance(env, GarnetEnv):
-        return "garnet", dict(
-            n_states=env.n_states,
-            n_actions=env.n_actions,
-            branching=env.branching,
-            n_nbr_rate=round(env.n_nbr / env.n_states, 6),
-            reward_support=env.reward_support,
-        )
-    if isinstance(env, FourRoomsTabular):
-        return "fourrooms", dict(k=env.k)
-    raise TypeError(f"Unsupported env type: {type(env).__name__!r}. "
-                    f"Pass a GarnetEnv or FourRoomsTabular instance.")
+    @property
+    def backups_per_shift(self) -> int:
+        return self.K * self.n_steps_per_shift
+
+    def seed_values(self) -> List[int]:
+        return list(range(self.seed_offset, self.seed_offset + self.seeds))
 
 
-def _make_env(
-    env_name: str,
-    gamma: float,
-    seed: int,
-    # garnet kwargs
-    n_states: int = 75,
-    n_actions: int = 5,
-    branching: int = 3,
-    n_nbr_rate: float = 0.15,
-    reward_support: int = 4,
-    # fourrooms kwargs
-    k: int = 1,
-):
+@dataclass(frozen=True)
+class AgentRunConfig:
+    variant: str
+    module_kwargs: Dict[str, Any]
+    normalize_b_from_first_shift: bool = False
+
+
+def _resolve_arg(value, cfg: dict, key: str, fallback):
+    return value if value is not None else cfg.get(key, fallback)
+
+
+def _resolve_env_kwargs(env_name: str, cfg: dict) -> Dict[str, Any]:
     if env_name == "garnet":
-        return GarnetEnv(
-            n_states=n_states, n_actions=n_actions, branching=branching,
-            n_nbr_rate=n_nbr_rate, reward_support=reward_support, gamma=gamma, seed=seed,
-        )
+        return {
+            "n_states": int(cfg.get("n_states", 75)),
+            "n_actions": int(cfg.get("n_actions", 4)),
+            "branching": int(cfg.get("branching", 3)),
+            "n_nbr_rate": float(cfg.get("n_nbr_rate", 0.15)),
+            "reward_support": int(cfg.get("reward_support", 4)),
+        }
     if env_name == "fourrooms":
-        return FourRoomsTabular(k=k, gamma=gamma, seed=seed)
+        return {"k": int(cfg.get("k_fourrooms", cfg.get("k", 1)))}
     raise ValueError(f"Unknown env: {env_name!r}")
 
 
-def _eval_agent(agent, env, n_shifts: int, K: int, n_steps_per_shift: int = 100) -> float:
+def _build_run_config(args, cfg: dict, env_name: str, config_path: Path | None) -> TunerRunConfig:
+    K = args.K
+    if K is None:
+        budgets = cfg.get("budgets")
+        K = int(budgets[0]) if budgets else 20
+    return TunerRunConfig(
+        env_name=env_name,
+        gamma=float(_resolve_arg(args.gamma, cfg, "gamma", 0.95)),
+        seeds=int(args.seeds),
+        seed_offset=int(args.seed_offset),
+        n_shifts=int(_resolve_arg(args.n_shifts, cfg, "n_shifts", 6)),
+        K=int(K),
+        n_steps_per_shift=int(_resolve_arg(args.n_steps_per_shift, cfg, "n_steps_per_shift", 50)),
+        workers=args.workers,
+        config_path=str(config_path) if config_path is not None else None,
+        env_kwargs=_resolve_env_kwargs(env_name, cfg),
+    )
+
+
+def _make_env(run_cfg: TunerRunConfig, seed: int):
+    if run_cfg.env_name == "garnet":
+        return GarnetEnv(
+            gamma=run_cfg.gamma,
+            seed=seed,
+            **run_cfg.env_kwargs,
+        )
+    if run_cfg.env_name == "fourrooms":
+        return FourRoomsTabular(
+            k=run_cfg.env_kwargs["k"],
+            gamma=run_cfg.gamma,
+            seed=seed,
+        )
+    raise ValueError(f"Unknown env: {run_cfg.env_name!r}")
+
+
+def _eval_agent(agent, env, run_cfg: TunerRunConfig) -> float:
     # K = backups per host step; n_steps_per_shift = host steps between reward shifts.
     # Total backup budget per shift = K × n_steps_per_shift, matching the Dyna protocol.
     # DP host has oracle P/r so there are no model updates between host steps;
     # plan(K * n_steps_per_shift) is equivalent to calling plan(K) n_steps_per_shift times.
-    budget = K * n_steps_per_shift
+    budget = run_cfg.backups_per_shift
     errs = []
-    for _ in range(n_shifts):
+    for _ in range(run_cfg.n_shifts):
         r = env.shift_reward()
         V_star = env.value_iteration(r)
         V = agent.plan(K=budget, r=r)
@@ -185,48 +242,29 @@ def _eval_agent(agent, env, n_shifts: int, K: int, n_steps_per_shift: int = 100)
 
 
 # ---------------------------------------------------------------------------
-# Top-level worker functions (must be module-level for ProcessPoolExecutor)
+# Top-level worker function (must be module-level for ProcessPoolExecutor)
 # ---------------------------------------------------------------------------
 
-def _run_baseline_seed(
-    seed: int, env_name: str, gamma: float, n_shifts: int, K: int,
-    n_steps_per_shift: int = 100,
-    # env construction kwargs (forwarded from _env_kwargs_from_env)
-    n_states: int = 75, n_actions: int = 5, branching: int = 3,
-    n_nbr_rate: float = 0.15, reward_support: int = 4, k: int = 1,
-) -> float:
-    env = _make_env(env_name, gamma, seed=seed, n_states=n_states,
-                    n_actions=n_actions, branching=branching, n_nbr_rate=n_nbr_rate,
-                    reward_support=reward_support, k=k)
-    agent = make_agent("standard_ps", P=env.P, r=env.r, gamma=gamma, q=20)
-    return _eval_agent(agent, env, n_shifts, K, n_steps_per_shift)
+def _run_seed(seed: int, run_cfg: TunerRunConfig, agent_cfg: AgentRunConfig) -> float:
+    env = _make_env(run_cfg, seed=seed)
+    module_kwargs = dict(agent_cfg.module_kwargs)
 
-
-def _run_trial_seed(
-    seed: int, env_name: str, gamma: float, n_shifts: int, K: int,
-    n_steps_per_shift: int = 100,
-    # env construction kwargs (forwarded from _env_kwargs_from_env)
-    n_states: int = 75, n_actions: int = 5, branching: int = 3,
-    n_nbr_rate: float = 0.15, reward_support: int = 4, k: int = 1,
-    variant: str = "gta_base",
-    slem_init: float = 0.0,
-    **cfg_kwargs,
-) -> float:
-    env = _make_env(env_name, gamma, seed=seed, n_states=n_states,
-                    n_actions=n_actions, branching=branching, n_nbr_rate=n_nbr_rate,
-                    reward_support=reward_support, k=k)
-
-    # Bug 3 fix: normalise b using the FIRST SHIFTED reward, not the construction reward.
-    if "b" in cfg_kwargs:
+    # Normalise b using the first shifted reward, not the construction reward.
+    if agent_cfg.normalize_b_from_first_shift:
         r_first_shift = env.shift_reward()
         scale = compute_reward_scale(r_first_shift)
-        cfg_kwargs = {**cfg_kwargs, "b": cfg_kwargs["b"] / scale}
-        env = _make_env(env_name, gamma, seed=seed, n_states=n_states,
-                        n_actions=n_actions, branching=branching, n_nbr_rate=n_nbr_rate,
-                        reward_support=reward_support, k=k)
+        module_kwargs["b"] = module_kwargs["b"] / scale
+        env = _make_env(run_cfg, seed=seed)
 
-    agent = make_agent(variant, P=env.P, r=env.r, gamma=gamma, q=20, **cfg_kwargs)
-    return _eval_agent(agent, env, n_shifts, K, n_steps_per_shift)
+    agent = make_agent(
+        agent_cfg.variant,
+        P=env.P,
+        r=env.r,
+        gamma=run_cfg.gamma,
+        q=20,
+        **module_kwargs,
+    )
+    return _eval_agent(agent, env, run_cfg)
 
 
 class GtaPSTuner:
@@ -248,73 +286,51 @@ class GtaPSTuner:
 
     def __init__(
         self,
-        env,
+        run_cfg: TunerRunConfig,
         space: GtaPSSearchSpace,
-        seeds: int = 10,
-        n_shifts: int = 10,
-        K: int = 50,
-        n_steps_per_shift: int = 100,
-        workers: int | None = None,
         variant: str = "gta_base",
-        seed_offset: int = 1000,
     ):
-        self.env_name, self._env_kwargs = _env_kwargs_from_env(env)
-        self.gamma  = env.gamma
+        self.run_cfg = run_cfg
         self.space  = space
-        self.seeds  = seeds
-        self.n_shifts = n_shifts
-        self.K        = K
-        self.n_steps_per_shift = n_steps_per_shift
         self.variant  = variant
-        self.seed_offset = seed_offset
-        self._runner  = RunManager(n_workers=workers)
-
-        # SLEM from the provided env (already built at seed=0).
-        from gta_ps.utils.spectral import slem_arnoldi
-        _P_uni = np.einsum(
-            'sa,ast->st',
-            np.ones((env.n_states, env.n_actions)) / env.n_actions,
-            env.P,
-        )
-        self._slem_init, _ = slem_arnoldi(_P_uni, k=min(15, env.n_states - 2))
-
+        self._runner  = RunManager(n_workers=run_cfg.workers)
         self.baseline_error = self._compute_baseline()
 
     def _compute_baseline(self) -> float:
-        seeds = list(range(self.seed_offset, self.seed_offset + self.seeds))
-        results = self._runner.run(
-            _run_baseline_seed,
-            seeds=seeds,
-            fn_kwargs={
-                "env_name": self.env_name,
-                "gamma": self.gamma,
-                "n_shifts": self.n_shifts,
-                "K": self.K,
-                "n_steps_per_shift": self.n_steps_per_shift,
-                **self._env_kwargs,
-            },
+        jobs = [
+            {
+                "seed": seed,
+                "run_cfg": self.run_cfg,
+                "agent_cfg": AgentRunConfig(variant="standard_ps", module_kwargs={}),
+            }
+            for seed in self.run_cfg.seed_values()
+        ]
+        results = self._runner.run_jobs(
+            _run_seed,
+            jobs=jobs,
             desc="baseline",
         )
         return float(np.mean(results))
 
     def objective(self, trial: optuna.Trial) -> float:
         cfg = self.space.suggest(trial)
-        fixed = {
-            "env_name": self.env_name,
-            "gamma": self.gamma,
-            "n_shifts": self.n_shifts,
-            "K": self.K,
-            "n_steps_per_shift": self.n_steps_per_shift,
-            "variant": self.variant,
-            "slem_init": self._slem_init,
-            **self._env_kwargs,
-            **cfg.to_kwargs(),
-        }
-        seeds = list(range(self.seed_offset, self.seed_offset + self.seeds))
-        jobs = [{"seed": s, **fixed} for s in seeds]
+        module_kwargs = cfg.to_kwargs()
+        agent_cfg = AgentRunConfig(
+            variant=self.variant,
+            module_kwargs=module_kwargs,
+            normalize_b_from_first_shift="b" in module_kwargs,
+        )
+        jobs = [
+            {
+                "seed": seed,
+                "run_cfg": self.run_cfg,
+                "agent_cfg": agent_cfg,
+            }
+            for seed in self.run_cfg.seed_values()
+        ]
         # verbose=False: Optuna callback handles outer progress
         results = self._runner.run_jobs(
-            _run_trial_seed, jobs,
+            _run_seed, jobs,
             desc=f"trial-{trial.number}", verbose=False,
         )
         mean_err = float(np.mean(results))
@@ -347,13 +363,30 @@ class GtaPSTuner:
         baseline = round(self.baseline_error, 6)
         improvement = round((baseline - best_err) / baseline * 100, 2)
         return {
-            "env": self.env_name,
+            "env": self.run_cfg.env_name,
             "tuned_params": self.space.param_names,
             "baseline_error": baseline,
             "best_error": best_err,
             "improvement_pct": improvement,
             "best_params": best_params,
         }
+
+
+def _print_run_stats(run_cfg: TunerRunConfig, variant: str, n_trials: int, tuned_params: List[str]) -> None:
+    seed_last = run_cfg.seed_offset + run_cfg.seeds - 1
+    print("  run stats:")
+    print(f"    config: {run_cfg.config_path or '<none>'}")
+    print(f"    variant: {variant}")
+    print(f"    trials: {n_trials}")
+    print(f"    seeds: {run_cfg.seed_offset}..{seed_last} ({run_cfg.seeds} total)")
+    print(f"    K: {run_cfg.K}")
+    print(f"    n_steps_per_shift: {run_cfg.n_steps_per_shift}")
+    print(f"    n_shifts: {run_cfg.n_shifts}")
+    print(f"    backups_per_shift: {run_cfg.backups_per_shift}")
+    print(f"    gamma: {run_cfg.gamma}")
+    print(f"    workers: {run_cfg.workers if run_cfg.workers is not None else 'auto'}")
+    print(f"    env_kwargs: {run_cfg.env_kwargs}")
+    print(f"    tuned_params: {tuned_params}")
 
 
 # ---------------------------------------------------------------------------
@@ -374,19 +407,13 @@ def main():
     parser.add_argument("--n-trials", type=int, default=30)
     parser.add_argument("--seeds", type=int, default=30)
     parser.add_argument("--seed-offset", type=int, default=100000)
-    parser.add_argument("--n-shifts", type=int, default=6)
-    parser.add_argument("--K", type=int, default=None,
-                        help="Bellman backup budget per host step (default: budgets[0] from config, else 20)")
-    parser.add_argument("--n-steps-per-shift", type=int, default=50)
-    parser.add_argument("--gamma", type=float, default=0.95)
-    parser.add_argument("--workers", type=int, default=None,
-                        help="parallel worker processes per trial (None → auto)")
+    parser.add_argument("--n-shifts", type=int, default=4, help="reward shifts per seed (YAML n_shifts overrides)")
+    parser.add_argument("--K", type=int, default=20, help="Bellman backup budget per host step (YAML budgets[0] overrides)")
+    parser.add_argument("--n-steps-per-shift", type=int, default=50, help="steps per reward shift (YAML n_steps_per_shift overrides)")
+    parser.add_argument("--gamma", type=float, default=None)
+    parser.add_argument("--workers", default=5)
     parser.add_argument("--out", default=str(ROOT / "results/misc/tuner/tune.json"))
-    parser.add_argument(
-        "--configs-dir", default=None,
-        help="path to configs/ directory for write-back "
-             "(default: configs/ relative to ROOT)",
-    )
+    parser.add_argument("--configs-dir", default=None)
     parser.add_argument(
         "--config", default=None, metavar="YAML",
         help="Path to a YAML experiment config. Provides defaults for "
@@ -395,30 +422,10 @@ def main():
     args = parser.parse_args()
 
     # ── load YAML config ─────────────────────────────────────────────────
-    _cfg: dict = {}
-    if args.config is not None:
-        config_path = Path(args.config).resolve()
-        _cfg = _load_config(str(config_path))
-        # Apply YAML defaults where CLI left values at parser defaults
-        _MAP = [("n_shifts", "n_shifts", 8), ("gamma", "gamma", 0.95),
-                ("seeds",  "seeds",    30)]
-        for dest, key, default in _MAP:
-            if key in _cfg and getattr(args, dest) == default:
-                setattr(args, dest, _cfg[key])
 
     # K: YAML budgets[0] → fallback 20
-    if args.K is None:
-        args.K = int(_cfg["budgets"][0]) if "budgets" in _cfg else 20
 
-    # n_steps_per_shift: YAML → fallback 100 (matches rq2_allocation default)
-    if args.n_steps_per_shift is None:
-        args.n_steps_per_shift = int(_cfg.get("n_steps_per_shift", 100))
-
-    _n_actions      = _cfg.get("n_actions",  10)
-    _branching      = _cfg.get("branching",  3)
-    _n_nbr          = _cfg.get("n_nbr_rate",  0.15)
-    _reward_support = _cfg.get("reward_support", 4)
-    _k_fourrooms    = _cfg.get("k_fourrooms",  1)
+    # n_steps_per_shift: YAML → fallback 50 (matches rq2_allocation default)
 
     configs_dir = (
         Path(args.configs_dir).resolve() if args.configs_dir
@@ -428,25 +435,23 @@ def main():
     results: Dict = {}
     for env_name in args.envs:
         results[env_name] = {}
-        # Build seed=0 env once per env_name; tuner extracts all params from it.
-        _env0 = _make_env(
-            env_name, args.gamma, seed=0,
-            n_actions=_n_actions, branching=_branching, n_nbr_rate=_n_nbr,
-            reward_support=_reward_support, k=_k_fourrooms,
+        env_cfg, env_cfg_path = _resolve_config_for_env(
+            env_name=env_name,
+            configs_dir=configs_dir,
+            explicit_config=args.config,
         )
+        run_cfg = _build_run_config(args, env_cfg, env_name, env_cfg_path)
         for variant in args.variants:
             space = SPACES[variant]
             print(f"\n[{env_name}] {variant}  tuning: {space.param_names}")
+            _print_run_stats(run_cfg, variant, args.n_trials, space.param_names)
             tuner = GtaPSTuner(
-                env=_env0, space=space,
-                seeds=args.seeds, n_shifts=args.n_shifts, K=args.K,
-                n_steps_per_shift=args.n_steps_per_shift,
-                workers=args.workers,
+                run_cfg=run_cfg,
+                space=space,
                 variant=variant,
-                seed_offset=args.seed_offset,
             )
             print(f" [DP + Standard PS] baseline: {tuner.baseline_error:.4f}"
-                  f"  (K={args.K} × {args.n_steps_per_shift} steps/shift = {args.K * args.n_steps_per_shift} backups/shift)")
+                  f"  (K={run_cfg.K} × {run_cfg.n_steps_per_shift} steps/shift = {run_cfg.backups_per_shift} backups/shift)")
             result = tuner.run(n_trials=args.n_trials)
             results[env_name][variant] = result
             print(

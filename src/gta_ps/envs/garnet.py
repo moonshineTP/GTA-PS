@@ -13,8 +13,8 @@ class GarnetEnv:
 
     def __init__(
         self,
-        n_states: int = 100,
-        n_actions: int = 10,
+        n_states: int = 75,
+        n_actions: int = 4,
         branching: int = 3,
         reward_support: int = 4,
         gamma: float = 0.95,
@@ -134,7 +134,7 @@ class GarnetEnv:
         for _ in range(1000):
             Q = r[None, :] + self.gamma * (self.P * V[None, None, :]).sum(axis=2)
             V_new = Q.max(axis=0)
-            if np.linalg.norm(V_new - V, ord=np.inf) < 1e-8: break
+            if np.linalg.norm(V_new - V, ord=np.inf) < 1e-4: break
             V = V_new
         return V
 

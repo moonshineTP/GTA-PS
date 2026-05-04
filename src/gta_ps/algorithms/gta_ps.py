@@ -97,7 +97,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
     def _solve_out(self, rhs: np.ndarray, x0: np.ndarray | None = None) -> np.ndarray:
         if self._lu_out is not None:
             return self._lu_out.solve(rhs)
-        f, info = spla.gmres(self._A_out, rhs, x0=x0, restart=30, maxiter=500, atol=1e-8)
+        f, info = spla.gmres(self._A_out, rhs, x0=x0, restart=30, maxiter=500, atol=1e-4)
         if info != 0:
             f = spla.spsolve(self._A_out.tocsc(), rhs)
         return f
@@ -105,7 +105,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
     def _solve_in(self, rhs: np.ndarray, x0: np.ndarray | None = None) -> np.ndarray:
         if self._lu_in is not None:
             return self._lu_in.solve(rhs)
-        f, info = spla.gmres(self._A_in, rhs, x0=x0, restart=30, maxiter=500, atol=1e-8)
+        f, info = spla.gmres(self._A_in, rhs, x0=x0, restart=30, maxiter=500, atol=1e-4)
         if info != 0:
             f = spla.spsolve(self._A_in.tocsc(), rhs)
         return f
@@ -169,9 +169,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
 
         # Priority queues and counters
         self.q_t = self.q if self.q is not None else n
-        self._step_count = 0
-        # H_ref ≈ |S| and T_arn ≈ ceil(sqrt(|S|)): dense refreshes stay amortized,
-        # while SLEM is recomputed often enough to keep beta_t from drifting.
+        self._step_count = 0.
         self._T_arn = max(1, math.isqrt(max(1, n) - 1) + 1)
         self._T_topo = max(1, n)
         self._T_tau = max(1, n)
@@ -252,13 +250,12 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
             # β₂ < 0  → dampening threshold (dampen; β_t=0 when |β₂| > 1−SLEM)
             # β₂ = 0  → pure spectral-gap scaling (β_t > 0 iff SLEM < 1)
             # β₂ > 0  → positive floor (β_t always > 0 when β₁ > 0)
-            # Recommended tuning range: β₂ ∈ (−0.05, 0.25)..
             return self.beta1 * ((1.0 - slem) + self.beta2)
         if self.beta_mode == "log":
             # β_t = β₁ · (−log SLEM + β₂)
             # −log(SLEM) ≈ (1−SLEM) for SLEM≈1 but saturates as SLEM→0,
             # preventing topology overdrive on fast-mixing chains.
-            return self.beta1 * (-np.log(max(slem, 1e-15)) + self.beta2)
+            return self.beta1 * (-np.log(max(slem, 1e-10)) + self.beta2)
         raise ValueError(f"Invalid beta_mode: {self.beta_mode!r}. "
                          f"Choose from: 'fixed', 'linear', 'log'.")
 
@@ -292,7 +289,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         entries = []
         if self.beta_t > 0:
             for s in self._top_q:
-                if self.xi[s] <= 1e-8:
+                if self.xi[s] <= 1e-4:
                     score = self.beta_t * self.tau[s]
                     if score > 0:
                         self._version_hq[int(s)] = 0
@@ -309,7 +306,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         #   β_t = 0 → pure Standard-PS (no topology signal).
         # Floor at 0 (not at ξ): a residual state must stay in the queue
         # (positive priority) but its relative rank can be reduced by negative τ.
-        hot = np.where(self.xi > 1e-8)[0]
+        hot = np.where(self.xi > 1e-4)[0]
         self._version_xi = {int(s): 0 for s in hot}
         entries = [
             (-float(max(0.0, self.xi[s] + self.beta_t * self.tau[s])), 0, int(s))
@@ -325,7 +322,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         if self.beta_t > 0:
             for s in self._top_q:
                 s = int(s)
-                if self.xi[s] <= 1e-8 and self.tau[s] > 0:
+                if self.xi[s] <= 1e-4 and self.tau[s] > 0:
                     self._version_hq[s] = 0
                     topo_entries.append((-self.beta_t * float(self.tau[s]), 0, s))
         heapq.heapify(topo_entries)
@@ -492,11 +489,11 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
                 pred, self._P_model, self._r_model, self.gamma, self.V
             )
             self.xi[pred] = xi_pred
-            if xi_pred > 1e-8:
+            if xi_pred > 1e-4:
                 # Score = ξ + β_t·τ, floored at 0 so the state stays
                 # EMA-style update to the score: incorporate latest tau into the existing residual priority.
                 # This ensures the global field update reflects in the queue ranks.
-                score = max(0.0, 0.8 * xi_pred + 0.2 * self.beta_t * self.tau[pred])
+                score = max(0.0, xi_pred + self.beta_t * self.tau[pred])
                 v = self._version_xi.get(pred, -1) + 1
                 self._version_xi[pred] = v
                 heapq.heappush(self._Q_xi, (-score, v, pred))

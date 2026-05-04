@@ -33,7 +33,7 @@ from threads.runner import RunManager
 # Per-scheduler beta2 grids
 # ---------------------------------------------------------------------------
 
-_GRID_LINEAR = [-0.05, -0.02, -0.01, 0.0, 0.01, 0.02, 0.05, 0.10, 0.20, 0.50]
+_GRID_LINEAR = [-0.05, -0.02, 0.0, 0.01, 0.02, 0.05, 0.10, 0.20, 0.50]
 
 SCHEDULER_GRIDS = {
     "linear": _GRID_LINEAR,
