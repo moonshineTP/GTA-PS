@@ -1,157 +1,170 @@
 {
-  "status": "legacy_stale_pre_redesign",
-  "message": "This artifact comes from the old n_nbr_rate / FourRooms rq6 design. Regenerate it by rerunning code/experiments/rq6_curl_divergence.py after the directed path-flow vs cyclic-flow rewrite.",
   "garnet": {
-    "1.0": {
+    "Path-like flow": {
       "Standard-PS": {
-        "mean": 5.817983208605142,
-        "ci95": 0.24141576795709666
+        "mean": 1.3170513321150432,
+        "ci95": 0.07155111341830915
       },
-      "Forward-GTA": {
-        "mean": 5.490066140162623,
-        "ci95": 0.23768873397809268
+      "GTA-base": {
+        "mean": 1.3803200238215185,
+        "ci95": 0.0820652604400646
       },
-      "Full-GTA": {
-        "mean": 5.487596191821509,
-        "ci95": 0.21001897487749865
+      "GTA-beta": {
+        "mean": 1.3665482606328223,
+        "ci95": 0.08373607381744606
       }
     },
-    "0.75": {
+    "Cycle-like flow": {
       "Standard-PS": {
-        "mean": 5.848323290348491,
-        "ci95": 0.24014139519785024
+        "mean": 1.426115686822009,
+        "ci95": 0.013861840399548606
       },
-      "Forward-GTA": {
-        "mean": 5.543458709501997,
-        "ci95": 0.24143048884716628
+      "GTA-base": {
+        "mean": 1.3086186696332407,
+        "ci95": 0.010026816067180406
       },
-      "Full-GTA": {
-        "mean": 5.510615756521412,
-        "ci95": 0.2240570551416566
-      }
-    },
-    "0.5": {
-      "Standard-PS": {
-        "mean": 5.989938214207114,
-        "ci95": 0.25801498554664776
-      },
-      "Forward-GTA": {
-        "mean": 5.728023981828504,
-        "ci95": 0.2570512047039685
-      },
-      "Full-GTA": {
-        "mean": 5.680059887554014,
-        "ci95": 0.21835919386528604
-      }
-    },
-    "0.25": {
-      "Standard-PS": {
-        "mean": 6.453485177261325,
-        "ci95": 0.27868566940429085
-      },
-      "Forward-GTA": {
-        "mean": 6.21246040889329,
-        "ci95": 0.26965137861307853
-      },
-      "Full-GTA": {
-        "mean": 6.231498589529286,
-        "ci95": 0.2692771189397778
-      }
-    },
-    "0.1": {
-      "Standard-PS": {
-        "mean": 6.266625837538799,
-        "ci95": 0.2743555797858721
-      },
-      "Forward-GTA": {
-        "mean": 6.1892395480693265,
-        "ci95": 0.28023995473760555
-      },
-      "Full-GTA": {
-        "mean": 6.181640563476089,
-        "ci95": 0.2675064906165808
-      }
-    },
-    "0.05": {
-      "Standard-PS": {
-        "mean": 4.612305105745775,
-        "ci95": 0.19487276824152538
-      },
-      "Forward-GTA": {
-        "mean": 4.512531213069465,
-        "ci95": 0.20332373836275086
-      },
-      "Full-GTA": {
-        "mean": 4.545081816601195,
-        "ci95": 0.171653570186645
+      "GTA-beta": {
+        "mean": 1.266019601899948,
+        "ci95": 0.010434430327607382
       }
     }
   },
   "fourrooms": {
     "Symmetric": {
       "Standard-PS": {
-        "mean": 10.481191274146763,
-        "ci95": 0.598930990138616
+        "mean": 15.064758977585607,
+        "ci95": 0.059701651226659797
       },
-      "Forward-GTA": {
-        "mean": 10.359814474989882,
-        "ci95": 0.5378685870785295
+      "GTA-base": {
+        "mean": 14.169221374942106,
+        "ci95": 0.058014172648394695
       },
-      "Full-GTA": {
-        "mean": 10.320244523772022,
-        "ci95": 0.5514920704851267
+      "GTA-beta": {
+        "mean": 14.152195632945517,
+        "ci95": 0.06170327914753562
       }
     },
     "Windy (Div)": {
       "Standard-PS": {
-        "mean": 7.693858404820634,
-        "ci95": 0.7046234054609991
+        "mean": 12.92453558790703,
+        "ci95": 0.11502261383873862
       },
-      "Forward-GTA": {
-        "mean": 7.748204282728582,
-        "ci95": 0.6769371204116008
+      "GTA-base": {
+        "mean": 12.170629648489056,
+        "ci95": 0.10618204489371123
       },
-      "Full-GTA": {
-        "mean": 7.466291008761459,
-        "ci95": 0.7350042872824143
+      "GTA-beta": {
+        "mean": 12.175508101352722,
+        "ci95": 0.10347435784931558
       }
     },
-    "Cyclic (Curl)": {
+    "Belt-like (Curl)": {
       "Standard-PS": {
-        "mean": 4.012788255129994,
-        "ci95": 0.28202461463756956
+        "mean": 8.799207927162163,
+        "ci95": 0.06360229211826389
       },
-      "Forward-GTA": {
-        "mean": 3.8167544013629127,
-        "ci95": 0.2623163779092191
+      "GTA-base": {
+        "mean": 8.428723936717676,
+        "ci95": 0.06242438985596974
       },
-      "Full-GTA": {
-        "mean": 3.995275211373392,
-        "ci95": 0.2941963644925068
+      "GTA-beta": {
+        "mean": 8.45658107257988,
+        "ci95": 0.06405556645633535
       }
     },
     "Mixed": {
       "Standard-PS": {
-        "mean": 3.4378000665266897,
-        "ci95": 0.2252420969753689
+        "mean": 8.109748739291849,
+        "ci95": 0.06624354564573506
       },
-      "Forward-GTA": {
-        "mean": 3.5600524171590906,
-        "ci95": 0.21560494096490357
+      "GTA-base": {
+        "mean": 7.704641233467328,
+        "ci95": 0.06492404841683841
       },
-      "Full-GTA": {
-        "mean": 3.4547485034783314,
-        "ci95": 0.3007569345041189
+      "GTA-beta": {
+        "mean": 7.815339833007755,
+        "ci95": 0.06689036823950179
       }
     }
   },
   "config": {
     "config": null,
-    "workers": 5,
-    "seeds": 50,
+    "workers": 8,
+    "seeds": 1000,
     "K": 20,
-    "n_shifts": 4,
-    "n_steps_per_shift": 50,
-    "gamma": 0.95
+    "n_shifts": 3,
+    "n_steps_per_shift": 40,
+    "gamma": 0.95,
+    "n_states": 35,
+    "n_actions": 3,
+    "branching": 2,
+    "reward_support": 3,
+    "reward_locality": true,
+    "forward_hi": 0.95,
+    "forward_lo": 0.85,
+    "room_size": 3,
+    "corridor_len": 1,
+    "corridor_width": 1,
+    "window_offset": 0,
+    "k_fourrooms": 2,
+    "flow_families": [
+      {
+        "label": "Path-like flow",
+        "kind": "path"
+      },
+      {
+        "label": "Cycle-like flow",
+        "kind": "cycle"
+      }
+    ],
+    "flow_env_kwargs": {
+      "n_states": 35,
+      "n_actions": 3,
+      "branching": 2,
+      "reward_support": 3,
+      "reward_locality": true
+    },
+    "kernel_kwargs": {
+      "forward_hi": 0.95,
+      "forward_lo": 0.85
+    },
+    "fourrooms_modes": [
+      {
+        "label": "Symmetric",
+        "kwargs": {}
+      },
+      {
+        "label": "Windy (Div)",
+        "kwargs": {
+          "drift": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "label": "Belt-like (Curl)",
+        "kwargs": {
+          "one_way_prob": 0.05
+        }
+      },
+      {
+        "label": "Mixed",
+        "kwargs": {
+          "drift": [
+            0,
+            1
+          ],
+          "one_way_prob": 0.05
+        }
+      }
+    ],
+    "fourrooms_base_kwargs": {
+      "room_size": 3,
+      "corridor_len": 1,
+      "corridor_width": 1,
+      "window_offset": 0,
+      "k": 2
+    }
   }
 }
