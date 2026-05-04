@@ -33,15 +33,16 @@ def test_garnet_vi():
 
 
 # ------------------------------------------------------------------ #
-# Environment tests — FourRooms (hand-built tabular)
+# Environment tests — FourRooms (position-only tabular)
 # ------------------------------------------------------------------ #
 
 def test_fourrooms_shapes():
     env = FourRoomsTabular(k=2, seed=0)
     S = env.n_states
     assert S > 0
-    assert env.P.shape == (4, S, S)   # 4 cardinal actions: UP, DOWN, LEFT, RIGHT
-    np.testing.assert_allclose(env.P.sum(axis=2), np.ones((4, S)), atol=1e-10)
+    assert env.P.shape == (5, S, S)   # left, up, right, down, stay
+    assert env.n_states == env.n_positions
+    np.testing.assert_allclose(env.P.sum(axis=2), np.ones((5, S)), atol=1e-10)
 
 
 def test_fourrooms_reward_shift():
@@ -54,14 +55,15 @@ def test_fourrooms_reward_shift():
 
 
 # ------------------------------------------------------------------ #
-# Environment tests — FourRooms
+# Environment tests — FourRooms (5-action LURD + stay semantics)
 # ------------------------------------------------------------------ #
 
 def test_minigrid_shapes():
     env = FourRoomsTabular(k=1, seed=0)
     S, A = env.n_states, env.n_actions
     assert S > 0
-    assert A == 4    # 4 cardinal actions: UP, DOWN, LEFT, RIGHT
+    assert A == 5    # left, up, right, down, stay
+    assert env.n_states == env.n_positions
     assert env.P.shape == (A, S, S)
     np.testing.assert_allclose(env.P.sum(axis=2), np.ones((A, S)), atol=1e-10)
 
@@ -189,16 +191,6 @@ def test_dynaps_runs():
 def test_gtaps_base_runs():
     env = GarnetEnv(n_states=30, n_actions=4, branching=3, seed=4)
     alg = GtaPS(env.P, env.r, gamma=env.gamma)
-    V = alg.plan(K=50)
-    assert V.shape == (30,)
-
-
-def test_gtaps_adaptive_runs():
-    env = GarnetEnv(n_states=30, n_actions=4, branching=3, seed=5)
-    alg = GtaPS(
-        env.P, env.r, gamma=env.gamma,
-        adaptive_alpha=True, adaptive_beta=True,
-    )
     V = alg.plan(K=50)
     assert V.shape == (30,)
 

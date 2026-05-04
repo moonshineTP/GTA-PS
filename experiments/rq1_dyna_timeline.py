@@ -112,10 +112,12 @@ def _run_seed(
     )
     sim_rng = np.random.default_rng(seed + 0xABCD_1234)  # trajectory only
     metrics = [REGISTRY[m] for m in metric_names]
+    variant_index = {v: i for i, v in enumerate(VARIANTS)}
 
     agents = {
         (K, v): make_agent(
             v, host="dyna", P=env.P, r=env.r, gamma=gamma, q=20,
+            rng=np.random.default_rng(np.random.SeedSequence([seed, K, variant_index[v], 0xD1A])),
             **_module_kwargs(v, method_cfgs, arnoldi_k)
         )
         for K in K_budgets

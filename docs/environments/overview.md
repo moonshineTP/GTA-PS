@@ -14,8 +14,8 @@ All environments expose a **common interface**:
 | **Dyna** (Learned) | [[reacher]] `src/gta_ps/envs/reacher.py`, [[cargoal]] `src/gta_ps/envs/cargoal.py` | empirical `P` via `CountModel`
 
 ## DP Environments
-- **GARNET**: Generative tabular MDP (100–500 states, ≥10 actions). Reference Archibald et al. 1995.
-- **FourRooms**: Deterministic 19×19 grid (≈384 states, 4 actions). Reward shifts in active rooms.
+- **GARNET**: Generative tabular MDP (75–200 states, ≥4 actions). Reference Archibald et al. 1995.
+- **FourRooms**: Deterministic FourRooms grid with 5 actions: left/up/right/down/stay. Reward shifts in active rooms.
 
 ## Dyna Environments
 - **Reacher**: 256‑state discretisation of 2‑joint Reacher (requires `gymnasium Reacher‑v5`, `mujoco`). Learns `P_hat` with `CountModelLearner`.

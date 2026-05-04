@@ -33,6 +33,7 @@ def make_agent(
     n_states: int | None = None,
     n_actions: int | None = None,
     eta_td: float = 0.1,
+    rng: "np.random.Generator | None" = None,
     **module_kwargs,
 ) -> "DpHost | DynaHost":
     """
@@ -59,6 +60,8 @@ def make_agent(
         not supplied; inferred from ``P.shape`` otherwise.
     eta_td : float
         TD learning rate (Dyna host only).
+    rng : np.random.Generator | None
+        Optional RNG used by Dyna planning rollouts.
     **module_kwargs
         Forwarded to GtaPS (e.g. ``beta1``, ``beta2``, ``alpha``, ``eta``, ``b``).
 
@@ -104,7 +107,7 @@ def make_agent(
         model = OracleModel(P, r)
         return DpHost(model, r, gamma, module)
     else:
-        return DynaHost(_n_states, _n_actions, gamma, eta_td, module, r_init=r)
+        return DynaHost(_n_states, _n_actions, gamma, eta_td, module, r_init=r, rng=rng)
 
 
 
