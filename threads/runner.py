@@ -67,6 +67,16 @@ class RunManager:
         list[Any]
             Results in the same order as `jobs`.
         """
+        if self.n_workers == 1:
+            results: list[Any] = [None] * len(jobs)
+            with tqdm(total=len(jobs), desc=desc, unit="job",
+                      dynamic_ncols=True, ascii=True,
+                      disable=not verbose) as pbar:
+                for i, job in enumerate(jobs):
+                    results[i] = fn(**job)
+                    pbar.update(1)
+            return results
+
         results: list[Any] = [None] * len(jobs)
         with ProcessPoolExecutor(max_workers=self.n_workers) as pool:
             futures = {pool.submit(fn, **job): i for i, job in enumerate(jobs)}
