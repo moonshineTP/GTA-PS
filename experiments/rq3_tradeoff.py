@@ -66,8 +66,8 @@ def run_alpha_sweep(
     seed: int,
     gamma: float,
     alpha_vals: list,
-    beta: float,
     budgets: list,
+    beta: float = 0.5,
     **env_kwargs
 ) -> dict:
     if env_name == "garnet":
@@ -99,7 +99,7 @@ def run_alpha_sweep(
         accuracy_top1 = 1.0 if top1_tau == top1_psi else 0.0
         
         # Metrics 2: Spearman Rho with oracle
-        if np.all(tau == tau[0]) or np.max(np.abs(tau)) < 1e-12:
+        if np.all(tau == tau[0]) or np.max(np.abs(tau)) < 1e-6:
             rho = 0.0
         else:
             rho_raw = stats.spearmanr(tau, psi)[0]
@@ -115,7 +115,7 @@ def run_alpha_sweep(
         # We define coverage as Top-20 states in tau overlap with states 
         # that have high oracle psi but are NOT the goal states.
         goal_states = set(np.where(r > 0)[0])
-        predecessor_states = np.argsort(-psi)[:40] # Top 40 in oracle
+        predecessor_states = np.argsort(-psi)[:20] # Top 20 in oracle
         predecessor_states = [s for s in predecessor_states if s not in goal_states]
         
         top20_states = np.argsort(-tau)[:20]
@@ -153,11 +153,11 @@ def main():
     parser.add_argument("--workers", type=int, default=5)
     args = parser.parse_args()
 
-    alpha_vals = [0.0, 0.1, 0.25, 0.5, 0.75, 1.0]
-    budgets = [25, 100]
+    alpha_vals = [0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0]
+    budgets = [10, 50]
     
     if args.env == "garnet":
-        env_kwargs = {"n_states": 75, "n_actions": 10, "branching": 3, "reward_support": 4, "reversible": 0.0}
+        env_kwargs = {"n_states": 75, "n_actions": 4, "branching": 3, "reward_support": 3, "reversible": 0.2}
     else:
         env_kwargs = {"k_fourrooms": args.k}
 
@@ -165,13 +165,12 @@ def main():
     fn_kwargs = {
         "env_name": args.env,
         "alpha_vals": alpha_vals,
-        "beta": args.beta,
         "budgets": budgets,
         "gamma": 0.95,
         **env_kwargs
     }
     
-    print(f"Running RQ3 tradeoff on {args.env} with beta={args.beta}...")
+    print(f"Running RQ3 tradeoff on {args.env}")
     all_raw = runner.run(run_alpha_sweep, list(range(args.seeds)), fn_kwargs)
     
     # Aggregate
@@ -199,22 +198,22 @@ def main():
         m_acc    = np.mean(summary[a]["acc"])
         m_rho    = np.mean(summary[a]["rho"])
         m_cov    = np.mean(summary[a]["cov"])
-        m_l1_25  = np.mean(summary[a]["err_l1"][25])
-        m_l1_100 = np.mean(summary[a]["err_l1"][100])
-        m_inf_25  = np.mean(summary[a]["err_inf"][25])
-        m_inf_100 = np.mean(summary[a]["err_inf"][100])
+        m_l1_small_K  = np.mean(summary[a]["err_l1"][budgets[0]])
+        m_l1_big_K = np.mean(summary[a]["err_l1"][budgets[1]])
+        m_inf_small_K  = np.mean(summary[a]["err_inf"][budget[0]])
+        m_inf_big_K = np.mean(summary[a]["err_inf"][budget[1]])
         print(f"{a:6.2f} | {m_acc:10.4f} | {m_rho:10.4f} | {m_cov:10.4f} | "
-              f"{m_l1_25:10.4f} | {m_l1_100:10.4f} | {m_inf_25:11.4f} | {m_inf_100:11.4f}")
+              f"{m_l1_small_K:10.4f} | {m_l1_big_K:10.4f} | {m_inf_small_K:11.4f} | {m_inf_big_K:11.4f}")
 
         final_data.append({
             "alpha": a,
             "top1_acc": m_acc,
             "rho": m_rho,
             "coverage": m_cov,
-            "err_l1_25": m_l1_25,
-            "err_l1_100": m_l1_100,
-            "err_inf_25": m_inf_25,
-            "err_inf_100": m_inf_100,
+            "err_l1_25": m_l1_small_K,
+            "err_l1_100": m_l1_big_K,
+            "err_inf_25": m_inf_small_K,
+            "err_inf_100": m_inf_big_K,
         })
 
     # Output to JSON

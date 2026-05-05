@@ -80,7 +80,7 @@ def run_beta_sweep(
             agent.module.push_predecessors(s, delta_V)
         
         # Calculate rho
-        if not sequence or np.all(tau == tau[0]) or np.max(np.abs(tau)) < 1e-12:
+        if not sequence or np.all(tau == tau[0]) or np.max(np.abs(tau)) < 1e-6:
             rho = 0.0
         else:
             initial_tau_ranks = stats.rankdata(-tau, method='min')
@@ -108,10 +108,10 @@ def main():
     parser.add_argument("--workers", type=int, default=5)
     args = parser.parse_args()
 
-    beta_vals = [0.0, 0.005, 0.02, 0.1, 0.5, 1.0, 2.5, 10.0, 20.0]
+    beta_vals = [0.0, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0]
     
     if args.env == "garnet":
-        env_kwargs = {"n_states": 75, "n_actions": 10, "branching": 3, "reward_support": 4}
+        env_kwargs = {"n_states": 75, "n_actions": 4, "branching": 3, "reward_support": 3}
         K = 25 # budget
         tag = "garnet_s75"
     else:
