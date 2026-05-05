@@ -36,7 +36,12 @@ from gta_ps.envs.garnet import GarnetEnv
 from gta_ps.algorithms import make_agent
 from gta_ps.utils.metrics import value_error_inf, value_error_l1
 from runner import RunManager
-from plot_academic import apply_style, get_palette
+from plot_academic import apply_style, get_palette, get_utility_color
+
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 
 def compute_policy_transition(env, policy):
     S = env.n_states
@@ -66,8 +71,8 @@ def run_alpha_sweep(
     seed: int,
     gamma: float,
     alpha_vals: list,
-    beta: float,
     budgets: list,
+    beta: float = 0.5,
     **env_kwargs
 ) -> dict:
     if env_name == "garnet":
@@ -99,7 +104,7 @@ def run_alpha_sweep(
         accuracy_top1 = 1.0 if top1_tau == top1_psi else 0.0
         
         # Metrics 2: Spearman Rho with oracle
-        if np.all(tau == tau[0]) or np.max(np.abs(tau)) < 1e-12:
+        if np.all(tau == tau[0]) or np.max(np.abs(tau)) < 1e-6:
             rho = 0.0
         else:
             rho_raw = stats.spearmanr(tau, psi)[0]
@@ -115,7 +120,7 @@ def run_alpha_sweep(
         # We define coverage as Top-20 states in tau overlap with states 
         # that have high oracle psi but are NOT the goal states.
         goal_states = set(np.where(r > 0)[0])
-        predecessor_states = np.argsort(-psi)[:40] # Top 40 in oracle
+        predecessor_states = np.argsort(-psi)[:20] # Top 20 in oracle
         predecessor_states = [s for s in predecessor_states if s not in goal_states]
         
         top20_states = np.argsort(-tau)[:20]
@@ -145,19 +150,60 @@ def run_alpha_sweep(
         
     return {"results": results}
 
+
+def plot_rq3_results(results_path: Path, plot_dir: Path) -> Path | None:
+    if plt is None or not results_path.exists():
+        return None
+
+    apply_style()
+    with open(results_path) as f:
+        data = json.load(f)
+
+    alphas = [d["alpha"] for d in data]
+    accs = [d["top1_acc"] for d in data]
+    covs = [d["coverage"] for d in data]
+
+    colors = get_palette("line", ["accuracy", "coverage"])
+    grid_color = get_utility_color("grid")
+
+    fig, ax1 = plt.subplots(figsize=(8, 5))
+    color1 = colors["accuracy"]
+    color2 = colors["coverage"]
+
+    ax1.set_xlabel(r"Weight $\alpha$")
+    ax1.set_ylabel("Accuracy", color=color1)
+    ax1.plot(alphas, accs, color=color1, marker="o", label="Accuracy")
+    ax1.tick_params(axis="y", labelcolor=color1)
+
+    ax2 = ax1.twinx()
+    ax2.set_ylabel("Coverage", color=color2)
+    ax2.plot(alphas, covs, color=color2, marker="s", label="Coverage")
+    ax2.tick_params(axis="y", labelcolor=color2)
+
+    ax1.set_title("Accuracy-Coverage Tradeoff")
+    ax1.grid(True, color=grid_color)
+    plt.tight_layout()
+    plot_dir.mkdir(parents=True, exist_ok=True)
+    out_path = plot_dir / "rq3_alpha_tradeoff.png"
+    plt.savefig(out_path, dpi=300)
+    plt.close(fig)
+    return out_path
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--env", default="garnet", choices=["garnet", "fourrooms"])
     parser.add_argument("--k", type=int, default=1, help="FourRooms k")
     parser.add_argument("--seeds", type=int, default=30)
     parser.add_argument("--workers", type=int, default=5)
+    parser.add_argument("--out-dir", default=str(ROOT / "results"))
+    parser.add_argument("--plot-dir", default=str(ROOT / "plots"))
     args = parser.parse_args()
 
-    alpha_vals = [0.0, 0.1, 0.25, 0.5, 0.75, 1.0]
-    budgets = [25, 100]
+    alpha_vals = [0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0]
+    budgets = [10, 50]
     
     if args.env == "garnet":
-        env_kwargs = {"n_states": 75, "n_actions": 10, "branching": 3, "reward_support": 4, "reversible": 0.0}
+        env_kwargs = {"n_states": 75, "n_actions": 4, "branching": 3, "reward_support": 3, "reversible": 0.0}
     else:
         env_kwargs = {"k_fourrooms": args.k}
 
@@ -170,7 +216,7 @@ def main():
         **env_kwargs
     }
     
-    print(f"Running RQ3 tradeoff on {args.env}...")
+    print(f"Running RQ3 tradeoff on {args.env}")
     all_raw = runner.run(run_alpha_sweep, list(range(args.seeds)), fn_kwargs)
     
     # Aggregate
@@ -188,8 +234,10 @@ def main():
                 summary[a]["err_l1"][K].append(res["value_errors"][K]["l1"])
                 
     print(f"\nResults for {args.env}:")
+    k_small, k_large = budgets
     header = (f"{'Alpha':>6} | {'Top-1 Acc':>10} | {'Rho':>10} | {'Coverage':>10} | "
-              f"{'L1(K=25)':>10} | {'L1(K=100)':>10} | {'Linf(K=25)':>11} | {'Linf(K=100)':>11}")
+              f"{f'L1(K={k_small})':>10} | {f'L1(K={k_large})':>10} | "
+              f"{f'Linf(K={k_small})':>11} | {f'Linf(K={k_large})':>11}")
     print(header)
     print("-" * len(header))
 
@@ -198,30 +246,38 @@ def main():
         m_acc    = np.mean(summary[a]["acc"])
         m_rho    = np.mean(summary[a]["rho"])
         m_cov    = np.mean(summary[a]["cov"])
-        m_l1_25  = np.mean(summary[a]["err_l1"][25])
-        m_l1_100 = np.mean(summary[a]["err_l1"][100])
-        m_inf_25  = np.mean(summary[a]["err_inf"][25])
-        m_inf_100 = np.mean(summary[a]["err_inf"][100])
+        m_l1_small_K  = np.mean(summary[a]["err_l1"][budgets[0]])
+        m_l1_big_K = np.mean(summary[a]["err_l1"][budgets[1]])
+        m_inf_small_K  = np.mean(summary[a]["err_inf"][budgets[0]])
+        m_inf_big_K = np.mean(summary[a]["err_inf"][budgets[1]])
         print(f"{a:6.2f} | {m_acc:10.4f} | {m_rho:10.4f} | {m_cov:10.4f} | "
-              f"{m_l1_25:10.4f} | {m_l1_100:10.4f} | {m_inf_25:11.4f} | {m_inf_100:11.4f}")
+              f"{m_l1_small_K:10.4f} | {m_l1_big_K:10.4f} | {m_inf_small_K:11.4f} | {m_inf_big_K:11.4f}")
 
         final_data.append({
             "alpha": a,
             "top1_acc": m_acc,
             "rho": m_rho,
             "coverage": m_cov,
-            "err_l1_25": m_l1_25,
-            "err_l1_100": m_l1_100,
-            "err_inf_25": m_inf_25,
-            "err_inf_100": m_inf_100,
+            "err_l1_small_K": m_l1_small_K,
+            "err_l1_big_K": m_l1_big_K,
+            "err_inf_small_K": m_inf_small_K,
+            "err_inf_big_K": m_inf_big_K,
         })
 
     # Output to JSON
     tag = f"{args.env}" if args.env == "garnet" else f"fourrooms_k{args.k}"
-    out_path = (ROOT / "results" / f"rq3_tradeoff_{tag}.json").resolve()
+    out_dir = Path(args.out_dir).resolve()
+    out_path = (out_dir / f"rq3_tradeoff_{tag}.json").resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(final_data, f, indent=2)
+
+    plot_path = plot_rq3_results(out_path, Path(args.plot_dir).resolve())
+    print(f"\nResults saved to: {out_path}")
+    if plot_path is not None:
+        print(f"Plot saved to:    {plot_path}")
+    else:
+        print("Plot skipped:     matplotlib is not installed")
 
 if __name__ == "__main__":
     main()

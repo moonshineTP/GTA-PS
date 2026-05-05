@@ -9,18 +9,18 @@ budgets:
 - 20
 - 50
 n_shifts: 6
-n_steps_per_shift: 100
-tail_steps: 150
+n_steps_per_shift: 40
+tail_steps: 80
 seeds: 100
 arnoldi_k: 15
 room_peak_ranges:
-- - 0.4
+- - 0.6
   - 1.2
 - - 0.3
-  - 0.8
-- - 0.2
   - 0.6
 - - 0.2
+  - 0.8
+- - 0.25
   - 0.5
 n_peaks_per_room: 2
 sigma_range:
