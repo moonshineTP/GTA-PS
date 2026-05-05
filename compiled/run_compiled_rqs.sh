@@ -46,13 +46,13 @@ done
 set -- "${NEW_ARGS[@]}"
 INDEX=0
 
-# RQ1 Proactiveness
+# RQ1 Convergence
 INDEX=$((INDEX+1))
 if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/9] RQ1 Proactiveness - skipped (start-from=$START_FROM)"
+    echo "[$INDEX/9] RQ1 Convergence - skipped (start-from=$START_FROM)"
 else
-    echo "[$INDEX/9] RQ1 Proactiveness (Compiled)"
-    "$ARTIFACTS_DIR/rq1_proactiveness.dist/rq1_proactiveness" "$@" || (echo "ERROR: rq1_proactiveness not found" && exit 1)
+    echo "[$INDEX/9] RQ1 Convergence (Compiled)"
+    "$ARTIFACTS_DIR/rq1_convergence.dist/rq1_convergence" "$@" || (echo "ERROR: rq1_convergence not found" && exit 1)
 fi
 echo ""
 

@@ -43,7 +43,7 @@ pip install -e ".[dev,reacher]"
 pytest tests/test_smoke.py -q   # ~21 tests
 
 # Quick RQ1 run
-python experiments/rq1_proactiveness.py --env garnet --n-states 100 --seeds 20 --n-shifts 5
+python experiments/rq1_convergence.py --n-states 100 --seeds 20
 
 # Beta schedule comparison (RQ2)
 python experiments/rq2_beta_magnitude.py

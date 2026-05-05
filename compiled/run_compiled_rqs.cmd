@@ -36,7 +36,7 @@ for %%a in (!USER_ARGS!) do (
 set "USER_ARGS=!NEW_USER_ARGS!"
 set "INDEX=0"
 
-call :RunRQ "RQ1 Proactiveness" "rq1_proactiveness.exe"
+call :RunRQ "RQ1 Convergence" "rq1_convergence.exe"
 call :RunRQ "RQ1 DP Timeline" "rq1_dp_timeline.exe"
 call :RunRQ "RQ1 Dyna Timeline" "rq1_dyna_timeline.exe"
 call :RunRQ "RQ2 Allocation" "rq2_allocation.exe"

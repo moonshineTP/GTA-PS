@@ -10,7 +10,7 @@ Design note
 Reward tracking is intentionally NOT part of PlanningModel / OracleModel.
 DpHost owns self.r so that multiple DpHost instances with different K values
 can each track their own reward state without aliasing (as in the multi-K
-experiment loop in rq1_proactiveness.py). OracleModel exposes r_init only
+experiment loop in rq1_convergence.py). OracleModel exposes r_init only
 as a convenience for constructing modules — it is not updated at runtime.
 """
 from __future__ import annotations

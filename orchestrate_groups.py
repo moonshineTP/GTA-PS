@@ -64,12 +64,11 @@ GROUPS: dict[str, tuple[ScriptSpec, ...]] = {
     ),
     "rqs": (
         ScriptSpec(
-            path="experiments/rq1_proactiveness.py",
-            label="RQ1 proactiveness",
+            path="experiments/rq1_convergence.py",
+            label="RQ1 convergence",
             forwarded_flags={
                 "workers": "--workers",
                 "seeds": "--seeds",
-                "K": "--K",
             },
         ),
         ScriptSpec(
