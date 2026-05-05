@@ -9,13 +9,13 @@
         "b"
       ],
       "baseline_error": 0.740627,
-      "best_error": 0.691708,
-      "improvement_pct": 6.61,
+      "best_error": 0.684133,
+      "improvement_pct": 7.63,
       "best_params": {
-        "beta": 0.09377,
-        "alpha": 0.533959,
-        "eta": 0.00293,
-        "b": 3.236061
+        "beta": 0.117935,
+        "alpha": 0.489958,
+        "eta": 0.014118,
+        "b": 3.94896
       }
     },
     "gta_beta": {
@@ -28,14 +28,14 @@
         "b"
       ],
       "baseline_error": 0.740627,
-      "best_error": 0.69163,
-      "improvement_pct": 6.62,
+      "best_error": 0.68236,
+      "improvement_pct": 7.87,
       "best_params": {
-        "beta1": 0.259669,
-        "beta2": 0.280532,
-        "alpha": 0.442632,
-        "eta": 0.000525,
-        "b": 3.140771
+        "beta1": 0.346922,
+        "beta2": 0.269094,
+        "alpha": 0.455302,
+        "eta": 0.015734,
+        "b": 3.82617
       }
     }
   }

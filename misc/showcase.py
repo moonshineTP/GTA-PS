@@ -65,9 +65,9 @@ from runner import RunManager
 # Configuration
 # ---------------------------------------------------------------------------
 
-K = 16
-ABLATION_T_SHIFT = 50
-SHOWCASE_T_SHIFT = 50
+K = 10
+ABLATION_T_SHIFT = 60
+SHOWCASE_T_SHIFT = 60
 ABLATION_ROOM_SIZE = 2
 ABLATION_CORRIDOR_LEN = 1
 SHOWCASE_ROOM_SIZE = 2
@@ -75,8 +75,8 @@ SHOWCASE_CORRIDOR_LEN = 1
 SHOWCASE_ACTIVE_ROOMS = 2
 SHOWCASE_PEAKS_PER_ROOM = 1
 SHOWCASE_SIGMA_RANGE = (0.3, 0.9)
-N_SHIFTS = 50
-EPS_GREEDY = 0.12
+N_SHIFTS = 30
+EPS_GREEDY = 0.2
 GAMMA = 0.95
 
 VARIANTS = ["standard_ps", "gta_beta"]
