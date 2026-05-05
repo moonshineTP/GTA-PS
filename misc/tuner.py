@@ -206,7 +206,7 @@ def _run_trial_seed(
     seed: int, env_name: str, gamma: float, n_shifts: int, K: int,
     n_steps_per_shift: int = 100,
     # env construction kwargs (forwarded from _env_kwargs_from_env)
-    n_states: int = 75, n_actions: int = 5, branching: int = 3,
+    n_states: int = 75, n_actions: int = 4, branching: int = 3,
     n_nbr_rate: float = 0.15, reward_support: int = 4, k: int = 1,
     variant: str = "gta_base",
     slem_init: float = 0.0,
@@ -379,7 +379,7 @@ def main():
                         help="Bellman backup budget per host step (default: budgets[0] from config, else 20)")
     parser.add_argument("--n-steps-per-shift", type=int, default=50)
     parser.add_argument("--gamma", type=float, default=0.95)
-    parser.add_argument("--workers", type=int, default=None,
+    parser.add_argument("--workers", type=int, default=5,
                         help="parallel worker processes per trial (None → auto)")
     parser.add_argument("--out", default=str(ROOT / "results/misc/tuner/tune.json"))
     parser.add_argument(
