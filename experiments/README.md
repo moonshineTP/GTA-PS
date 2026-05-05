@@ -12,7 +12,7 @@ This directory contains the core implementation of the GTA-PS Research Questions
 - **Allocation Audit** (`rq2_allocation.py`): Evaluates how topology signals correlate with priority queue ordering.
 - **Beta Schedule** (`rq2_beta.py`): Compares fixed $\beta$ vs. linear and adaptive $\beta_t$ schedules.
 
-### RQ3: Convergence vs. Propagation Tradeoff (`rq3_tradeoff.py`)
+### RQ3: Convergence vs. Propagation Tradeoff (`rq3_mixing_tradeoff.py`)
 - **Mission:** Audits the accuracy-coverage tradeoff controlled by the mixing weight $\alpha$.
 - **Metric:** Top-1 oracle agreement vs. predecessor-side state coverage.
 

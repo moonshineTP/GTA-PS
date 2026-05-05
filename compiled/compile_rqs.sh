@@ -22,7 +22,7 @@ RQS=(
     "experiments/rq1_dyna_timeline.py"
     "experiments/rq2_allocation.py"
     "experiments/rq2_beta.py"
-    "experiments/rq3_tradeoff.py"
+    "experiments/rq3_mixing_tradeoff.py"
     "experiments/rq4_asymmetry.py"
     "experiments/rq5_bottlenecks.py"
     "experiments/rq6_curl_divergence.py"
