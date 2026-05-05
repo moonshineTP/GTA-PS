@@ -111,15 +111,15 @@ class GtaPSSearchSpace:
 
     # --- search bounds (log=True applied where sensible) ---
     # beta is the fixed β_t scalar; allows negative (dampen) and positive (amplify).
-    beta_bounds: tuple = (0.04, 0.4)   # linear scale — log not valid (can be negative)
-    beta1_bounds: tuple = (0.04, 0.4)
+    beta_bounds: tuple = (0.3, 1.5)   # linear scale — log not valid (can be negative)
+    beta1_bounds: tuple = (0.3, 1.5)
     # beta2 is the additive offset in the unified linear scheduler:
     #   β_t = β₁ · ((1−SLEM) + β₂)
     # Negative values create a dead-zone (dampen); positive values add a floor.
     # Range (0.10, 0.5) is environment-agnostic: covers both slow-mixing
     # chains (FourRooms SLEM≈0.98 ⇒ 1−SLEM≈0.02) and fast-mixing ones (GARNET).
-    beta2_bounds: tuple = (0.04, 0.4)   
-    alpha_bounds: tuple = (0.35, 0.65)
+    beta2_bounds: tuple = (0.3, 1.5)   
+    alpha_bounds: tuple = (0.5, 0.95)
     eta_bounds: tuple = (5e-4, 2e-2)
     b_bounds: tuple = (2.8, 4.8)  # interpretable as b̃ = b·max|r| ∈ [1, 20]
 

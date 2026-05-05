@@ -70,9 +70,9 @@ except ImportError:
 # Configuration
 # ---------------------------------------------------------------------------
 
-K_SWEEP            = [20, 50, 100]  # planning budget sweep (GTA needs K>=100 for topology)
-N_SHIFTS            = 10              # number of reward-shift episodes per seed
-N_STEPS_PER_SHIFT   = 100            # env steps between shifts (monitors error over time)
+K_SWEEP            = [10, 20, 50]   # planning budget sweep (GTA needs K>=100 for topology)
+N_SHIFTS            = 10            # number of reward-shift episodes per seed
+N_STEPS_PER_SHIFT   = 40            # env steps between shifts (monitors error over time)
 
 # Fixed room_size=3 -> 9x9 grid (2*3 + 1 + 2 = 9), ~40 passable positions.
 # Sweep corridor_width to vary SLEM/t_mix.

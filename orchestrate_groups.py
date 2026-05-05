@@ -171,25 +171,6 @@ GROUPS: dict[str, tuple[ScriptSpec, ...]] = {
             },
         ),
         ScriptSpec(
-            path="misc/boltzmann_b_ablation.py",
-            label="Boltzmann-b ablation",
-            forwarded_flags={
-                "workers": "--workers",
-                "seeds": "--seeds",
-                "K": "--K",
-                "n_shifts": "--n-shifts",
-            },
-        ),
-        ScriptSpec(
-            path="misc/scheduler_ablation.py",
-            label="Scheduler ablation",
-            forwarded_flags={
-                "seeds": "--seeds",
-                "K": "--K",
-                "n_shifts": "--n-shifts",
-            },
-        ),
-        ScriptSpec(
             path="misc/gamma_ablation.py",
             label="Gamma ablation",
             forwarded_flags={
