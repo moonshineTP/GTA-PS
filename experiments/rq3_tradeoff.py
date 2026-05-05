@@ -165,13 +165,12 @@ def main():
     fn_kwargs = {
         "env_name": args.env,
         "alpha_vals": alpha_vals,
-        "beta": args.beta,
         "budgets": budgets,
         "gamma": 0.95,
         **env_kwargs
     }
     
-    print(f"Running RQ3 tradeoff on {args.env} with beta={args.beta}...")
+    print(f"Running RQ3 tradeoff on {args.env}...")
     all_raw = runner.run(run_alpha_sweep, list(range(args.seeds)), fn_kwargs)
     
     # Aggregate
