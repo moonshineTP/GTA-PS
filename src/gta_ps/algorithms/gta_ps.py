@@ -169,9 +169,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
 
         # Priority queues and counters
         self.q_t = self.q if self.q is not None else n
-        self._step_count = 0
-        # H_ref ≈ |S| and T_arn ≈ ceil(sqrt(|S|)): dense refreshes stay amortized,
-        # while SLEM is recomputed often enough to keep beta_t from drifting.
+        self._step_count = 0.
         self._T_arn = max(1, math.isqrt(max(1, n) - 1) + 1)
         self._T_topo = max(1, n)
         self._T_tau = max(1, n)
@@ -252,13 +250,12 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
             # β₂ < 0  → dampening threshold (dampen; β_t=0 when |β₂| > 1−SLEM)
             # β₂ = 0  → pure spectral-gap scaling (β_t > 0 iff SLEM < 1)
             # β₂ > 0  → positive floor (β_t always > 0 when β₁ > 0)
-            # Recommended tuning range: β₂ ∈ (−0.05, 0.25)..
             return self.beta1 * ((1.0 - slem) + self.beta2)
         if self.beta_mode == "log":
             # β_t = β₁ · (−log SLEM + β₂)
             # −log(SLEM) ≈ (1−SLEM) for SLEM≈1 but saturates as SLEM→0,
             # preventing topology overdrive on fast-mixing chains.
-            return self.beta1 * (-np.log(max(slem, 1e-15)) + self.beta2)
+            return self.beta1 * (-np.log(max(slem, 1e-10)) + self.beta2)
         raise ValueError(f"Invalid beta_mode: {self.beta_mode!r}. "
                          f"Choose from: 'fixed', 'linear', 'log'.")
 

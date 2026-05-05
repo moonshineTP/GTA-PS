@@ -17,31 +17,28 @@ Modes
     Col 0: Standard-PS env | GTA-PS env (two independent instances)
     Col 1: Standard-PS V(s) | GTA-PS V(s)
     Col 2: Standard-PS queue ξ(s) | GTA-PS combined queue (ξ+τ)(s)
-
-Usage
------
-python misc/showcase.py --mode ablation --seeds 5 --n-shifts 8 --K 40 --host dyna
-python misc/showcase.py --mode showcase --seeds 0 --n-frames 400 --K 40 --n-steps-per-shift 100 --host dyna
 """
 from __future__ import annotations
 
-import sys
-import os
 import argparse
 import json
-import numpy as np
+import os
+import sys
 from pathlib import Path
-from tqdm import tqdm
 
-# Agg must be set before importing pyplot
 import matplotlib
 matplotlib.use("Agg")
+import numpy as np
+from matplotlib import animation
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
-import matplotlib.pyplot as plt
+
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
-from matplotlib import animation
+import matplotlib.pyplot as plt
+from minigrid.core.grid import Grid
+from minigrid.core.world_object import Goal, Wall
+from tqdm import tqdm
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
@@ -57,35 +54,33 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "threads"))
 sys.path.insert(0, str(ROOT / "misc"))
 
-from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.algorithms import make_agent
-from gta_ps.utils.metrics import value_error_l1
+from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.utils.hyperparams import load_tuned_for_env
-from minigrid.core.grid import Grid
-from minigrid.core.world_object import Goal, Wall
+from gta_ps.utils.metrics import value_error_l1
+from plot_academic import LABELS as AGENT_LABELS, apply_style, get_palette
 from runner import RunManager
-from plot_academic import apply_style, get_palette, LABELS as AGENT_LABELS
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
-K = 50                  # planning budget per host step
-ABLATION_T_SHIFT = 80   # ablation reward-shift interval (real steps)
-SHOWCASE_T_SHIFT = 80   # showcase reward-shift interval (real steps)
-ABLATION_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
+K = 10
+ABLATION_T_SHIFT = 60
+SHOWCASE_T_SHIFT = 60
+ABLATION_ROOM_SIZE = 2
 ABLATION_CORRIDOR_LEN = 1
-SHOWCASE_ROOM_SIZE = 3  # 2 * room_size + corridor_len + 2 = 9 with corridor_len=1
+SHOWCASE_ROOM_SIZE = 2
 SHOWCASE_CORRIDOR_LEN = 1
 SHOWCASE_ACTIVE_ROOMS = 2
 SHOWCASE_PEAKS_PER_ROOM = 1
-SHOWCASE_SIGMA_RANGE = (0.15, 0.35)
-N_SHIFTS = 25           # total number of reward shifts (episodes) for ablation mode
-EPS      = 0.11  # epsilon-greedy exploration rate
-GAMMA    = 0.95  # discount factor
+SHOWCASE_SIGMA_RANGE = (0.3, 0.9)
+N_SHIFTS = 30
+EPS_GREEDY = 0.2
+GAMMA = 0.95
 
 VARIANTS = ["standard_ps", "gta_beta"]
-LABELS   = {v: AGENT_LABELS[v] for v in VARIANTS}
+LABELS = {v: AGENT_LABELS[v] for v in VARIANTS}
 
 
 def _standardps_queue_scores(module) -> np.ndarray:
@@ -119,6 +114,7 @@ def _load_config(path: str | None) -> dict:
     if path is None:
         return {}
     import yaml
+
     with open(path) as f:
         return yaml.safe_load(f) or {}
 
@@ -177,10 +173,7 @@ def _fourrooms_env_kwargs_from_config(cfg: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 class FourRoomsRenderer:
-    """
-    Maps FourRoomsTabular state indices onto a 2-D grid and renders
-    value + priority heatmaps onto matplotlib Axes.
-    """
+    """Map FourRooms states onto a 2-D grid and render heatmaps."""
 
     MINIGRID_TILE_SIZE = 32
     GOAL_COLOR = "#98ff66"
@@ -188,24 +181,23 @@ class FourRoomsRenderer:
 
     def __init__(self, env: FourRoomsTabular) -> None:
         self.env = env
-        self._row_min = 0
-        self._col_min = 0
+        self._pos_list = env._pos_list
         self._h = 2 * env.room_size + env.corridor_len + 2
         self._w = 2 * env.room_size + env.corridor_len + 2
         self._reward_marker_count = max(1, int(getattr(env, "k", 1)) * int(getattr(env, "n_peaks_per_room", 1)))
         self._passable_mask = np.zeros((self._h, self._w), dtype=bool)
-        for row, col in env._pos_list:
+        for row, col in self._pos_list:
             self._passable_mask[row, col] = True
         self._minigrid_base = Grid(self._w, self._h)
         for row in range(self._h):
             for col in range(self._w):
                 self._minigrid_base.set(col, row, Wall())
-        for row, col in env._pos_list:
+        for row, col in self._pos_list:
             self._minigrid_base.set(col, row, None)
 
     def _to_grid(self, values: np.ndarray) -> np.ndarray:
         grid = np.full((self._h, self._w), np.nan)
-        for s, (r, c) in enumerate(self.env._pos_list):
+        for s, (r, c) in enumerate(self._pos_list):
             grid[r, c] = values[s]
         return grid
 
@@ -225,20 +217,16 @@ class FourRoomsRenderer:
     ) -> np.ndarray:
         grid = self._minigrid_base.copy()
         for state in self._reward_marker_states(r):
-            row, col = self.env._pos_list[state]
+            row, col = self._pos_list[state]
             grid.set(col, row, Goal())
 
         if agent_pos is None:
             agent_xy = (-1, -1)
         else:
-            row, col = self.env._pos_list[agent_pos]
+            row, col = self._pos_list[agent_pos]
             agent_xy = (col, row)
 
-        return grid.render(
-            self.MINIGRID_TILE_SIZE,
-            agent_pos=agent_xy,
-            agent_dir=agent_dir,
-        )
+        return grid.render(self.MINIGRID_TILE_SIZE, agent_pos=agent_xy, agent_dir=agent_dir)
 
     def draw_interface(
         self,
@@ -295,7 +283,7 @@ class FourRoomsRenderer:
 
     def _draw_reward_overlay(self, ax: Axes, r: np.ndarray | None) -> None:
         for state in self._reward_marker_states(r):
-            row, col = self.env._pos_list[state]
+            row, col = self._pos_list[state]
             ax.add_patch(
                 mpatches.Rectangle(
                     (col - 0.34, row - 0.34),
@@ -311,11 +299,12 @@ class FourRoomsRenderer:
     def _reward_marker_states(self, r: np.ndarray | None) -> list[int]:
         if r is None:
             return []
-        positive_states = np.flatnonzero(r > 0)
+        reward = np.asarray(r, dtype=np.float64)
+        positive_states = np.flatnonzero(reward > 0)
         if positive_states.size == 0:
             return []
         marker_count = min(self._reward_marker_count, int(positive_states.size))
-        ranked = positive_states[np.argsort(r[positive_states])[::-1]]
+        ranked = positive_states[np.argsort(reward[positive_states])[::-1]]
         return [int(state) for state in ranked[:marker_count]]
 
     def draw_grid(
@@ -363,9 +352,11 @@ class IndependentAgentSession:
         host: str,
         tuned_cfg: dict,
         K: int = K,
-        eps: float = EPS,
+        eps: float = EPS_GREEDY,
         seed: int = 0,
         env_kwargs: dict | None = None,
+        initial_reward: np.ndarray | None = None,
+        initial_target_V: np.ndarray | None = None,
     ) -> None:
         self.variant = variant
         self.host = host
@@ -375,44 +366,48 @@ class IndependentAgentSession:
 
         ek = env_kwargs or {"gamma": GAMMA}
         self.env = FourRoomsTabular(seed=seed, **ek)
+        if initial_reward is not None:
+            self.r_current = np.asarray(initial_reward, dtype=np.float64).copy()
+            self.env.base_r = self.r_current.copy()
+            self.env.r = self.r_current.copy()
+        else:
+            self.r_current = self.env.r.copy()
+
         kw = tuned_cfg.get(variant, {}).copy() if variant != "standard_ps" else {}
+        variant_index = VARIANTS.index(variant)
         self.agent = make_agent(
             variant,
             host=host,
-            P=self.env.P, r=self.env.r, gamma=self.env.gamma,
-            n_states=self.env.n_states, n_actions=self.env.n_actions,
+            P=self.env.P,
+            r=self.env.r,
+            gamma=self.env.gamma,
+            n_states=self.env.n_states,
+            n_actions=self.env.n_actions,
+            rng=np.random.default_rng(np.random.SeedSequence([seed, variant_index, 0xD1A])),
             **kw,
         )
 
-        self.state      = int(self._rng.integers(0, self.env.n_states))
-        self.agent_dir  = 3
+        self.state = int(self._rng.integers(0, self.env.n_states))
+        self.agent_dir = 3
         self.step_count = 0
-        self.r_current  = self.env.r.copy()
-        self._behavior_V = self.env.value_iteration(self.r_current)
+        if initial_target_V is not None:
+            self._target_V = np.asarray(initial_target_V, dtype=np.float64).copy()
+        else:
+            self._target_V = self.env.value_iteration(self.r_current)
 
-        # History
         self.err_history: list[float] = []
-        self.cumul_l1:   list[float] = [0.0]
+        self.cumul_l1: list[float] = [0.0]
         self.return_history: list[float] = []
         self.cumul_reward: list[float] = [0.0]
-        self.coverage_history: list[int] = []  # unique states visited per episode
+        self.coverage_history: list[int] = []
         self._visited: set[int] = set()
 
-    def _next_state(self, state: int, action: int) -> int:
-        return int(np.argmax(self.env.P[action, state, :]))
-
-    def _moving_actions(self, state: int) -> list[int]:
-        return [action for action in range(self.env.n_actions) if self._next_state(state, action) != state]
-
     def _pick_action(self) -> int:
-        moving_actions = self._moving_actions(self.state)
         if self._rng.random() < self.eps:
-            if moving_actions:
-                return int(self._rng.choice(moving_actions))
             return int(self._rng.integers(0, self.env.n_actions))
 
         q_values = self.agent.Q[:, self.state]
-        candidate_actions = moving_actions if moving_actions else list(range(self.env.n_actions))
+        candidate_actions = list(range(self.env.n_actions))
         candidate_values = np.array([float(q_values[action]) for action in candidate_actions])
         best_value = float(candidate_values.max())
         best_actions = [
@@ -431,7 +426,7 @@ class IndependentAgentSession:
             row_next, col_next = self.env._pos_list[s_next]
             delta = (row_next - row_s, col_next - col_s)
             self.agent_dir = self.DELTA_TO_MINIGRID_DIR.get(delta, self.agent_dir)
-        r_val  = float(self.r_current[s])
+        r_val = float(self.r_current[s])
         self.agent.real_step(s, a, r_val, s_next)
         if self.host == "dyna":
             self.agent.plan_steps(self.K)
@@ -441,13 +436,24 @@ class IndependentAgentSession:
         self.step_count += 1
         self._visited.add(s)
 
-        V_star = self.env.value_iteration(self.r_current)
-        err = value_error_l1(self.agent.Q.max(axis=0), V_star)
+        err = value_error_l1(self.agent.Q.max(axis=0), self._target_V)
         return r_val, err
 
-    def shift_reward(self) -> None:
-        self.r_current = self.env.shift_reward()
-        self._behavior_V = self.env.value_iteration(self.r_current)
+    def shift_reward(
+        self,
+        r_current: np.ndarray | None = None,
+        target_V: np.ndarray | None = None,
+    ) -> None:
+        if r_current is None:
+            self.r_current = self.env.shift_reward()
+        else:
+            self.r_current = np.asarray(r_current, dtype=np.float64).copy()
+            self.env.base_r = self.r_current.copy()
+            self.env.r = self.r_current.copy()
+        if target_V is None:
+            self._target_V = self.env.value_iteration(self.r_current)
+        else:
+            self._target_V = np.asarray(target_V, dtype=np.float64).copy()
         _apply_reward_update(self.agent, self.r_current)
         self._visited.clear()
 
@@ -470,10 +476,15 @@ class IndependentAgentSession:
         self._visited.clear()
         return ep_reward, mean_err, coverage
 
+    def position_values(self) -> np.ndarray:
+        return self.agent.Q.max(axis=0).copy()
+
+    def position_reward(self) -> np.ndarray:
+        return self.r_current.copy()
+
     def get_queue_scores(self) -> np.ndarray:
-        if self.variant == "standard_ps":
-            return _standardps_queue_scores(self.agent.module)
-        return _gtaps_queue_scores(self.agent.module)
+        raw = _standardps_queue_scores(self.agent.module) if self.variant == "standard_ps" else _gtaps_queue_scores(self.agent.module)
+        return raw
 
     def get_combined_queue(self) -> np.ndarray:
         """For GTA-PS: combined queue (ξ + τ). For Standard-PS: just ξ."""
@@ -505,6 +516,9 @@ def _run_seed_ablation(
     **_ignored,
 ) -> dict:
     """One seed: run independent agent sessions and return metrics."""
+    ref_env = FourRoomsTabular(seed=seed, **(env_kwargs or {"gamma": GAMMA}))
+    initial_reward = ref_env.r.copy()
+    initial_target_V = ref_env.value_iteration(ref_env.r)
     sessions = {
         variant: IndependentAgentSession(
             variant=variant,
@@ -513,28 +527,32 @@ def _run_seed_ablation(
             K=K,
             seed=seed,
             env_kwargs=env_kwargs,
+            initial_reward=initial_reward,
+            initial_target_V=initial_target_V,
         )
         for variant in VARIANTS
     }
 
     for ep in range(n_shifts):
         if ep > 0:
+            ref_r = ref_env.shift_reward()
+            ref_target = ref_env.value_iteration(ref_r)
             for s in sessions.values():
-                s.shift_reward()
+                s.shift_reward(r_current=ref_r, target_V=ref_target)
         for s in sessions.values():
             s.episode(T_shift)
 
     return {
         "return_history": {v: list(sessions[v].return_history) for v in VARIANTS},
-        "cumul_reward":  {v: list(sessions[v].cumul_reward) for v in VARIANTS},
-        "cumul_l1":      {v: list(sessions[v].cumul_l1) for v in VARIANTS},
-        "coverage":      {v: list(sessions[v].coverage_history) for v in VARIANTS},
-        "final_V":       {v: sessions[v].agent.Q.max(axis=0).tolist() for v in VARIANTS},
+        "cumul_reward": {v: list(sessions[v].cumul_reward) for v in VARIANTS},
+        "cumul_l1": {v: list(sessions[v].cumul_l1) for v in VARIANTS},
+        "coverage": {v: list(sessions[v].coverage_history) for v in VARIANTS},
+        "final_V": {v: sessions[v].position_values().tolist() for v in VARIANTS},
         "final_queue": {
             "standard_ps": sessions["standard_ps"].get_queue_scores().tolist(),
-            "gta_beta":    sessions["gta_beta"].get_combined_queue().tolist(),
+            "gta_beta": sessions["gta_beta"].get_combined_queue().tolist(),
         },
-        "r_current": sessions["standard_ps"].r_current.tolist(),
+        "r_current": sessions["standard_ps"].position_reward().tolist(),
     }
 
 
@@ -565,46 +583,46 @@ def run_ablation(args) -> None:
     raw = runner.run(
         fn=_run_seed_ablation,
         seeds=list(range(seed_count)),
-        fn_kwargs=dict(K=args.K, n_shifts=args.n_shifts, T_shift=shift_steps,
-                       host=host, tuned_cfg=tuned, env_kwargs=env_kwargs),
+        fn_kwargs=dict(
+            K=args.K,
+            n_shifts=args.n_shifts,
+            T_shift=shift_steps,
+            host=host,
+            tuned_cfg=tuned,
+            env_kwargs=env_kwargs,
+        ),
         desc="fourrooms-ablation",
     )
 
     def _agg(mat):
-        arr  = np.array(mat)
+        arr = np.array(mat)
         mean = arr.mean(axis=0)
-        ci   = (np.zeros_like(mean) if len(mat) < 2
-                else sp_stats.sem(arr, axis=0) * sp_stats.t.ppf(0.975, df=len(mat) - 1))
+        ci = np.zeros_like(mean) if len(mat) < 2 else sp_stats.sem(arr, axis=0) * sp_stats.t.ppf(0.975, df=len(mat) - 1)
         return mean, ci
 
     print(f"\n{'Variant':<20}  {'Mean Return':>14}  {'Mean Coverage':>16}")
     print("-" * 62)
-    all_returns  = {v: [r["return_history"][v] for r in raw] for v in VARIANTS}
+    all_returns = {v: [r["return_history"][v] for r in raw] for v in VARIANTS}
     all_coverage = {v: [r["coverage"][v] for r in raw] for v in VARIANTS}
     for v in VARIANTS:
         m_ret, _ = _agg(all_returns[v])
         m_cov, _ = _agg(all_coverage[v])
         print(f"  {LABELS[v]:<20}  {m_ret[-1]:>14.4f}  {m_cov[-1]:>16.1f}")
 
-    # Plots: 2x3 grid (one row per agent, one column per metric)
     apply_style()
     colors = {v: get_palette("line")[v] for v in VARIANTS}
-    env_disp = FourRoomsTabular(seed=seed_count - 1, **env_kwargs)
-
     fig = plt.figure(figsize=(18, 10), layout="constrained")
-    gs  = gridspec.GridSpec(2, 3, figure=fig)
+    gs = gridspec.GridSpec(2, 3, figure=fig)
 
     episodes = np.arange(1, args.n_shifts + 1)
     cumul_ep = np.arange(0, args.n_shifts + 1)
 
     def _agg(mat):
-        arr  = np.array(mat)
+        arr = np.array(mat)
         mean = arr.mean(axis=0)
-        ci   = (np.zeros_like(mean) if len(mat) < 2
-                else sp_stats.sem(arr, axis=0) * sp_stats.t.ppf(0.975, df=len(mat) - 1))
+        ci = np.zeros_like(mean) if len(mat) < 2 else sp_stats.sem(arr, axis=0) * sp_stats.t.ppf(0.975, df=len(mat) - 1)
         return mean, ci
 
-    # Column 0: Cumulative reward
     for row, v in enumerate(VARIANTS):
         ax = fig.add_subplot(gs[row, 0])
         m, c = _agg([r["cumul_reward"][v] for r in raw])
@@ -616,7 +634,6 @@ def run_ablation(args) -> None:
         if row == 1:
             ax.set_xlabel("Episode $N$")
 
-    # Column 1: cumulative L1 error
     for row, v in enumerate(VARIANTS):
         ax = fig.add_subplot(gs[row, 1])
         m, c = _agg([r["cumul_l1"][v] for r in raw])
@@ -629,7 +646,6 @@ def run_ablation(args) -> None:
         if row == 1:
             ax.set_xlabel("Episode $N$")
 
-    # Column 2: Coverage (unique states per episode)
     for row, v in enumerate(VARIANTS):
         ax = fig.add_subplot(gs[row, 2])
         m, c = _agg([r["coverage"][v] for r in raw])
@@ -655,7 +671,6 @@ def run_ablation(args) -> None:
     print(f"\nAblation plot saved to {out_path}")
     plt.close()
 
-    # ── Persist JSON ────────────────────────────────────────────────────────
     out_dir_json = Path(ROOT / "results/misc/showcase")
     out_dir_json.mkdir(parents=True, exist_ok=True)
     json_path = out_dir_json / "ablation.json"
@@ -670,12 +685,14 @@ def run_ablation(args) -> None:
             "T_shift": shift_steps,
             "env_kwargs": env_kwargs,
         },
-        "returns": {v: {"mean": _agg(all_returns[v])[0].tolist(),
-                          "ci95": _agg(all_returns[v])[1].tolist()}
-                     for v in VARIANTS},
-        "coverage": {v: {"mean": _agg(all_coverage[v])[0].tolist(),
-                           "ci95": _agg(all_coverage[v])[1].tolist()}
-                      for v in VARIANTS},
+        "returns": {
+            v: {"mean": _agg(all_returns[v])[0].tolist(), "ci95": _agg(all_returns[v])[1].tolist()}
+            for v in VARIANTS
+        },
+        "coverage": {
+            v: {"mean": _agg(all_coverage[v])[0].tolist(), "ci95": _agg(all_coverage[v])[1].tolist()}
+            for v in VARIANTS
+        },
     }
     with open(json_path, "w") as f:
         json.dump(results_payload, f, indent=2)
@@ -699,6 +716,9 @@ def run_showcase(args) -> None:
     env_kwargs["n_peaks_per_room"] = SHOWCASE_PEAKS_PER_ROOM
     env_kwargs["sigma_range"] = SHOWCASE_SIGMA_RANGE
 
+    ref_env = FourRoomsTabular(seed=showcase_seed, **env_kwargs)
+    initial_reward = ref_env.r.copy()
+    initial_target_V = ref_env.value_iteration(ref_env.r)
     sessions = {
         v: IndependentAgentSession(
             variant=v,
@@ -707,6 +727,8 @@ def run_showcase(args) -> None:
             K=args.K,
             seed=showcase_seed,
             env_kwargs=env_kwargs,
+            initial_reward=initial_reward,
+            initial_target_V=initial_target_V,
         )
         for v in VARIANTS
     }
@@ -722,51 +744,50 @@ def run_showcase(args) -> None:
     print(f"  K={args.K}  T_shift={shift_steps}  host={host}")
     print("-" * 50)
 
-    # Pre-simulate and capture frames
     captured_data = []
     ep_reward = {v: 0.0 for v in VARIANTS}
 
     print(f"Simulating {total_steps} steps...")
-    with tqdm(
-        total=total_steps,
-        desc="showcase-sim",
-        unit="step",
-        dynamic_ncols=True,
-        ascii=True,
-    ) as sim_pbar:
+    with tqdm(total=total_steps, desc="showcase-sim", unit="step", dynamic_ncols=True, ascii=True) as sim_pbar:
         for step in range(total_steps):
             shift_idx = step // shift_steps
             if step > 0 and step % shift_steps == 0:
+                ref_r = ref_env.shift_reward()
+                ref_target = ref_env.value_iteration(ref_r)
                 for s in sessions.values():
-                    s.shift_reward()
+                    s.shift_reward(r_current=ref_r, target_V=ref_target)
                 ep_reward = {v: 0.0 for v in VARIANTS}
 
             for v in VARIANTS:
-                r_val, err = sessions[v].step_once()
+                r_val, _ = sessions[v].step_once()
                 ep_reward[v] += r_val
 
             if step >= total_steps - n_to_show:
-                captured_data.append({
-                    "step": step + 1,
-                    "shift": shift_idx + 1,
-                    "ep_reward": dict(ep_reward),
-                    "sps": {
-                        "env": sessions["standard_ps"].env,
-                        "state": sessions["standard_ps"].state,
-                        "agent_dir": sessions["standard_ps"].agent_dir,
-                        "r_current": sessions["standard_ps"].r_current.copy(),
-                        "V": sessions["standard_ps"].agent.Q.max(axis=0).copy(),
-                        "queue": sessions["standard_ps"].get_queue_scores().copy(),
-                    },
-                    "gta": {
-                        "env": sessions["gta_beta"].env,
-                        "state": sessions["gta_beta"].state,
-                        "agent_dir": sessions["gta_beta"].agent_dir,
-                        "r_current": sessions["gta_beta"].r_current.copy(),
-                        "V": sessions["gta_beta"].agent.Q.max(axis=0).copy(),
-                        "queue": sessions["gta_beta"].get_combined_queue().copy(),
-                    },
-                })
+                sps_session = sessions["standard_ps"]
+                gta_session = sessions["gta_beta"]
+                captured_data.append(
+                    {
+                        "step": step + 1,
+                        "shift": shift_idx + 1,
+                        "ep_reward": dict(ep_reward),
+                        "sps": {
+                            "env": sps_session.env,
+                            "state": sps_session.state,
+                            "agent_dir": sps_session.agent_dir,
+                            "r_current": sps_session.position_reward(),
+                            "V": sps_session.position_values(),
+                            "queue": sps_session.get_queue_scores(),
+                        },
+                        "gta": {
+                            "env": gta_session.env,
+                            "state": gta_session.state,
+                            "agent_dir": gta_session.agent_dir,
+                            "r_current": gta_session.position_reward(),
+                            "V": gta_session.position_values(),
+                            "queue": gta_session.get_combined_queue(),
+                        },
+                    }
+                )
             sim_pbar.update(1)
 
     apply_style()
@@ -775,10 +796,10 @@ def run_showcase(args) -> None:
 
     ax_env_sps = fig.add_subplot(gs[0, 0])
     ax_env_gta = fig.add_subplot(gs[1, 0])
-    ax_v_sps   = fig.add_subplot(gs[0, 1])
-    ax_v_gta   = fig.add_subplot(gs[1, 1])
-    ax_q_sps   = fig.add_subplot(gs[0, 2])
-    ax_q_gta   = fig.add_subplot(gs[1, 2])
+    ax_v_sps = fig.add_subplot(gs[0, 1])
+    ax_v_gta = fig.add_subplot(gs[1, 1])
+    ax_q_sps = fig.add_subplot(gs[0, 2])
+    ax_q_gta = fig.add_subplot(gs[1, 2])
 
     renderer_sps = FourRoomsRenderer(sessions["standard_ps"].env)
     renderer_gta = FourRoomsRenderer(sessions["gta_beta"].env)
@@ -791,7 +812,6 @@ def run_showcase(args) -> None:
         sps_data = data["sps"]
         gta_data = data["gta"]
 
-        # Left column: Environments
         renderer_sps.draw_interface(
             ax_env_sps,
             r=sps_data["r_current"],
@@ -807,21 +827,19 @@ def run_showcase(args) -> None:
             title=f"{LABELS['gta_beta']} Environment",
         )
 
-        # Middle column: V(s) heatmaps
         renderer_sps.draw_metric(
             ax_v_sps,
             values=sps_data["V"],
-            title=f"{LABELS['standard_ps']} V(s) [L1={sps_data.get('err', 0):.3f}]",
+            title=f"{LABELS['standard_ps']} V(s)",
             cmap="magma",
         )
         renderer_gta.draw_metric(
             ax_v_gta,
             values=gta_data["V"],
-            title=f"{LABELS['gta_beta']} V(s) [L1={gta_data.get('err', 0):.3f}]",
+            title=f"{LABELS['gta_beta']} V(s)",
             cmap="magma",
         )
 
-        # Right column: Queue heatmaps
         renderer_sps.draw_metric(
             ax_q_sps,
             values=sps_data["queue"],
@@ -854,13 +872,7 @@ def run_showcase(args) -> None:
     out_dir = Path(ROOT / "plots")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "fourrooms_showcase.gif"
-    with tqdm(
-        total=len(captured_data),
-        desc="showcase-gif",
-        unit="frame",
-        dynamic_ncols=True,
-        ascii=True,
-    ) as gif_pbar:
+    with tqdm(total=len(captured_data), desc="showcase-gif", unit="frame", dynamic_ncols=True, ascii=True) as gif_pbar:
         last_frame = -1
 
         def _on_save_progress(frame_idx: int, _total: int) -> None:
@@ -879,28 +891,17 @@ def run_showcase(args) -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="FourRooms: Standard-PS vs GTA-PS^β (2×3 showcase/ablation)"
-    )
-    parser.add_argument("--config", default=None,
-                        help="YAML config path (FourRooms configs supported)")
-    parser.add_argument("--mode",     choices=["ablation", "showcase"], default="ablation",
-                        help="'ablation': parallel multi-seed PNG; 'showcase': animated GIF")
-    parser.add_argument("--K",        type=int,   default=K)
-    parser.add_argument("--n-steps-per-shift", type=int, default=None,
-                        help="Real steps between reward shifts")
-    parser.add_argument("--shift-steps", dest="n_steps_per_shift", type=int,
-                        help=argparse.SUPPRESS)
-    parser.add_argument("--seeds",    type=int,   default=40,
-                        help="Seed count in ablation mode; fixed seed value in showcase mode")
-    parser.add_argument("--n-shifts", type=int,   default=N_SHIFTS,
-                        help="Reward-shift episodes (ablation mode)")
-    parser.add_argument("--n-frames", type=int,   default=200,
-                        help="Animation frames (showcase mode); defaults to entire navigation")
-    parser.add_argument("--host",      choices=["dyna", "dp"], default="dyna",
-                        help="Host algorithm for both agents")
-    parser.add_argument("--workers",  default=5,
-                        help="Parallel workers for RunManager (ablation mode)")
+    parser = argparse.ArgumentParser(description="FourRooms: Standard-PS vs GTA-PS^β (2×3 showcase/ablation)")
+    parser.add_argument("--config", default=None, help="YAML config path (FourRooms configs supported)")
+    parser.add_argument("--mode", choices=["ablation", "showcase"], default="ablation", help="'ablation': parallel multi-seed PNG; 'showcase': animated GIF")
+    parser.add_argument("--K", type=int, default=K)
+    parser.add_argument("--n-steps-per-shift", type=int, default=None, help="Real steps between reward shifts")
+    parser.add_argument("--shift-steps", dest="n_steps_per_shift", type=int, help=argparse.SUPPRESS)
+    parser.add_argument("--seeds", type=int, default=40, help="Seed count in ablation mode; fixed seed value in showcase mode")
+    parser.add_argument("--n-shifts", type=int, default=N_SHIFTS, help="Reward-shift episodes (ablation mode)")
+    parser.add_argument("--n-frames", type=int, default=300, help="Animation frames (showcase mode); defaults to entire navigation")
+    parser.add_argument("--host", choices=["dyna", "dp"], default="dyna", help="Host algorithm for both agents")
+    parser.add_argument("--workers", default=5, help="Parallel workers for RunManager (ablation mode)")
     args = parser.parse_args()
 
     if args.mode == "ablation":

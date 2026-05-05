@@ -8,7 +8,7 @@ non-empty, and GTA-PS's full-support resolvent signal yields a cumulative
 tracking-error advantage over Standard-PS (Thm. thm:tracking).
 
 Protocol:
-  Fix room_size=3 (9x9 grid, ~40 passable states).
+  Fix room_size=3 (9x9 grid, ~40 passable positions / states).
   Sweep K ∈ [50, 100, 200] — planning budget per shift.
   Sweep corridor_width ∈ [1, 2, 3] — controls connectivity/mixing.
   For each (K, corridor_width) × seed:
@@ -74,7 +74,7 @@ K_SWEEP            = [20, 50, 100]  # planning budget sweep (GTA needs K>=100 fo
 N_SHIFTS            = 10              # number of reward-shift episodes per seed
 N_STEPS_PER_SHIFT   = 100            # env steps between shifts (monitors error over time)
 
-# Fixed room_size=3 -> 9x9 grid (2*3 + 1 + 2 = 9), ~40 passable states.
+# Fixed room_size=3 -> 9x9 grid (2*3 + 1 + 2 = 9), ~40 passable positions.
 # Sweep corridor_width to vary SLEM/t_mix.
 ROOM_SIZE          = 3
 CORRIDOR_SWEEP     = [1, 2, 3]      # corridor_width values (max = room_size)
@@ -109,7 +109,7 @@ def _run_seed(
     env = FourRoomsTabular(room_size=ROOM_SIZE, corridor_len=1,
                            corridor_width=corridor_width,
                            gamma=gamma, seed=seed)
-    n_states = env.P.shape[0]  # actual state count
+    n_states = env.n_states  # position-only state count
 
     agents = {}
     for v in VARIANTS:

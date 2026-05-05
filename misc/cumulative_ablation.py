@@ -76,7 +76,7 @@ N_EPISODES  = 20
 T_WARMUP    = 200           # real steps before episodes begin
 T_REAL      = 50            # real steps per episode (after shift)
 K           = 20            # planning steps per real step
-EPS_GREEDY  = 0.1           # epsilon-greedy exploration rate
+EPS_GREEDY  = 0.12   # epsilon-greedy exploration rate
 
 VARIANTS    = ["standard_ps", "gta_beta"]
 
@@ -99,24 +99,31 @@ def _run_seed(
                          n_nbr_rate=N_NBR_RATE, reward_support=REWARD_SUP,
                          gamma=gamma, seed=seed)
     sim_rng  = np.random.default_rng(seed + 0xFACE_CAFE)
+    traj_rngs = {
+        v: np.random.default_rng(np.random.SeedSequence([seed, idx, 0xFACE]))
+        for idx, v in enumerate(VARIANTS)
+    }
 
     agents = {}
-    for v in VARIANTS:
+    for idx, v in enumerate(VARIANTS):
         kw = method_cfgs.get(v, {}).copy() if v != "standard_ps" else {}
         agents[v] = make_agent(
-            v, host="dyna", P=env.P, r=env.r, gamma=gamma, q=20, **kw
+            v, host="dyna", P=env.P, r=env.r, gamma=gamma, q=20,
+            rng=np.random.default_rng(np.random.SeedSequence([seed, idx, 0xC0DA])),
+            **kw
         )
 
     cur_s = {v: int(sim_rng.integers(n_states)) for v in VARIANTS}
 
     def _real_step_plan(v: str, s: int, r_vec: np.ndarray) -> int:
         """One real step + K plan steps. Returns next state."""
-        if sim_rng.random() < EPS_GREEDY:
-            a = int(sim_rng.integers(N_ACTIONS))
+        traj_rng = traj_rngs[v]
+        if traj_rng.random() < EPS_GREEDY:
+            a = int(traj_rng.integers(N_ACTIONS))
         else:
             a = int(agents[v].Q[:, s].argmax())
         probs  = env.P[a, s]
-        s_next = int(sim_rng.choice(n_states, p=probs))
+        s_next = int(traj_rng.choice(n_states, p=probs))
         r_env  = float(r_vec[s])        # state-based reward at current state
         agents[v].real_step(s, a, r_env, s_next)
         agents[v].plan_steps(K)
@@ -126,10 +133,11 @@ def _run_seed(
     r0 = env.r.copy()
     for _ in range(t_warmup):
         for v in VARIANTS:
+            traj_rng = traj_rngs[v]
             s      = cur_s[v]
-            a      = int(sim_rng.integers(N_ACTIONS))
+            a      = int(traj_rng.integers(N_ACTIONS))
             probs  = env.P[a, s]
-            s_next = int(sim_rng.choice(n_states, p=probs))
+            s_next = int(traj_rng.choice(n_states, p=probs))
             agents[v].real_step(s, a, float(r0[s]), s_next)
             agents[v].plan_steps(K)
             cur_s[v] = s_next

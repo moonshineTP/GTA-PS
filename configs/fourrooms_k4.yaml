@@ -16,12 +16,11 @@ room_peak_ranges:
   - 1.0
 - - 0.3
   - 1.0
-eps_metric: 10
 budgets:
 - 10
 - 20
 - 50
-arnoldi_k: 10
+arnoldi_k: 15
 slem_recompute_every: null
 default:
   alpha: 0.5
@@ -32,13 +31,13 @@ default:
   b: 1.0
 tuned:
   gta_base:
-    beta: 0.391603
-    alpha: 0.905299
-    eta: 0.004254
-    b: 4.343374
+    beta: 1.393908
+    alpha: 0.879685
+    eta: 0.00965
+    b: 3.46087
   gta_beta:
-    beta1: 0.423141
-    beta2: 0.42457
-    alpha: 0.915907
-    eta: 0.005288
-    b: 4.456778
+    beta1: 1.281478
+    beta2: 1.356273
+    alpha: 0.870918
+    eta: 0.018831
+    b: 2.801307

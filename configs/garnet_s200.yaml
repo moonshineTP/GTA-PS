@@ -15,7 +15,6 @@ reward_support_sweep:
 gamma: 0.95
 n_shifts: 10
 seeds: 30
-eps_metric: 10
 budgets:
 - 10
 - 20
@@ -31,13 +30,13 @@ default:
   b: 1.0
 tuned:
   gta_base:
-    beta: 0.343809
-    alpha: 0.728695
-    eta: 0.017272
-    b: 2.708701
+    beta: 0.117935
+    alpha: 0.489958
+    eta: 0.014118
+    b: 3.94896
   gta_beta:
-    beta1: 0.484179
-    beta2: 0.492854
-    alpha: 0.716106
-    eta: 0.019789
-    b: 3.225066
+    beta1: 0.346922
+    beta2: 0.269094
+    alpha: 0.455302
+    eta: 0.015734
+    b: 3.82617

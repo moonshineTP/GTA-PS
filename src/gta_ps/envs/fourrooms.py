@@ -1,15 +1,36 @@
 """
 FourRooms tabular MDP with adjustable corridor bottlenecks.
+
+The environment is position-only with 5 actions:
+left / up / right / down / stay.
 """
 from __future__ import annotations
+
+from typing import List, Optional
+
 import numpy as np
-from typing import Optional, List, Tuple
+
 from .base import TabularEnv
 
 N_ACTIONS = 4
-_DELTAS = [(-1, 0), (1, 0), (0, -1), (0, 1)] # UP, DOWN, LEFT, RIGHT
+ACTION_LEFT = 0
+ACTION_UP = 1
+ACTION_RIGHT = 2
+ACTION_DOWN = 3
+_DELTAS = [
+    (0, -1),  # left
+    (-1, 0),  # up
+    (0, 1),   # right
+    (1, 0),   # down
+]
 
-def _build_corridor_grid(room_size: int, corridor_len: int, corridor_width: int = 1, window_offset: int = 0) -> frozenset[tuple[int, int]]:
+
+def _build_corridor_grid(
+    room_size: int,
+    corridor_len: int,
+    corridor_width: int = 1,
+    window_offset: int = 0,
+) -> frozenset[tuple[int, int]]:
     """
     Build a grid of 4 rooms connected by corridors.
     Each room is (room_size x room_size).
@@ -53,25 +74,21 @@ def _build_corridor_grid(room_size: int, corridor_len: int, corridor_width: int 
         for c in range(c_start_r1, c_start_r1 + room_size):
             passable.add((r, c))
 
-    # Corridors with window_offset and corridor_width
-    # The wall is at room_size+1 (vertical) or c_start_r1 (horizontal)
-    # Inner room size = room_size - 2 (subtracting walls)
-    # Valid window positions: within [1, room_size] range
+    # Corridors with window_offset and corridor_width.
     mid_base = (room_size + 1) // 2
     mid = max(1, min(room_size, mid_base + window_offset))
 
-    # Half-width for corridor (expand symmetrically around mid)
     w_half = corridor_width // 2
-    w_extra = corridor_width % 2  # extra cell for odd widths
+    w_extra = corridor_width % 2
 
-    # R0 <-> R1 (Horizontal corridor at rows mid-w_half .. mid+w_half)
+    # R0 <-> R1 (horizontal corridor)
     for w_off in range(-w_half, w_half + w_extra):
         row = mid + w_off
         if 1 <= row <= 2 * room_size + corridor_len:
             for c in range(room_size + 1, c_start_r1):
                 passable.add((row, c))
 
-    # R2 <-> R3 (Horizontal corridor at row=r_start_r2 + mid - 1, expanded)
+    # R2 <-> R3 (horizontal corridor)
     base_row_r2 = r_start_r2 + mid - 1
     for w_off in range(-w_half, w_half + w_extra):
         row = base_row_r2 + w_off
@@ -79,14 +96,14 @@ def _build_corridor_grid(room_size: int, corridor_len: int, corridor_width: int 
             for c in range(room_size + 1, c_start_r1):
                 passable.add((row, c))
 
-    # R0 <-> R2 (Vertical corridor at cols mid-w_half .. mid+w_half)
+    # R0 <-> R2 (vertical corridor)
     for w_off in range(-w_half, w_half + w_extra):
         col = mid + w_off
         if 1 <= col <= 2 * room_size + corridor_len:
             for r in range(room_size + 1, r_start_r2):
                 passable.add((r, col))
 
-    # R1 <-> R3 (Vertical corridor at col=c_start_r1 + mid - 1, expanded)
+    # R1 <-> R3 (vertical corridor)
     base_col_r3 = c_start_r1 + mid - 1
     for w_off in range(-w_half, w_half + w_extra):
         col = base_col_r3 + w_off
@@ -96,10 +113,16 @@ def _build_corridor_grid(room_size: int, corridor_len: int, corridor_width: int 
 
     return frozenset(passable)
 
+
 class FourRoomsTabular(TabularEnv):
+    ACTION_LEFT = ACTION_LEFT
+    ACTION_UP = ACTION_UP
+    ACTION_RIGHT = ACTION_RIGHT
+    ACTION_DOWN = ACTION_DOWN
+
     def __init__(
         self,
-        room_size: int = 5,
+        room_size: int = 3,
         corridor_len: int = 1,
         corridor_width: int = 1,
         window_offset: int = 0,
@@ -109,7 +132,7 @@ class FourRoomsTabular(TabularEnv):
         drift: Optional[tuple[int, int]] = None,
         seed: int = 0,
         n_peaks_per_room: int = 2,
-        sigma_range: tuple = (0.3, 0.8),
+        sigma_range: tuple = (0.3, 0.9),
         room_peak_ranges: Optional[List] = None,
     ):
         self.room_size = room_size
@@ -131,21 +154,19 @@ class FourRoomsTabular(TabularEnv):
         self._passable = _build_corridor_grid(room_size, corridor_len, corridor_width, window_offset)
         self._pos_list = sorted(list(self._passable))
         self._pos2idx = {p: i for i, p in enumerate(self._pos_list)}
-        self._pos_arr  = np.array(self._pos_list, dtype=np.float64)  # cached for Gaussian
+        self._pos_arr = np.array(self._pos_list, dtype=np.float64)  # cached for Gaussian
 
-        self.n_states = len(self._pos_list)
+        self.n_positions = len(self._pos_list)
+        self.n_states = self.n_positions
         self.n_actions = N_ACTIONS
 
         self._rooms = self._detect_rooms()
+        self.base_r = self._sample_reward()
+        self.r = self.base_r.copy()
         self.P = self._build_transition()
-        self.r = self._sample_reward()
 
     def _detect_rooms(self) -> list[list[int]]:
         rooms = [[] for _ in range(4)]
-        # Center gap
-        c_gap = self.room_size + 1
-        r_gap = self.room_size + 1
-        
         for i, (r, c) in enumerate(self._pos_list):
             if r <= self.room_size and c <= self.room_size:
                 rooms[0].append(i)
@@ -172,59 +193,34 @@ class FourRoomsTabular(TabularEnv):
             lo, hi = peak_ranges[room_idx % len(peak_ranges)]
             for _ in range(self.n_peaks_per_room):
                 center_s = int(self._rng.choice(room_states))
-                center   = self._pos_arr[center_s]
-                sigma    = self._rng.uniform(*self.sigma_range)
-                height   = self._rng.uniform(lo, hi)
+                center = self._pos_arr[center_s]
+                sigma = self._rng.uniform(*self.sigma_range)
+                height = self._rng.uniform(lo, hi)
                 dists_sq = np.sum((self._pos_arr - center) ** 2, axis=1)
-                r       += height * np.exp(-dists_sq / (2.0 * sigma ** 2))
+                r += height * np.exp(-dists_sq / (2.0 * sigma ** 2))
         mx = r.max()
         if mx > 0:
             r *= 1.0 / mx
         return r
 
-    def _build_transition(self) -> np.ndarray:
-        P = np.zeros((N_ACTIONS, self.n_states, self.n_states))
-        for s, (r, c) in enumerate(self._pos_list):
-            for a, (dr, dc) in enumerate(_DELTAS):
-                nr, nc = r + dr, c + dc
-                
-                if self.drift is not None and self._rng.random() < 0.2:
-                    nr, nc = r + self.drift[0], c + self.drift[1]
-                
-                # Simple one-way logic if requested (for other RQs)
-                # Not used for the base RQ5 corridor sweep
-                is_blocked = False
-                if self.one_way_prob < 1.0:
-                    # If leaving a room into a corridor, check prob
-                    in_room = any(s in room for room in self._rooms)
-                    next_s_idx = self._pos2idx.get((nr, nc))
-                    if next_s_idx is not None:
-                        next_in_room = any(next_s_idx in room for room in self._rooms)
-                        if in_room and not next_in_room and self._rng.random() > self.one_way_prob:
-                            is_blocked = True
+    def _next_position(self, pos: int, action: int) -> int:
+        row, col = self._pos_list[pos]
+        dr, dc = _DELTAS[action]
+        nr, nc = row + dr, col + dc
 
-                s_next = self._pos2idx.get((nr, nc), s)
-                if is_blocked: s_next = s
-                
-                P[a, s, s_next] += 1.0
+        next_pos = self._pos2idx.get((nr, nc), pos)
+        return next_pos
+
+    def _build_transition(self) -> np.ndarray:
+        P = np.zeros((self.n_actions, self.n_states, self.n_states), dtype=np.float64)
+        for pos in range(self.n_positions):
+            for action in range(self.n_actions):
+                next_pos = self._next_position(pos, action)
+                P[action, pos, next_pos] = 1.0
         P /= P.sum(axis=2, keepdims=True)
         return P
 
     def shift_reward(self) -> np.ndarray:
-        self.r = self._sample_reward()
+        self.base_r = self._sample_reward()
+        self.r = self.base_r.copy()
         return self.r.copy()
-
-    def value_iteration(self, r: Optional[np.ndarray] = None) -> np.ndarray:
-        if r is None: r = self.r
-        V = np.zeros(self.n_states)
-        for _ in range(1000):
-            Q = r[None, :] + self.gamma * (self.P * V[None, None, :]).sum(axis=2)
-            V_new = Q.max(axis=0)
-            if np.linalg.norm(V_new - V, ord=np.inf) < 1e-8: break
-            V = V_new
-        return V
-
-    def greedy_policy(self, V: np.ndarray, r: Optional[np.ndarray] = None) -> np.ndarray:
-        if r is None: r = self.r
-        Q = r[None, :] + self.gamma * (self.P * V[None, None, :]).sum(axis=2)
-        return Q.argmax(axis=0)

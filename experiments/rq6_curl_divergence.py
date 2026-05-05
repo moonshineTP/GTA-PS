@@ -173,68 +173,32 @@ def _make_directed_garnet_env(
     return env
 
 
-def _make_fourrooms_env(seed: int, gamma: float, env_kwargs: dict) -> FourRoomsTabular:
-    return FourRoomsTabular(seed=seed, gamma=gamma, **env_kwargs)
+def _geometry_stats(env: GarnetEnv) -> dict:
+    P_mean = env.P.mean(axis=0)
+    S, A = operator_split(P_mean)
+    curl_norm = float(np.linalg.norm(A, ord="fro"))
+    div_norm = float(np.linalg.norm(np.eye(P_mean.shape[0]) - S, ord="fro"))
+    slem, _ = slem_arnoldi(P_mean)
+    return {
+        "curl_norm": curl_norm,
+        "div_norm": div_norm,
+        "curl_over_div": float(curl_norm / max(div_norm, 1e-12)),
+        "slem": float(slem),
+    }
 
-
-def _apply_reward_update(agent, r_new: np.ndarray) -> None:
-    updater = getattr(agent, "reward_update", None)
-    if callable(updater):
-        updater(r_new)
-        return
-
-    module = getattr(agent, "module", None)
-    module_updater = getattr(module, "reward_update", None) if module is not None else None
-    if callable(module_updater):
-        current = getattr(module, "r", None)
-        if current is None:
-            raise RuntimeError("Cannot refresh rewards on this agent.")
-        module_updater(r_new - np.asarray(current))
-        return
-
-    raise AttributeError("Agent does not expose a reward_update hook.")
-
-
-def run_seed_worker(
-    env_name: str,
-    env_params: dict,
-    variants: List[dict],
-    n_shifts: int,
-    n_steps_per_shift: int,
-    k_planning: int,
-    seed: int,
-):
-    np.random.seed(seed)
-    gamma = float(env_params["gamma"])
-    if env_name == "garnet":
-        kind = env_params["kind"]
-        env = _make_directed_garnet_env(
-            kind=kind,
-            seed=seed,
-            gamma=gamma,
-            env_kwargs=env_params["env_kwargs"],
-            kernel_kwargs=env_params["kernel_kwargs"],
-        )
-    elif env_name == "fourrooms":
-        env = _make_fourrooms_env(
-            seed=seed,
-            gamma=gamma,
-            env_kwargs=env_params["env_kwargs"],
-        )
-    else:
-        raise ValueError(f"Unknown env_name {env_name!r}")
-
+def run_seed_worker(kind: str, gamma: float, variants: List[dict], n_shifts: int, n_steps_per_shift: int, k_planning: int, seed: int):
+    env = _make_directed_garnet_env(kind, seed=seed, gamma=gamma)
+    sim_rng = np.random.default_rng(np.random.SeedSequence([seed, 0xC06E, 6]))
     n_states = env.n_states
     seed_results = {}
-    for var in variants:
+    for idx, var in enumerate(variants):
         agent = make_agent(
             variant=var["variant"],
             host="dyna",
             P=env.P,
             r=env.r,
             gamma=env.gamma,
-            n_states=env.n_states,
-            n_actions=env.n_actions,
+            rng=np.random.default_rng(np.random.SeedSequence([seed, idx, 0xC06E])),
             **var.get("kwargs", {}),
         )
 
@@ -247,15 +211,15 @@ def run_seed_worker(
             for step in range(n_steps_per_shift):
                 burst_size = 5 * n_states if step == 0 else 1
                 if burst_size > 1:
-                    ss = np.random.randint(n_states, size=burst_size)
-                    aa = np.random.randint(env.n_actions, size=burst_size)
-                    sn = np.array([np.random.choice(n_states, p=env.P[aa[i], ss[i]]) for i in range(burst_size)])
+                    ss = sim_rng.integers(n_states, size=burst_size)
+                    aa = sim_rng.integers(env.n_actions, size=burst_size)
+                    sn = np.array([sim_rng.choice(n_states, p=env.P[aa[i], ss[i]]) for i in range(burst_size)])
                     rr = r_new[ss]
                     agent.real_steps_batch(ss, aa, rr, sn)
                 else:
-                    s_rand = np.random.randint(n_states)
-                    a_rand = np.random.randint(env.n_actions)
-                    s_next_rand = np.random.choice(n_states, p=env.P[a_rand, s_rand])
+                    s_rand = sim_rng.integers(n_states)
+                    a_rand = sim_rng.integers(env.n_actions)
+                    s_next_rand = sim_rng.choice(n_states, p=env.P[a_rand, s_rand])
                     r_rand = r_new[s_rand]
                     agent.real_step(s_rand, a_rand, r_rand, s_next_rand)
 

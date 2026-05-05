@@ -4,7 +4,6 @@ n_rollout_steps: 20000
 gamma: 0.95
 n_shifts: 10
 seeds: 100
-eps_metric: 0.1
 
 # budgets: |S|/4, |S|, 4|S|
 budgets: [64, 256, 1024]

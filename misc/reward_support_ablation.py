@@ -46,15 +46,18 @@ def run_seed_worker(support: int, n_states: int, variants: List[dict], n_shifts:
     """
     env = GarnetEnv(n_states=n_states, reward_support=support, seed=seed)
     n_actions = env.n_actions
+    sim_rng = np.random.default_rng(np.random.SeedSequence([seed, support, 0x5EED]))
     
     seed_results = {}
-    for var in variants:
+    for idx, var in enumerate(variants):
+        agent_rng = np.random.default_rng(np.random.SeedSequence([seed, support, idx, 0x5EED]))
         agent = make_agent(
             variant=var['variant'],
             host="dyna",
             P=env.P,
             r=env.r,
             gamma=env.gamma,
+            rng=agent_rng,
             **var.get('kwargs', {})
         )
         
@@ -68,9 +71,9 @@ def run_seed_worker(support: int, n_states: int, variants: List[dict], n_shifts:
                 # Dyna interaction
                 burst_size = 5 * n_states if step == 0 else 1
                 for _ in range(burst_size):
-                    s_rand = np.random.randint(n_states)
-                    a_rand = np.random.randint(n_actions)
-                    s_next_rand = np.random.choice(n_states, p=env.P[a_rand, s_rand])
+                    s_rand = sim_rng.integers(n_states)
+                    a_rand = sim_rng.integers(n_actions)
+                    s_next_rand = sim_rng.choice(n_states, p=env.P[a_rand, s_rand])
                     r_rand = r_new[s_rand]
                     agent.real_step(s_rand, a_rand, r_rand, s_next_rand)
                 

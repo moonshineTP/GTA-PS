@@ -71,17 +71,19 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
         env = GarnetEnv(**env_params, seed=seed)
     else:
         env = FourRoomsTabular(**env_params, seed=seed)
+    sim_rng = np.random.default_rng(np.random.SeedSequence([seed, 0xB07, 5]))
         
     n_states = env.n_states
     
     seed_results = {}
-    for var in variants:
+    for idx, var in enumerate(variants):
         agent = make_agent(
             variant=var['variant'],
             host="dyna",
             P=env.P,
             r=env.r,
             gamma=env.gamma,
+            rng=np.random.default_rng(np.random.SeedSequence([seed, idx, 0xB07])),
             **var.get('kwargs', {})
         )
         
@@ -94,15 +96,15 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
             for step in range(n_steps_per_shift):
                 burst_size = 5 * n_states if step == 0 else 1
                 if burst_size > 1:
-                    ss = np.random.randint(n_states, size=burst_size)
-                    aa = np.random.randint(env.n_actions, size=burst_size)
-                    sn = np.array([np.random.choice(n_states, p=env.P[aa[i], ss[i]]) for i in range(burst_size)])
+                    ss = sim_rng.integers(n_states, size=burst_size)
+                    aa = sim_rng.integers(env.n_actions, size=burst_size)
+                    sn = np.array([sim_rng.choice(n_states, p=env.P[aa[i], ss[i]]) for i in range(burst_size)])
                     rr = r_new[ss]
                     agent.real_steps_batch(ss, aa, rr, sn)
                 else:
-                    s_rand = np.random.randint(n_states)
-                    a_rand = np.random.randint(env.n_actions)
-                    s_next_rand = np.random.choice(n_states, p=env.P[a_rand, s_rand])
+                    s_rand = sim_rng.integers(n_states)
+                    a_rand = sim_rng.integers(env.n_actions)
+                    s_next_rand = sim_rng.choice(n_states, p=env.P[a_rand, s_rand])
                     r_rand = r_new[s_rand]
                     agent.real_step(s_rand, a_rand, r_rand, s_next_rand)
                 

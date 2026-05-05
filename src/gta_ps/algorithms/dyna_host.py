@@ -2,7 +2,7 @@
 DynaHost — empirical-model (one-step TD) host, module-agnostic.
 
 Uses P_hat built from experience. TD errors drive residuals — NOT
-distributional Bellman. Syncs P_hat and V into the module after every
+distributional Bellman. Syncs P_hat and Q into the module after every
 real_step so the module's predecessor lookup uses empirical data.
 """
 from __future__ import annotations
@@ -38,12 +38,14 @@ class DynaHost(TdMixin):
         module: PrioritizedSweepingModule,
         model_type: str = "count",
         r_init: np.ndarray | None = None,
+        rng: np.random.Generator | None = None,
     ):
         self.n_states = n_states
         self.n_actions = n_actions
         self.gamma = gamma
         self.eta_td = eta_td
         self.module = module
+        self.rng = rng if rng is not None else np.random.default_rng()
         self.Q = np.zeros((n_actions, n_states))
         self.r_oracle = None if r_init is None else r_init.copy()
         if model_type == "sample":
@@ -131,7 +133,7 @@ class DynaHost(TdMixin):
 
             # Sample next state from empirical model
             probs = P_hat[a, s]
-            s_sim = int(np.random.choice(n_states, p=probs))
+            s_sim = int(self.rng.choice(n_states, p=probs))
             r_sim = r_model[s]
 
             # TD update

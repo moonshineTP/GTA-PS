@@ -1,5 +1,23 @@
 {
   "garnet": {
+    "gta_base": {
+      "env": "garnet",
+      "tuned_params": [
+        "beta",
+        "alpha",
+        "eta",
+        "b"
+      ],
+      "baseline_error": 0.740627,
+      "best_error": 0.684133,
+      "improvement_pct": 7.63,
+      "best_params": {
+        "beta": 0.117935,
+        "alpha": 0.489958,
+        "eta": 0.014118,
+        "b": 3.94896
+      }
+    },
     "gta_beta": {
       "env": "garnet",
       "tuned_params": [
@@ -9,15 +27,15 @@
         "eta",
         "b"
       ],
-      "baseline_error": 1.409749,
-      "best_error": 1.398413,
-      "improvement_pct": 0.8,
+      "baseline_error": 0.740627,
+      "best_error": 0.68236,
+      "improvement_pct": 7.87,
       "best_params": {
-        "beta1": 0.484179,
-        "beta2": 0.492854,
-        "alpha": 0.716106,
-        "eta": 0.019789,
-        "b": 3.225066
+        "beta1": 0.346922,
+        "beta2": 0.269094,
+        "alpha": 0.455302,
+        "eta": 0.015734,
+        "b": 3.82617
       }
     }
   }
