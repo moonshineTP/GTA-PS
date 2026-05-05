@@ -75,7 +75,7 @@ SHOWCASE_CORRIDOR_LEN = 1
 SHOWCASE_ACTIVE_ROOMS = 2
 SHOWCASE_PEAKS_PER_ROOM = 1
 SHOWCASE_SIGMA_RANGE = (0.3, 0.9)
-N_SHIFTS = 30
+N_SHIFTS = 25
 EPS_GREEDY = 0.2
 GAMMA = 0.95
 
@@ -899,7 +899,7 @@ def main() -> None:
     parser.add_argument("--shift-steps", dest="n_steps_per_shift", type=int, help=argparse.SUPPRESS)
     parser.add_argument("--seeds", type=int, default=40, help="Seed count in ablation mode; fixed seed value in showcase mode")
     parser.add_argument("--n-shifts", type=int, default=N_SHIFTS, help="Reward-shift episodes (ablation mode)")
-    parser.add_argument("--n-frames", type=int, default=300, help="Animation frames (showcase mode); defaults to entire navigation")
+    parser.add_argument("--n-frames", type=int, default=150, help="Animation frames (showcase mode); defaults to entire navigation")
     parser.add_argument("--host", choices=["dyna", "dp"], default="dyna", help="Host algorithm for both agents")
     parser.add_argument("--workers", default=5, help="Parallel workers for RunManager (ablation mode)")
     args = parser.parse_args()
