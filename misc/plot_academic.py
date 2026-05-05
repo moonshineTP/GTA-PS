@@ -132,74 +132,6 @@ ROOT       = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT / "results"
 PLOTS_DIR   = ROOT / "plots"
 
-def plot_rq2() -> None:
-    apply_style()
-    try:
-        with open(RESULTS_DIR / "rq2_ablation_garnet_s75.json") as f:
-            garnet_data = json.load(f)
-        with open(RESULTS_DIR / "rq2_ablation_fourrooms_k4.json") as f:
-            fr_data = json.load(f)
-    except FileNotFoundError: return
-
-    point_colors = get_palette("point")
-    colors = {
-        "garnet": point_colors["standard_ps"],
-        "fourrooms": point_colors["gta_base"],
-    }
-    grid_color = get_utility_color("grid")
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    beta_vals = garnet_data["beta_vals"]
-    ax.errorbar(beta_vals, garnet_data["mean_rhos"], yerr=garnet_data["sem_rhos"],
-                label="GARNET", marker="o", capsize=5, color=colors["garnet"])
-    ax.errorbar(beta_vals, fr_data["mean_rhos"], yerr=fr_data["sem_rhos"],
-                label="FourRooms", marker="s", capsize=5, color=colors["fourrooms"])
-    ax.set_xscale("symlog", linthresh=0.001)
-    ax.set_xlabel(r"$\beta$ Magnitude")
-    ax.set_ylabel("Correlation")
-    ax.set_title("Beta Allocation Sweep")
-    ax.legend()
-    ax.grid(True, color=grid_color)
-    plt.tight_layout()
-    PLOTS_DIR.mkdir(exist_ok=True)
-    plt.savefig(PLOTS_DIR / "rq2_beta_ablation.png", dpi=300)
-    plt.close()
-
-def plot_rq3() -> None:
-    apply_style()
-    try:
-        with open(RESULTS_DIR / "rq3_tradeoff_garnet.json") as f:
-            data = json.load(f)
-    except FileNotFoundError: return
-
-    alphas = [d["alpha"] for d in data]
-    accs   = [d["top1_acc"] for d in data]
-    covs   = [d["coverage"] for d in data]
-
-    colors = get_palette("line", ["accuracy", "coverage"])
-    grid_color = get_utility_color("grid")
-
-    fig, ax1 = plt.subplots(figsize=(8, 5))
-    color1 = colors["accuracy"]
-    color2 = colors["coverage"]
-    
-    ax1.set_xlabel(r"Weight $\alpha$")
-    ax1.set_ylabel("Accuracy", color=color1)
-    ax1.plot(alphas, accs, color=color1, marker="o", label="Accuracy")
-    ax1.tick_params(axis="y", labelcolor=color1)
-
-    ax2 = ax1.twinx()
-    ax2.set_ylabel("Coverage", color=color2)
-    ax2.plot(alphas, covs, color=color2, marker="s", label="Coverage")
-    ax2.tick_params(axis="y", labelcolor=color2)
-
-    ax1.set_title("Accuracy-Coverage Tradeoff")
-    ax1.grid(True, color=grid_color)
-    plt.tight_layout()
-    PLOTS_DIR.mkdir(exist_ok=True)
-    plt.savefig(PLOTS_DIR / "rq3_alpha_tradeoff.png", dpi=300)
-    plt.close()
-
 
 def plot_swift_test_template() -> Path:
     """Render a fast palette/template figure with dummy data for visual checks."""
@@ -314,22 +246,8 @@ def plot_swift_test_template() -> Path:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Render academic-quality GTA-PS plots.")
-    parser.add_argument(
-        "--mode",
-        choices=["all", "rq2", "rq3", "swift-test"],
-        default="all",
-        help="Select which plotting routine to run. 'all' runs rq2 plus the swift-test template.",
-    )
-    args = parser.parse_args()
-
-    if args.mode in {"all", "rq2"}:
-        plot_rq2()
-    if args.mode == "rq3":
-        plot_rq3()
-    if args.mode in {"all", "swift-test"}:
-        output_path = plot_swift_test_template()
-        print(f"Saved template plot to {output_path}")
+    output_path = plot_swift_test_template()
+    print(f"Saved template plot to {output_path}")
 
 if __name__ == "__main__":
     main()

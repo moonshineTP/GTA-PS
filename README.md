@@ -54,7 +54,7 @@ pytest tests/test_smoke.py -q
 All primary experiments live in `experiments/`:
 - **RQ1 (Proactiveness):** `rq1_proactiveness.py` (Convergence speed)
 - **RQ2 (Allocation):** `rq2_allocation.py` (Adaptive schedule analysis)
-- **RQ3 (Tradeoff):** `rq3_tradeoff.py` (Accuracy vs. Coverage)
+- **RQ3 (Tradeoff):** `rq3_mixing_tradeoff.py` (Accuracy vs. Coverage)
 - **RQ4 (Asymmetry):** `rq4_asymmetry.py` (Directed dynamics gain)
 
 ### Ablation Studies

@@ -40,7 +40,17 @@ from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.algorithms import make_agent
 from gta_ps.utils.metrics import value_error_inf, value_error_l1
 from runner import RunManager
-from plot_academic import apply_style, get_palette
+from plot_academic import (
+    LABELS as AGENT_LABELS,
+    apply_style,
+    get_palette,
+    get_utility_color,
+)
+
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 
 # ---------------------------------------------------------------------------
 # Config & Factory
@@ -265,6 +275,105 @@ def aggregate(all_results: list, budgets: list) -> dict:
         }
     return out
 
+
+def _budget_stat_arrays(summary: dict, norm: str, method: str, budgets: list[int]) -> tuple[np.ndarray, np.ndarray]:
+    mean = np.array([summary["results"][norm][method][K]["mean"] for K in budgets], dtype=float)
+    ci = np.array([summary["results"][norm][method][K]["ci95"] for K in budgets], dtype=float)
+    return mean, np.nan_to_num(ci, nan=0.0)
+
+
+def plot_allocation(summary: dict, budgets: list[int], env_label: str, out_path: Path) -> bool:
+    if plt is None:
+        return False
+
+    apply_style()
+    colors = get_palette("line")
+    fallback_color = get_utility_color("text_main")
+    grid_color = get_utility_color("grid")
+    methods = ["standard_ps", "gta_base", "gta_beta"]
+    budget_x = np.array(budgets, dtype=float)
+
+    fig, axes = plt.subplots(2, 2, figsize=(13, 8))
+
+    top_panels = [
+        (axes[0, 0], "l1", r"Value Error ($L_1$)"),
+        (axes[0, 1], "inf", r"Value Error ($L_\infty$)"),
+    ]
+    for ax, norm, ylabel in top_panels:
+        for method in methods:
+            mean, ci = _budget_stat_arrays(summary, norm, method, budgets)
+            color = colors.get(method, fallback_color)
+            ax.plot(budget_x, mean, marker="o", color=color, label=AGENT_LABELS.get(method, method))
+            ax.fill_between(budget_x, mean - ci, mean + ci, color=color, alpha=0.15)
+        if len(budgets) > 1 and np.all(budget_x > 0):
+            ax.set_xscale("log")
+        ax.set_xlabel("Planning Budget K")
+        ax.set_ylabel(ylabel)
+        ax.set_title(f"{ylabel} vs Budget")
+        ax.grid(True, which="both", ls="-", color=grid_color, alpha=0.2)
+        ax.legend()
+
+    shift_axis = None
+    for method in ("gta_base", "gta_beta"):
+        if summary["history"][method]["rho_mean"]:
+            shift_axis = np.arange(1, len(summary["history"][method]["rho_mean"]) + 1)
+            break
+    if shift_axis is None:
+        shift_axis = np.arange(1, 2)
+
+    ax = axes[1, 0]
+    for method in ("gta_base", "gta_beta"):
+        rho = np.array(summary["history"][method]["rho_mean"], dtype=float)
+        if rho.size == 0:
+            continue
+        ax.plot(
+            shift_axis[:rho.size],
+            rho,
+            marker="o",
+            color=colors.get(method, fallback_color),
+            label=AGENT_LABELS.get(method, method),
+        )
+    ax.set_xlabel("Reward Shift")
+    ax.set_ylabel("Spearman rho")
+    ax.set_title("Topology-Order Correlation")
+    ax.grid(True, which="both", ls="-", color=grid_color, alpha=0.2)
+    ax.legend()
+
+    ax = axes[1, 1]
+    for method in ("gta_base", "gta_beta"):
+        color = colors.get(method, fallback_color)
+        beta = np.array(summary["history"][method]["beta_mean"], dtype=float)
+        slem = np.array(summary["history"][method]["slem_mean"], dtype=float)
+        if beta.size:
+            ax.plot(
+                shift_axis[:beta.size],
+                beta,
+                marker="o",
+                color=color,
+                label=f"{AGENT_LABELS.get(method, method)} beta_t",
+            )
+        if slem.size:
+            ax.plot(
+                shift_axis[:slem.size],
+                slem,
+                linestyle="--",
+                color=color,
+                alpha=0.85,
+                label=f"{AGENT_LABELS.get(method, method)} SLEM",
+            )
+    ax.set_xlabel("Reward Shift")
+    ax.set_ylabel("Mean trace value")
+    ax.set_title("Schedule Trace (solid beta_t, dashed SLEM)")
+    ax.grid(True, which="both", ls="-", color=grid_color, alpha=0.2)
+    ax.legend()
+
+    fig.suptitle(f"RQ2 Allocation: {env_label}", y=1.02)
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    return True
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -281,6 +390,7 @@ def main():
     parser.add_argument("--config", default=None, help="YAML config path")
     parser.add_argument("--workers", type=int, default=5)
     parser.add_argument("--out-dir", default=str(ROOT / "results"))
+    parser.add_argument("--plot-dir", default=str(ROOT / "plots"))
 
     args = parser.parse_args()
     _cfg = _load_config(str(Path(args.config).resolve())) if args.config else {}
@@ -321,6 +431,9 @@ def main():
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2)
 
+    plot_path = Path(args.plot_dir).resolve() / f"rq2_{run_config['file_tag']}.png"
+    plot_written = plot_allocation(summary, budgets, run_config["env_label"], plot_path)
+
     print(f"\nEnvironment: {run_config['env_label']}")
     for norm in ("l1", "inf"):
         print(f"  --- L_{norm} ---")
@@ -333,6 +446,11 @@ def main():
     for m in ["gta_base", "gta_beta"]:
         rho = summary["history"][m]["rho_mean"]
         print(f"  {m:10s} avg rho: {np.mean(rho):.4f}")
+    print(f"\nResults saved to: {out_path}")
+    if plot_written:
+        print(f"Plot saved to:    {plot_path}")
+    else:
+        print("Plot skipped:     matplotlib is not installed")
 
 if __name__ == "__main__":
     main()
