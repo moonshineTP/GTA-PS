@@ -203,7 +203,7 @@ def main():
     budgets = [10, 50]
     
     if args.env == "garnet":
-        env_kwargs = {"n_states": 75, "n_actions": 4, "branching": 3, "reward_support": 3, "reversible": 0.2}
+        env_kwargs = {"n_states": 75, "n_actions": 4, "branching": 3, "reward_support": 3, "reversible": 0.0}
     else:
         env_kwargs = {"k_fourrooms": args.k}
 
@@ -248,8 +248,8 @@ def main():
         m_cov    = np.mean(summary[a]["cov"])
         m_l1_small_K  = np.mean(summary[a]["err_l1"][budgets[0]])
         m_l1_big_K = np.mean(summary[a]["err_l1"][budgets[1]])
-        m_inf_small_K  = np.mean(summary[a]["err_inf"][budget[0]])
-        m_inf_big_K = np.mean(summary[a]["err_inf"][budget[1]])
+        m_inf_small_K  = np.mean(summary[a]["err_inf"][budgets[0]])
+        m_inf_big_K = np.mean(summary[a]["err_inf"][budgets[1]])
         print(f"{a:6.2f} | {m_acc:10.4f} | {m_rho:10.4f} | {m_cov:10.4f} | "
               f"{m_l1_small_K:10.4f} | {m_l1_big_K:10.4f} | {m_inf_small_K:11.4f} | {m_inf_big_K:11.4f}")
 
@@ -258,10 +258,10 @@ def main():
             "top1_acc": m_acc,
             "rho": m_rho,
             "coverage": m_cov,
-            "err_l1_25": m_l1_small_K,
-            "err_l1_100": m_l1_big_K,
-            "err_inf_25": m_inf_small_K,
-            "err_inf_100": m_inf_big_K,
+            "err_l1_small_K": m_l1_small_K,
+            "err_l1_big_K": m_l1_big_K,
+            "err_inf_small_K": m_inf_small_K,
+            "err_inf_big_K": m_inf_big_K,
         })
 
     # Output to JSON

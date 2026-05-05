@@ -12,9 +12,6 @@ apply_style()
 colors = get_palette("line")  # Strict Viridis for time-series
 """
 from __future__ import annotations
-
-import argparse
-import json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -131,7 +128,6 @@ LABELS: dict[str, str] = {
 ROOT       = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT / "results"
 PLOTS_DIR   = ROOT / "plots"
-
 
 def plot_swift_test_template() -> Path:
     """Render a fast palette/template figure with dummy data for visual checks."""
