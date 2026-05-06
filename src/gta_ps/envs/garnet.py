@@ -2,7 +2,6 @@
 GARNET (Generalized Average Reward Non-stationary Environment Task) tabular MDP.
 """
 import numpy as np
-import scipy.sparse as sp
 from typing import Optional
 
 class GarnetEnv:
