@@ -68,28 +68,11 @@ def _resolve_tuned_variants(tuned: dict) -> dict:
     if not tuned:
         return {"forward_gta": {}, "full_gta": {}}
 
-    if "forward_gta" in tuned or "full_gta" in tuned:
-        if "forward_gta" not in tuned or "full_gta" not in tuned:
-            raise ValueError("RQ5 expects both tuned.forward_gta and tuned.full_gta when using explicit method names.")
-        forward_cfg = dict(tuned.get("forward_gta") or {})
-        full_cfg = dict(tuned.get("full_gta") or {})
+    if "gta_beta" not in tuned:
+        raise ValueError("RQ5 expects tuned.gta_beta when using legacy method names.")
     else:
-        forward_cfg = None
-        full_cfg = None
-        for cfg in tuned.values():
-            cfg_dict = dict(cfg or {})
-            is_full = any(cfg_dict.get(key) is not None for key in ("beta1", "beta2")) or bool(cfg_dict.get("adaptive_beta"))
-            is_forward = cfg_dict.get("beta") is not None and not is_full
-            if is_full:
-                if full_cfg is not None:
-                    raise ValueError("RQ5 could not infer a unique Full-GTA tuned block.")
-                full_cfg = cfg_dict
-            elif is_forward:
-                if forward_cfg is not None:
-                    raise ValueError("RQ5 could not infer a unique Forward-GTA tuned block.")
-                forward_cfg = cfg_dict
-        if forward_cfg is None or full_cfg is None:
-            raise ValueError("RQ5 could not infer Forward-GTA / Full-GTA tuned blocks from the config.")
+        forward_cfg = dict(tuned.get("gta_beta") or {})
+        full_cfg = dict(tuned.get("gta_beta") or {})
 
     forward_cfg["alpha"] = 0.0
     return {
@@ -110,6 +93,22 @@ def _build_method_cfgs(cfg: dict) -> dict:
     result["forward_gta"]["alpha"] = 0.0
     return result
 
+def _build_variants(method_cfgs: dict) -> List[dict]:
+    return [
+        {"label": AGENT_LABELS["standard_ps"], "variant": "standard_ps", "kwargs": {}},
+        {"label": AGENT_LABELS["forward_gta"], "variant": "forward_gta", "kwargs": method_cfgs.get("forward_gta", {"alpha": 0.0})},
+        {"label": AGENT_LABELS["full_gta"], "variant": "full_gta", "kwargs": method_cfgs.get("full_gta", {})},
+    ]
+
+def _resolve_env_method_cfgs(config_path: str | None) -> tuple[dict, dict]:
+    if config_path:
+        method_cfgs = _build_method_cfgs(_load_config(config_path))
+        return method_cfgs, method_cfgs
+    return (
+        _build_method_cfgs(_load_default_env_config("garnet")),
+        _build_method_cfgs(_load_default_env_config("fourrooms")),
+    )
+
 def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shifts: int, n_steps_per_shift: int, k_planning: int, seed: int):
     if env_name == "garnet":
         env = GarnetEnv(**env_params, seed=seed)
@@ -125,7 +124,7 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
     for idx, var in enumerate(variants):
         agent = make_agent(
             variant=var['variant'],
-            host="dyna",
+            host="dp",
             P=env.P,
             r=env.r,
             gamma=env.gamma,
@@ -138,28 +137,19 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
         for shift in range(n_shifts):
             r_new = env.shift_reward()
             V_star = env.value_iteration(r_new)
-            agent.reward_update(r_new)
             
             for step in range(n_steps_per_shift):
-                burst_size = 5 * n_states if step == 0 else 1
-                if burst_size > 1:
-                    ss = sim_rng.integers(n_states, size=burst_size)
-                    aa = sim_rng.integers(env.n_actions, size=burst_size)
-                    sn = np.array([sim_rng.choice(n_states, p=env.P[aa[i], ss[i]]) for i in range(burst_size)])
-                    rr = r_new[ss]
-                    agent.real_steps_batch(ss, aa, rr, sn)
+                # DP agent planning with reward update on first step
+                if step == 0:
+                    agent.plan(K=k_planning, r=r_new)
                 else:
-                    s_rand = sim_rng.integers(n_states)
-                    a_rand = sim_rng.integers(env.n_actions)
-                    s_next_rand = sim_rng.choice(n_states, p=env.P[a_rand, s_rand])
-                    r_rand = r_new[s_rand]
-                    agent.real_step(s_rand, a_rand, r_rand, s_next_rand)
+                    agent.plan(K=k_planning)
                 
-                agent.plan_steps(K=k_planning)
-                
+                # If last step of shift, record error
                 if step == n_steps_per_shift - 1:
-                    V_after = agent.Q.max(axis=0)
-                    shift_end_errors.append(value_error_l1(V_after, V_star))
+                    V_after = agent.V
+                    error = value_error_l1(V_after, V_star)
+                    shift_end_errors.append(error)
             
         seed_results[var['label']] = np.mean(shift_end_errors)
     return seed_results
@@ -214,7 +204,7 @@ def plot_rq5_schema(garnet_stats: Dict[float, Dict[str, dict]], fourrooms_stats:
     ax2.grid(True, alpha=0.3, color=grid_color)
     
     plt.tight_layout()
-    plot_path = ROOT / "plots" / "rq5_bottlenecks_corridor.png"
+    plot_path = ROOT / "plots" / "rq5_bottlenecks.png"
     plot_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(plot_path, dpi=300, bbox_inches="tight")
 
@@ -239,19 +229,16 @@ if __name__ == "__main__":
     parser.add_argument("--gamma", type=float, default=0.95)
     args = parser.parse_args()
 
-    if args.config:
-        method_cfgs = _build_method_cfgs(_load_config(args.config))
-    else:
-        method_cfgs = _build_method_cfgs(_load_default_env_config("garnet"))
+    garnet_method_cfgs, fourrooms_method_cfgs = _resolve_env_method_cfgs(args.config)
 
     print(f"Starting RQ5 Corridor Sweep...")
-    
-    variants = [
-        {"label": AGENT_LABELS["standard_ps"], "variant": "standard_ps", "kwargs": {}},
-        {"label": AGENT_LABELS["forward_gta"], "variant": "forward_gta", "kwargs": method_cfgs.get("forward_gta", {"alpha": 0.0})},
-        {"label": AGENT_LABELS["full_gta"],    "variant": "full_gta",    "kwargs": method_cfgs.get("full_gta", {})},
-    ]
-    variant_labels = [v['label'] for v in variants]
+    print("Resolved method configs:")
+    print("  GARNET:", json.dumps(garnet_method_cfgs, indent=2, sort_keys=True))
+    print("  FourRooms:", json.dumps(fourrooms_method_cfgs, indent=2, sort_keys=True))
+
+    garnet_variants = _build_variants(garnet_method_cfgs)
+    fourrooms_variants = _build_variants(fourrooms_method_cfgs)
+    variant_labels = [v['label'] for v in garnet_variants]
     runner = RunManager(n_workers=args.workers)
     
     # 1. GARNET
@@ -261,7 +248,7 @@ if __name__ == "__main__":
     for rate in nbr_rates:
         seed_results = runner.run(fn=run_seed_worker, seeds=list(range(args.seeds)), 
                                   fn_kwargs=dict(env_name="garnet", env_params={"n_states": 75, "n_nbr_rate": rate, "reversible": 1.0, "gamma": args.gamma},
-                                                 variants=variants, n_shifts=args.n_shifts, n_steps_per_shift=args.n_steps_per_shift, k_planning=args.K),
+                                                 variants=garnet_variants, n_shifts=args.n_shifts, n_steps_per_shift=args.n_steps_per_shift, k_planning=args.K),
                                   desc=f"garnet_{rate}")
         garnet_final_stats[rate] = get_stats(seed_results, variant_labels)
         
@@ -276,6 +263,8 @@ if __name__ == "__main__":
         cfg = _load_config(args.config)
         corridor_lens = cfg.get("corridor_lens", corridor_lens)
         room_size = cfg.get("room_size", room_size)
+    print("FourRooms corridor sweep config:")
+    print(json.dumps({"corridor_lens": corridor_lens, "room_size": room_size}, indent=2, sort_keys=True))
 
     for cl in corridor_lens:
         print(f"  Corridor Length: {cl}")
@@ -285,7 +274,7 @@ if __name__ == "__main__":
             fn_kwargs=dict(
                 env_name="fourrooms", 
                 env_params={"room_size": room_size, "corridor_len": cl, "k": 1, "gamma": args.gamma},
-                variants=variants, n_shifts=args.n_shifts, 
+                variants=fourrooms_variants, n_shifts=args.n_shifts, 
                 n_steps_per_shift=args.n_steps_per_shift, k_planning=args.K
             ),
             desc=f"fr_cl_{cl}"
@@ -303,9 +292,13 @@ if __name__ == "__main__":
             "fourrooms": {str(k): v for k, v in fourrooms_final_stats.items()},
             "config": {
                 **vars(args),
-                "method_variants": [
+                "garnet_method_variants": [
                     {"label": variant["label"], "variant": variant["variant"], "kwargs": variant["kwargs"]}
-                    for variant in variants
+                    for variant in garnet_variants
+                ],
+                "fourrooms_method_variants": [
+                    {"label": variant["label"], "variant": variant["variant"], "kwargs": variant["kwargs"]}
+                    for variant in fourrooms_variants
                 ],
             },
         }, f, indent=2)

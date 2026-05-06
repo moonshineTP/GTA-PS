@@ -44,7 +44,7 @@ call :RunRQ "RQ2 Beta" "rq2_beta.exe"
 call :RunRQ "RQ3 Tradeoff" "rq3_tradeoff.exe"
 call :RunRQ "RQ4 Asymmetry" "rq4_asymmetry.exe"
 call :RunRQ "RQ5 Bottlenecks" "rq5_bottlenecks.exe"
-call :RunRQ "RQ6 Curl Divergence" "rq6_curl_divergence.exe"
+call :RunRQ "RQ6 Curl Divergence"
 
 echo Done.
 endlocal

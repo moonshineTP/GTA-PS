@@ -129,17 +129,6 @@ GROUPS: dict[str, tuple[ScriptSpec, ...]] = {
                 "n_shifts": "--n-shifts",
             },
         ),
-        ScriptSpec(
-            path="experiments/rq6_curl_divergence.py",
-            label="RQ6 curl divergence",
-            forwarded_flags={
-                "workers": "--workers",
-                "seeds": "--seeds",
-                "K": "--K",
-                "n_steps_per_shift": "--n-steps-per-shift",
-                "n_shifts": "--n-shifts",
-            },
-        ),
     ),
     "ablations": (
         ScriptSpec(

@@ -101,23 +101,14 @@ def _resolve_tuned_variants(tuned: dict) -> dict:
             raise ValueError("RQ6 expects both tuned.forward_gta and tuned.full_gta when using explicit method names.")
         forward_cfg = dict(tuned.get("forward_gta") or {})
         full_cfg = dict(tuned.get("full_gta") or {})
+    elif "gta_base" in tuned or "gta_beta" in tuned:
+        if "gta_beta" not in tuned:
+            raise ValueError("RQ6 expects tuned.gta_beta when using legacy method names.")
+        # Forward-GTA is the full GTA-Beta family with alpha fixed to zero.
+        forward_cfg = dict(tuned.get("gta_beta") or {})
+        full_cfg = dict(tuned.get("gta_beta") or {})
     else:
-        forward_cfg = None
-        full_cfg = None
-        for cfg in tuned.values():
-            cfg_dict = dict(cfg or {})
-            is_full = any(cfg_dict.get(key) is not None for key in ("beta1", "beta2")) or bool(cfg_dict.get("adaptive_beta"))
-            is_forward = cfg_dict.get("beta") is not None and not is_full
-            if is_full:
-                if full_cfg is not None:
-                    raise ValueError("RQ6 could not infer a unique Full-GTA tuned block.")
-                full_cfg = cfg_dict
-            elif is_forward:
-                if forward_cfg is not None:
-                    raise ValueError("RQ6 could not infer a unique Forward-GTA tuned block.")
-                forward_cfg = cfg_dict
-        if forward_cfg is None or full_cfg is None:
-            raise ValueError("RQ6 could not infer Forward-GTA / Full-GTA tuned blocks from the config.")
+        raise ValueError("RQ6 expected tuned.forward_gta/full_gta or tuned.gta_base/gta_beta.")
 
     forward_cfg["alpha"] = 0.0
     return {
@@ -345,6 +336,16 @@ def _build_variants(method_cfgs: dict) -> List[dict]:
     ]
 
 
+def _resolve_env_method_cfgs(config_path: str | None) -> tuple[dict, dict]:
+    if config_path:
+        method_cfgs = _build_method_cfgs(_load_config(config_path))
+        return method_cfgs, method_cfgs
+    return (
+        _build_method_cfgs(_load_default_env_config("garnet")),
+        _build_method_cfgs(_load_default_env_config("fourrooms")),
+    )
+
+
 def run_seed_worker(
     env_name: str,
     env_params: dict,
@@ -377,9 +378,9 @@ def run_seed_worker(
     n_states = env.n_states
     seed_results = {}
     for idx, var in enumerate(variants):
-        agent: DynaHost = make_agent(
+        agent = make_agent(
             variant=var["variant"],
-            host="dyna",
+            host="dp",
             P=env.P,
             r=env.r,
             gamma=env.gamma,
@@ -392,27 +393,19 @@ def run_seed_worker(
         for _ in range(n_shifts):
             r_new = env.shift_reward()
             V_star = env.value_iteration(r_new)
-            agent.reward_update(r_new)
 
             for step in range(n_steps_per_shift):
-                burst_size = 5 * n_states if step == 0 else 1
-                if burst_size > 1:
-                    ss = sim_rng.integers(n_states, size=burst_size)
-                    aa = sim_rng.integers(env.n_actions, size=burst_size)
-                    sn = np.array([sim_rng.choice(n_states, p=env.P[aa[i], ss[i]]) for i in range(burst_size)])
-                    rr = r_new[ss]
-                    agent.real_steps_batch(ss, aa, rr, sn)
+                # DP agent planning with reward update on first step
+                if step == 0:
+                    agent.plan(K=k_planning, r=r_new)
                 else:
-                    s_rand = sim_rng.integers(n_states)
-                    a_rand = sim_rng.integers(env.n_actions)
-                    s_next_rand = sim_rng.choice(n_states, p=env.P[a_rand, s_rand])
-                    r_rand = r_new[s_rand]
-                    agent.real_step(s_rand, a_rand, r_rand, s_next_rand)
-
-                agent.plan_steps(K=k_planning)
+                    agent.plan(K=k_planning)
+                
+                # If last step of shift, record error
                 if step == n_steps_per_shift - 1:
-                    V_after = agent.Q.max(axis=0)
-                    shift_end_errors.append(value_error_l1(V_after, V_star))
+                    V_after = agent.V
+                    error = value_error_l1(V_after, V_star)
+                    shift_end_errors.append(error)
 
         seed_results[var["label"]] = float(np.mean(shift_end_errors))
     return seed_results
@@ -537,12 +530,10 @@ if __name__ == "__main__":
     parser.add_argument("--k-fourrooms", type=int, default=FOURROOMS_BASE_KWARGS["k"])
     args = parser.parse_args()
 
-    if args.config:
-        garnet_method_cfgs = _build_method_cfgs(_load_config(args.config))
-        fourrooms_method_cfgs = garnet_method_cfgs
-    else:
-        garnet_method_cfgs = _build_method_cfgs(_load_default_env_config("garnet"))
-        fourrooms_method_cfgs = _build_method_cfgs(_load_default_env_config("fourrooms"))
+    garnet_method_cfgs, fourrooms_method_cfgs = _resolve_env_method_cfgs(args.config)
+    print("Resolved method configs:")
+    print("  GARNET:", json.dumps(garnet_method_cfgs, indent=2, sort_keys=True))
+    print("  FourRooms:", json.dumps(fourrooms_method_cfgs, indent=2, sort_keys=True))
 
     garnet_variants = _build_variants(garnet_method_cfgs)
     fourrooms_variants = _build_variants(fourrooms_method_cfgs)

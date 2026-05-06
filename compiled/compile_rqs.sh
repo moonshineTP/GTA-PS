@@ -24,7 +24,6 @@ RQS=(
     "experiments/rq3_mixing_tradeoff.py"
     "experiments/rq4_asymmetry.py"
     "experiments/rq5_bottlenecks.py"
-    "experiments/rq6_curl_divergence.py"
 )
 
 # Use Zig compiler pipeline if setup exists

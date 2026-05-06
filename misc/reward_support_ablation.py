@@ -63,23 +63,14 @@ def _resolve_tuned_variants(tuned: dict) -> dict:
             raise ValueError("Reward support ablation expects both tuned.forward_gta and tuned.full_gta when using explicit method names.")
         forward_cfg = dict(tuned.get("forward_gta") or {})
         full_cfg = dict(tuned.get("full_gta") or {})
+    elif "gta_base" in tuned or "gta_beta" in tuned:
+        if "gta_beta" not in tuned:
+            raise ValueError("Reward support ablation expects tuned.gta_beta when using legacy method names.")
+        # Forward-GTA is the full GTA-Beta family with alpha fixed to zero.
+        forward_cfg = dict(tuned.get("gta_beta") or {})
+        full_cfg = dict(tuned.get("gta_beta") or {})
     else:
-        forward_cfg = None
-        full_cfg = None
-        for cfg in tuned.values():
-            cfg_dict = dict(cfg or {})
-            is_full = any(cfg_dict.get(key) is not None for key in ("beta1", "beta2")) or bool(cfg_dict.get("adaptive_beta"))
-            is_forward = cfg_dict.get("beta") is not None and not is_full
-            if is_full:
-                if full_cfg is not None:
-                    raise ValueError("Reward support ablation could not infer a unique Full-GTA tuned block.")
-                full_cfg = cfg_dict
-            elif is_forward:
-                if forward_cfg is not None:
-                    raise ValueError("Reward support ablation could not infer a unique Forward-GTA tuned block.")
-                forward_cfg = cfg_dict
-        if forward_cfg is None or full_cfg is None:
-            raise ValueError("Reward support ablation could not infer Forward-GTA / Full-GTA tuned blocks from the config.")
+        raise ValueError("Reward support ablation expected tuned.forward_gta/full_gta or tuned.gta_base/gta_beta.")
 
     forward_cfg["alpha"] = 0.0
     return {
@@ -113,7 +104,7 @@ def run_seed_worker(support: int, n_states: int, variants: List[dict], n_shifts:
         agent_rng = np.random.default_rng(np.random.SeedSequence([seed, support, idx, 0x5EED]))
         agent = make_agent(
             variant=var['variant'],
-            host="dyna",
+            host="dp",
             P=env.P,
             r=env.r,
             gamma=env.gamma,
@@ -126,22 +117,17 @@ def run_seed_worker(support: int, n_states: int, variants: List[dict], n_shifts:
         for shift in range(n_shifts):
             r_new = env.shift_reward()
             V_star = env.value_iteration(r_new)
-            agent.reward_update(r_new)
             
             for step in range(n_steps_per_shift):
-                # Dyna interaction
-                burst_size = 5 * n_states if step == 0 else 1
-                for _ in range(burst_size):
-                    s_rand = sim_rng.integers(n_states)
-                    a_rand = sim_rng.integers(n_actions)
-                    s_next_rand = sim_rng.choice(n_states, p=env.P[a_rand, s_rand])
-                    r_rand = r_new[s_rand]
-                    agent.real_step(s_rand, a_rand, r_rand, s_next_rand)
+                # DP agent planning with reward update on first step
+                if step == 0:
+                    agent.plan(K=k_planning, r=r_new)
+                else:
+                    agent.plan(K=k_planning)
                 
-                agent.plan_steps(K=k_planning)
-                
+                # If last step of shift, record error
                 if step == n_steps_per_shift - 1:
-                    V_after = agent.Q.max(axis=0)
+                    V_after = agent.V
                     error = value_error_l1(V_after, V_star)
                     shift_end_errors.append(error)
             
@@ -159,8 +145,8 @@ def plot_ablation(stats: Dict[int, Dict[str, dict]], seeds: int, k: int, steps: 
     p_point = get_palette("point")
     label_to_key = {
         "Standard-PS": "standard_ps",
-        "GTA-Base":    "forward_gta",
-        "GTA-Beta":    "full_gta"
+        "Forward-GTA": "forward_gta",
+        "Full-GTA":    "full_gta"
     }
     
     support_sizes = sorted(stats.keys())
@@ -219,8 +205,8 @@ if __name__ == "__main__":
     
     variants = [
         {"label": "Standard-PS", "variant": "standard_ps", "kwargs": {}},
-        {"label": "GTA-Base",    "variant": "forward_gta", "kwargs": method_cfgs.get("forward_gta", {"alpha": 0.0})},
-        {"label": "GTA-Beta",    "variant": "full_gta",    "kwargs": method_cfgs.get("full_gta", {})},
+        {"label": "Forward-GTA", "variant": "forward_gta", "kwargs": method_cfgs.get("forward_gta", {"alpha": 0.0})},
+        {"label": "Full-GTA",    "variant": "full_gta",    "kwargs": method_cfgs.get("full_gta", {})},
     ]
     variant_labels = [v['label'] for v in variants]
     

@@ -15,7 +15,7 @@ _ADAPTIVE_FLAGS: dict = {
     "standard_ps": {},
     "gta_base":    {},
     "gta_beta":    {"adaptive_beta":  True},
-    "forward_gta": {},
+    "forward_gta": {"adaptive_beta":  True},
     "full_gta":    {"adaptive_beta":  True},
 }
 
@@ -23,7 +23,7 @@ _CANONICAL_VARIANT: dict[str, str] = {
     "standard_ps": "standard_ps",
     "gta_base": "gta_base",
     "gta_beta": "gta_beta",
-    "forward_gta": "gta_base",
+    "forward_gta": "gta_beta",
     "full_gta": "gta_beta",
 }
 
