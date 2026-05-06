@@ -99,8 +99,10 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
     """
     if env_name == "garnet":
         env = GarnetEnv(**env_params, seed=seed)
+        model_type = "count"
     else:
         env = FourRoomsTabular(**env_params, seed=seed)
+        model_type = "sample"
     sim_rng = np.random.default_rng(np.random.SeedSequence([seed, 0xA54, 4]))
         
     n_states = env.n_states
@@ -114,6 +116,7 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
             P=env.P,
             r=env.r,
             gamma=env.gamma,
+            model_type=model_type,
             rng=np.random.default_rng(np.random.SeedSequence([seed, idx, 0xA54])),
             **var.get('kwargs', {})
         )

@@ -117,6 +117,7 @@ def _run_seed(
     agents = {
         (K, v): make_agent(
             v, host="dyna", P=env.P, r=env.r, gamma=gamma, q=20,
+            model_type="sample",
             rng=np.random.default_rng(np.random.SeedSequence([seed, K, variant_index[v], 0xD1A])),
             **_module_kwargs(v, method_cfgs, arnoldi_k)
         )

@@ -375,6 +375,9 @@ class IndependentAgentSession:
 
         kw = tuned_cfg.get(variant, {}).copy() if variant != "standard_ps" else {}
         variant_index = VARIANTS.index(variant)
+        agent_kwargs = {}
+        if host == "dyna":
+            agent_kwargs["model_type"] = "sample"
         self.agent = make_agent(
             variant,
             host=host,
@@ -384,6 +387,7 @@ class IndependentAgentSession:
             n_states=self.env.n_states,
             n_actions=self.env.n_actions,
             rng=np.random.default_rng(np.random.SeedSequence([seed, variant_index, 0xD1A])),
+            **agent_kwargs,
             **kw,
         )
 

@@ -11,7 +11,7 @@ Setup:
 - Environments: 
     - GARNET: n_nbr_rate sweep (localized vs. global connectivity).
     - FourRooms: Corridor length sweep (MFPT barrier scaling).
-- Agent: Dyna host (learned count-based model).
+- Agent: Dyna host (count-based on GARNET, sample-based on FourRooms).
 """
 import sys
 import os
@@ -69,8 +69,10 @@ def _build_method_cfgs(cfg: dict) -> dict:
 def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shifts: int, n_steps_per_shift: int, k_planning: int, seed: int):
     if env_name == "garnet":
         env = GarnetEnv(**env_params, seed=seed)
+        model_type = "count"
     else:
         env = FourRoomsTabular(**env_params, seed=seed)
+        model_type = "sample"
     sim_rng = np.random.default_rng(np.random.SeedSequence([seed, 0xB07, 5]))
         
     n_states = env.n_states
@@ -83,6 +85,7 @@ def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shi
             P=env.P,
             r=env.r,
             gamma=env.gamma,
+            model_type=model_type,
             rng=np.random.default_rng(np.random.SeedSequence([seed, idx, 0xB07])),
             **var.get('kwargs', {})
         )

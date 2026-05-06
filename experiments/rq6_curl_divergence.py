@@ -317,12 +317,14 @@ def run_seed_worker(
             env_kwargs=env_params["env_kwargs"],
             kernel_kwargs=env_params["kernel_kwargs"],
         )
+        model_type = "count"
     elif env_name == "fourrooms":
         env = _make_fourrooms_env(
             seed=seed,
             gamma=env_params["gamma"],
             env_kwargs=env_params["env_kwargs"],
         )
+        model_type = "sample"
     else:
         raise ValueError(f"Unknown env_name {env_name!r}")
 
@@ -336,6 +338,7 @@ def run_seed_worker(
             P=env.P,
             r=env.r,
             gamma=env.gamma,
+            model_type=model_type,
             rng=np.random.default_rng(np.random.SeedSequence([seed, idx, 0xC06E])),
             **var.get("kwargs", {}),
         )

@@ -68,7 +68,7 @@ except ImportError:
 N_STATES    = 75            # default, overridden by --n-states
 N_ACTIONS   = 4
 BRANCHING   = 3
-N_NBR_RATE  = 0.07          # slow mixing;
+N_NBR_RATE  = 0.07   # slow mixing;
 REWARD_SUP  = 4
 GAMMA       = 0.95
 
