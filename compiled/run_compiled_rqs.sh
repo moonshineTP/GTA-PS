@@ -76,16 +76,6 @@ else
 fi
 echo ""
 
-# RQ2 Allocation
-INDEX=$((INDEX+1))
-if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/9] RQ2 Allocation - skipped (start-from=$START_FROM)"
-else
-    echo "[$INDEX/9] RQ2 Allocation (Compiled)"
-    "$ARTIFACTS_DIR/rq2_allocation.dist/rq2_allocation" "$@" || (echo "ERROR: rq2_allocation not found" && exit 1)
-fi
-echo ""
-
 # RQ2 Beta
 INDEX=$((INDEX+1))
 if [ "$INDEX" -lt "$START_FROM" ]; then
@@ -126,14 +116,5 @@ else
 fi
 echo ""
 
-# RQ6 Curl Divergence
-INDEX=$((INDEX+1))
-if [ "$INDEX" -lt "$START_FROM" ]; then
-    echo "[$INDEX/9] RQ6 Curl Divergence - skipped (start-from=$START_FROM)"
-else
-    echo "[$INDEX/9] RQ6 Curl Divergence (Compiled)"
-    "$ARTIFACTS_DIR/rq6_curl_divergence.dist/rq6_curl_divergence" "$@" || (echo "ERROR: rq6_curl_divergence not found" && exit 1)
-fi
-echo ""
 
 echo "Done."

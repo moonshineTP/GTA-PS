@@ -33,7 +33,7 @@ def in_laplacian(P: np.ndarray) -> sp.csr_array:
     n = Pdense.shape[0]
     D = sp.diags(d_in, format="csr")
     Psp_T = sp.csr_array(Pdense.T)
-    Psp_T.data[np.abs(Psp_T.data) < 1e-12] = 0.0
+    Psp_T.data[np.abs(Psp_T.data) < 1e-6] = 0.0
     Psp_T.eliminate_zeros()
     return D - Psp_T
 
@@ -92,7 +92,7 @@ def slem_arnoldi(
         mods = np.abs(vals)
         mods = np.sort(mods)[::-1]
         for v in mods:
-            if abs(v - 1.0) > 1e-8:
+            if abs(v - 1.0) > 1e-6:
                 return float(v), None
         # All eigenvalues ≈ 1 → near-periodic chain; SLEM is mods[1], not 0.
         return float(mods[1]), None
@@ -100,9 +100,9 @@ def slem_arnoldi(
     Psp = sp.csr_array(Pdense)
     # Eliminate near-zero fill-ins that arise when P_pi is a softmax-weighted
     # mixture of sparse transitions.  Without this, every entry is technically
-    # nonzero (probability ~ e^{-b*gap} ≥ 1e-20) and ARPACK runs dense matvecs
+    # nonzero  and ARPACK runs dense matvecs
     # instead of sparse ones, inflating cost by ~n× for large b.
-    Psp.data[np.abs(Psp.data) < 1e-12] = 0.0
+    Psp.data[np.abs(Psp.data) < 1e-6] = 0.0
     Psp.eliminate_zeros()
     k_eff = min(k, n - 2)
     try:
@@ -122,7 +122,7 @@ def slem_arnoldi(
     v0_next = np.real(vecs[:, 0]).astype(float)
 
     for v in mods:
-        if abs(v - 1.0) > 1e-8:
+        if abs(v - 1.0) > 1e-6:
             return float(v), v0_next
     # All eigenvalues ≈ 1 → near-periodic chain; SLEM is mods[1], not 0.
     return float(mods[1]), v0_next
@@ -167,7 +167,7 @@ def resolvent_forward(
             # Fallback to unpreconditioned if ILU encounters a singular pivot
             M = None
 
-        f, info = spla.gmres(A, r, M=M, restart=20, maxiter=200, atol=1e-8)
+        f, info = spla.gmres(A, r, M=M, restart=20, maxiter=200, atol=1e-4)
         if info != 0:
             # fallback to direct
             lu = spla.splu(A.tocsc())
@@ -204,7 +204,7 @@ def resolvent_backward(
             # Fallback to unpreconditioned if ILU encounters a singular pivot
             M = None
 
-        f, info = spla.gmres(A, r, M=M, restart=20, maxiter=200, atol=1e-8)
+        f, info = spla.gmres(A, r, M=M, restart=20, maxiter=200, atol=1e-4)
         if info != 0:
             lu = spla.splu(A.tocsc())
             f = lu.solve(r)

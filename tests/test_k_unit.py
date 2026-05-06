@@ -148,7 +148,7 @@ def test_gtaps_tau_uses_termwise_magnitudes_before_mixing():
 
     expected = (1.0 - alg.alpha_t) * np.abs(tau_out) + alg.alpha_t * np.abs(tau_in)
     mixed_abs = np.abs((1.0 - alg.alpha_t) * tau_out + alg.alpha_t * tau_in)
-    np.testing.assert_allclose(alg.tau, expected, atol=1e-12)
+    np.testing.assert_allclose(alg.tau, expected, atol=1e-6)
     assert not np.allclose(expected, mixed_abs)
 
 

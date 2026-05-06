@@ -36,7 +36,7 @@ from gta_ps.algorithms import make_agent, DynaHost
 from gta_ps.envs.garnet import GarnetEnv
 from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.utils.metrics import value_error_l1
-from gta_ps.utils.hyperparams import load_tuned_for_env
+from gta_ps.utils.hyperparams import ENV_DEFAULT_CONFIG
 from gta_ps.utils import operator_split, slem_arnoldi
 from runner import RunManager
 from plot_academic import (
@@ -82,16 +82,52 @@ def _load_config(path: str) -> dict:
         return yaml.safe_load(f) or {}
 
 
+def _load_default_env_config(env_name: str) -> dict:
+    filename = ENV_DEFAULT_CONFIG.get(env_name)
+    if filename is None:
+        raise ValueError(f"RQ6 has no default config mapping for env '{env_name}'.")
+    cfg_path = ROOT / "configs" / filename
+    if not cfg_path.exists():
+        raise FileNotFoundError(f"RQ6 expected default config at {cfg_path}.")
+    return _load_config(str(cfg_path))
+
+
+def _resolve_tuned_variants(tuned: dict) -> dict:
+    if not tuned:
+        return {"forward_gta": {}, "full_gta": {}}
+
+    if "forward_gta" in tuned or "full_gta" in tuned:
+        if "forward_gta" not in tuned or "full_gta" not in tuned:
+            raise ValueError("RQ6 expects both tuned.forward_gta and tuned.full_gta when using explicit method names.")
+        forward_cfg = dict(tuned.get("forward_gta") or {})
+        full_cfg = dict(tuned.get("full_gta") or {})
+    elif "gta_base" in tuned or "gta_beta" in tuned:
+        if "gta_beta" not in tuned:
+            raise ValueError("RQ6 expects tuned.gta_beta when using legacy method names.")
+        # Forward-GTA is the full GTA-Beta family with alpha fixed to zero.
+        forward_cfg = dict(tuned.get("gta_beta") or {})
+        full_cfg = dict(tuned.get("gta_beta") or {})
+    else:
+        raise ValueError("RQ6 expected tuned.forward_gta/full_gta or tuned.gta_base/gta_beta.")
+
+    forward_cfg["alpha"] = 0.0
+    return {
+        "forward_gta": forward_cfg,
+        "full_gta": full_cfg,
+    }
+
+
 def _build_method_cfgs(cfg: dict) -> dict:
     root_defaults = {k: cfg.get(k) for k in ["alpha", "beta", "beta1", "beta2", "eta", "b"] if cfg.get(k) is not None}
     default_block = cfg.get("default") or {}
     base_params = {**root_defaults, **default_block}
-    tuned = cfg.get("tuned") or {}
+    tuned = _resolve_tuned_variants(cfg.get("tuned") or {})
     result = {}
-    for variant in ("gta_base", "gta_beta"):
+    for variant in ("forward_gta", "full_gta"):
         variant_cfg = {k: v for k, v in base_params.items() if v is not None}
         overrides = {k: v for k, v in (tuned.get(variant) or {}).items() if v is not None}
         result[variant] = {**variant_cfg, **overrides}
+    result["forward_gta"]["alpha"] = 0.0
     return result
 
 
@@ -101,7 +137,7 @@ def _build_reward_adjacency(P: np.ndarray) -> List[List[int]]:
     for s in range(n_states):
         seen: set[int] = set()
         for a in range(P.shape[0]):
-            for s2 in np.flatnonzero(P[a, s] > 1e-12):
+            for s2 in np.flatnonzero(P[a, s] > 1e-6):
                 s2i = int(s2)
                 if s2i not in seen:
                     seen.add(s2i)
@@ -179,7 +215,7 @@ def _geometry_stats(env) -> dict:
     return {
         "curl_norm": curl_norm,
         "div_norm": div_norm,
-        "curl_over_div": float(curl_norm / max(div_norm, 1e-12)),
+        "curl_over_div": float(curl_norm / max(div_norm, 1e-6)),
         "slem": float(slem),
     }
 
@@ -253,13 +289,13 @@ def _fourrooms_transport_diagnostics(
         env_kwargs.update(mode_kwargs)
         env = _make_fourrooms_env(seed=0, gamma=gamma, env_kwargs=env_kwargs)
         diff = np.abs(env.P - symmetric_P)
-        changed_states = int(np.count_nonzero(np.any(diff > 1e-12, axis=(0, 2))))
+        changed_states = int(np.count_nonzero(np.any(diff > 1e-6, axis=(0, 2))))
         diagnostics[mode_name] = {
             "transport_l1_vs_symmetric": float(diff.sum()),
             "changed_states": changed_states,
             "geometry": _geometry_stats(env),
         }
-        if mode_name != "Symmetric" and diagnostics[mode_name]["transport_l1_vs_symmetric"] <= 1e-12:
+        if mode_name != "Symmetric" and diagnostics[mode_name]["transport_l1_vs_symmetric"] <= 1e-6:
             raise RuntimeError(f"FourRooms mode {mode_name!r} did not modify the transition kernel.")
         mode_kernels[mode_name] = env.P.copy()
 
@@ -269,7 +305,7 @@ def _fourrooms_transport_diagnostics(
         for rhs in mode_names[i + 1:]:
             pair_key = f"{lhs} vs {rhs}"
             pair_delta = float(np.abs(mode_kernels[lhs] - mode_kernels[rhs]).sum())
-            if pair_delta <= 1e-12:
+            if pair_delta <= 1e-6:
                 raise RuntimeError(f"FourRooms modes {lhs!r} and {rhs!r} produced the same transition kernel.")
             pairwise_l1[pair_key] = pair_delta
 
@@ -295,9 +331,19 @@ def _print_fourrooms_transport_diagnostics(diagnostics: dict) -> None:
 def _build_variants(method_cfgs: dict) -> List[dict]:
     return [
         {"label": AGENT_LABELS["standard_ps"], "variant": "standard_ps", "kwargs": {}},
-        {"label": AGENT_LABELS["forward_gta"], "variant": "forward_gta", "kwargs": method_cfgs.get("gta_base", {})},
-        {"label": AGENT_LABELS["full_gta"], "variant": "full_gta", "kwargs": method_cfgs.get("gta_beta", {})},
+        {"label": AGENT_LABELS["forward_gta"], "variant": "forward_gta", "kwargs": method_cfgs.get("forward_gta", {"alpha": 0.0})},
+        {"label": AGENT_LABELS["full_gta"], "variant": "full_gta", "kwargs": method_cfgs.get("full_gta", {})},
     ]
+
+
+def _resolve_env_method_cfgs(config_path: str | None) -> tuple[dict, dict]:
+    if config_path:
+        method_cfgs = _build_method_cfgs(_load_config(config_path))
+        return method_cfgs, method_cfgs
+    return (
+        _build_method_cfgs(_load_default_env_config("garnet")),
+        _build_method_cfgs(_load_default_env_config("fourrooms")),
+    )
 
 
 def run_seed_worker(
@@ -332,9 +378,9 @@ def run_seed_worker(
     n_states = env.n_states
     seed_results = {}
     for idx, var in enumerate(variants):
-        agent: DynaHost = make_agent(
+        agent = make_agent(
             variant=var["variant"],
-            host="dyna",
+            host="dp",
             P=env.P,
             r=env.r,
             gamma=env.gamma,
@@ -347,27 +393,19 @@ def run_seed_worker(
         for _ in range(n_shifts):
             r_new = env.shift_reward()
             V_star = env.value_iteration(r_new)
-            agent.reward_update(r_new)
 
             for step in range(n_steps_per_shift):
-                burst_size = 5 * n_states if step == 0 else 1
-                if burst_size > 1:
-                    ss = sim_rng.integers(n_states, size=burst_size)
-                    aa = sim_rng.integers(env.n_actions, size=burst_size)
-                    sn = np.array([sim_rng.choice(n_states, p=env.P[aa[i], ss[i]]) for i in range(burst_size)])
-                    rr = r_new[ss]
-                    agent.real_steps_batch(ss, aa, rr, sn)
+                # DP agent planning with reward update on first step
+                if step == 0:
+                    agent.plan(K=k_planning, r=r_new)
                 else:
-                    s_rand = sim_rng.integers(n_states)
-                    a_rand = sim_rng.integers(env.n_actions)
-                    s_next_rand = sim_rng.choice(n_states, p=env.P[a_rand, s_rand])
-                    r_rand = r_new[s_rand]
-                    agent.real_step(s_rand, a_rand, r_rand, s_next_rand)
-
-                agent.plan_steps(K=k_planning)
+                    agent.plan(K=k_planning)
+                
+                # If last step of shift, record error
                 if step == n_steps_per_shift - 1:
-                    V_after = agent.Q.max(axis=0)
-                    shift_end_errors.append(value_error_l1(V_after, V_star))
+                    V_after = agent.V
+                    error = value_error_l1(V_after, V_star)
+                    shift_end_errors.append(error)
 
         seed_results[var["label"]] = float(np.mean(shift_end_errors))
     return seed_results
@@ -492,12 +530,10 @@ if __name__ == "__main__":
     parser.add_argument("--k-fourrooms", type=int, default=FOURROOMS_BASE_KWARGS["k"])
     args = parser.parse_args()
 
-    if args.config:
-        garnet_method_cfgs = _build_method_cfgs(_load_config(args.config))
-        fourrooms_method_cfgs = garnet_method_cfgs
-    else:
-        garnet_method_cfgs = load_tuned_for_env("garnet")
-        fourrooms_method_cfgs = load_tuned_for_env("fourrooms")
+    garnet_method_cfgs, fourrooms_method_cfgs = _resolve_env_method_cfgs(args.config)
+    print("Resolved method configs:")
+    print("  GARNET:", json.dumps(garnet_method_cfgs, indent=2, sort_keys=True))
+    print("  FourRooms:", json.dumps(fourrooms_method_cfgs, indent=2, sort_keys=True))
 
     garnet_variants = _build_variants(garnet_method_cfgs)
     fourrooms_variants = _build_variants(fourrooms_method_cfgs)
@@ -593,6 +629,10 @@ if __name__ == "__main__":
                 "fourrooms": fourrooms_results,
                 "config": {
                     **vars(args),
+                    "method_variants": [
+                        {"label": variant["label"], "variant": variant["variant"], "kwargs": variant["kwargs"]}
+                        for variant in garnet_variants
+                    ],
                     "flow_families": [{"label": label, "kind": kind} for label, kind in FLOW_FAMILIES],
                     "flow_env_kwargs": garnet_env_kwargs,
                     "kernel_kwargs": kernel_kwargs,

@@ -114,7 +114,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         """Rebuild _A_out/_A_in from current P_pi (large-n path, after policy change)."""
         n, eta = self.n_states, self.eta
         Psp = sp.csr_array(self.P_pi)
-        Psp.data[np.abs(Psp.data) < 1e-12] = 0.0
+        Psp.data[np.abs(Psp.data) < 1e-6] = 0.0
         Psp.eliminate_zeros()
         self._A_out = sp.eye(n, format="csr") * (1.0 + eta) - Psp
         self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * eta
@@ -144,7 +144,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
 
         # Always store sparse system matrices (needed for large-n GMRES path and rebuilds)
         Psp = sp.csr_array(self.P_pi)
-        Psp.data[np.abs(Psp.data) < 1e-12] = 0.0
+        Psp.data[np.abs(Psp.data) < 1e-6] = 0.0
         Psp.eliminate_zeros()
         self._A_out = sp.eye(n, format="csr") * (1.0 + eta) - Psp
         self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * (eta + 1e-6)
@@ -255,7 +255,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
             # β_t = β₁ · (−log SLEM + β₂)
             # −log(SLEM) ≈ (1−SLEM) for SLEM≈1 but saturates as SLEM→0,
             # preventing topology overdrive on fast-mixing chains.
-            return self.beta1 * (-np.log(max(slem, 1e-10)) + self.beta2)
+            return self.beta1 * (-np.log(max(slem, 1e-6)) + self.beta2)
         raise ValueError(f"Invalid beta_mode: {self.beta_mode!r}. "
                          f"Choose from: 'fixed', 'linear', 'log'.")
 
@@ -379,7 +379,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         
         # Rebuild A_out and A_in from the current P_pi (which was updated in gta_policy_update)
         Psp = sp.csr_array(self.P_pi)
-        Psp.data[np.abs(Psp.data) < 1e-12] = 0.0
+        Psp.data[np.abs(Psp.data) < 1e-6] = 0.0
         Psp.eliminate_zeros()
         
         self._A_out = sp.eye(n, format="csr") * (1.0 + eta) - Psp
@@ -479,7 +479,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self._last_beta = self.beta_t
         self._last_signal_ratio = float(
             np.sum(np.abs(self.beta_t * self.tau))
-            / max(float(np.sum(self.xi)), 1e-12)
+            / max(float(np.sum(self.xi)), 1e-6)
         )
         self._slem = self.slem
         return chosen
@@ -590,7 +590,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self._last_beta = self.beta_t
         self._last_signal_ratio = float(
             np.sum(np.abs(self.beta_t * self.tau))
-            / max(float(np.sum(self.xi)), 1e-12)
+            / max(float(np.sum(self.xi)), 1e-6)
         )
         self._slem = self.slem
         return self.V.copy()

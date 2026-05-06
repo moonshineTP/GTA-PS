@@ -22,7 +22,7 @@ import optuna
 # Reward-scale normalizer for the softmax temperature b
 # ---------------------------------------------------------------------------
 
-def compute_reward_scale(reward: np.ndarray, eps: float = 1e-8) -> float:
+def compute_reward_scale(reward: np.ndarray, eps: float = 1e-6) -> float:
     """Return max(|r|) clamped to eps, for normalizing the softmax temperature b.
 
     The effective softmax argument is b * Q ≈ b * max|r| / (1 - γ).  Dividing

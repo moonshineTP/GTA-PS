@@ -105,7 +105,7 @@ def cumulative_return(rewards: np.ndarray, gamma: float) -> float:
 
 # --- Graph Smoothness Metrics (Lemma 6.9 / Poincaré) ---
 
-def _stationary_dist(P: np.ndarray, n_iter: int = 2000, tol: float = 1e-10) -> np.ndarray:
+def _stationary_dist(P: np.ndarray, n_iter: int = 2000, tol: float = 1e-6) -> np.ndarray:
     """Stationary distribution of row-stochastic P via power iteration."""
     n = P.shape[0]
     mu = np.ones(n, dtype=float) / n

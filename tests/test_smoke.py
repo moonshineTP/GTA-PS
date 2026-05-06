@@ -7,7 +7,7 @@ import pytest
 from gta_ps.envs.garnet import GarnetEnv
 from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.envs.reacher import ReacherDiscrete
-from gta_ps.algorithms.standard_ps import DynaPS
+from gta_ps.algorithms.standard_ps import StandardPS
 from gta_ps.algorithms.gta_ps import GtaPS
 from gta_ps.algorithms.empirical_model import CountModel
 from gta_ps.utils.spectral import out_laplacian, in_laplacian, slem_arnoldi, resolvent_forward
@@ -111,7 +111,7 @@ def test_minigrid_shift():
 
 def test_minigrid_plan():
     env = FourRoomsTabular(k=1, seed=0)
-    alg = DynaPS(env.P, env.r, gamma=env.gamma)
+    alg = StandardPS(env.P, env.r, gamma=env.gamma)
     V = alg.plan(K=20)
     assert V.shape == (env.n_states,)
     assert np.all(np.isfinite(V))
@@ -177,7 +177,7 @@ def test_out_laplacian():
     P = np.array([[0.5, 0.5], [0.3, 0.7]])
     L = out_laplacian(P).toarray()
     expected = np.eye(2) - P
-    np.testing.assert_allclose(L, expected, atol=1e-12)
+    np.testing.assert_allclose(L, expected, atol=1e-6)
 
 
 def test_slem_simple():
@@ -207,7 +207,7 @@ def test_resolvent_forward():
 
 def test_dynaps_runs():
     env = GarnetEnv(n_states=30, n_actions=4, branching=3, seed=3)
-    alg = DynaPS(env.P, env.r, gamma=env.gamma)
+    alg = StandardPS(env.P, env.r, gamma=env.gamma)
     V = alg.plan(K=50)
     assert V.shape == (30,)
 

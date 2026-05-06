@@ -105,7 +105,7 @@ class StandardPS(PrioritizedSweepingModule, BellmanMixin):
                 pred, self._P_model, self._r_model, self.gamma, self.V
             )
             self.xi[pred] = xi_pred
-            if xi_pred > 1e-8:
+            if xi_pred > 1e-6:
                 v = self._version.get(pred, -1) + 1
                 self._version[pred] = v
                 heapq.heappush(self._heap, (-xi_pred, v, pred))
@@ -115,7 +115,7 @@ class StandardPS(PrioritizedSweepingModule, BellmanMixin):
             s, self._P_model, self._r_model, self.gamma, self.V
         )
         self.xi[s] = xi_new
-        if xi_new > 1e-8:
+        if xi_new > 1e-6:
             v = self._version.get(s, -1) + 1
             self._version[s] = v
             heapq.heappush(self._heap, (-xi_new, v, s))

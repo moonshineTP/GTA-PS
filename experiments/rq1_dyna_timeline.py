@@ -33,6 +33,7 @@ sys.path.insert(0, str(ROOT / "misc"))
 
 from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.algorithms import make_agent
+from gta_ps.algorithms.empirical_model import SampleModel
 from gta_ps.utils.metrics import REGISTRY
 from runner import RunManager
 from plot_academic import (
@@ -48,6 +49,7 @@ from plot_academic import (
 
 VARIANTS = ["standard_ps", "gta_base", "gta_beta"]
 DEFAULT_METRIC_NAMES = ["l1", "inf"]
+DYNA_MODEL_TYPE = "sample"
 
 # ---------------------------------------------------------------------------
 # Config Helpers (Duplicated to avoid import issues)
@@ -117,13 +119,19 @@ def _run_seed(
     agents = {
         (K, v): make_agent(
             v, host="dyna", P=env.P, r=env.r, gamma=gamma, q=20,
-            model_type="sample",
+            model_type=DYNA_MODEL_TYPE,
             rng=np.random.default_rng(np.random.SeedSequence([seed, K, variant_index[v], 0xD1A])),
             **_module_kwargs(v, method_cfgs, arnoldi_k)
         )
         for K in K_budgets
         for v in VARIANTS
     }
+    for (K, v), agent in agents.items():
+        if not isinstance(agent.model, SampleModel):
+            raise RuntimeError(
+                f"rq1_dyna_timeline expected SampleModel for {(K, v)}, "
+                f"got {type(agent.model).__name__}"
+            )
 
     traces: dict = {f"{v}_K{K}_{m.name}": [] for v in VARIANTS for K in K_budgets for m in metrics}
     shift_steps: list[int] = []

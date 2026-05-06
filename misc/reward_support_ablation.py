@@ -36,9 +36,60 @@ sys.path.insert(0, str(ROOT / "threads"))
 from gta_ps.algorithms import make_agent
 from gta_ps.envs.garnet import GarnetEnv
 from gta_ps.utils.metrics import value_error_l1
-from gta_ps.utils.hyperparams import load_tuned_for_env
+from gta_ps.utils.hyperparams import ENV_DEFAULT_CONFIG
 from runner import RunManager
 from plot_academic import apply_style, get_palette
+
+def _load_config(path: str) -> dict:
+    import yaml
+    with open(path) as f:
+        return yaml.safe_load(f) or {}
+
+def _load_default_env_config(env_name: str) -> dict:
+    filename = ENV_DEFAULT_CONFIG.get(env_name)
+    if filename is None:
+        raise ValueError(f"Reward support ablation has no default config mapping for env '{env_name}'.")
+    cfg_path = ROOT / "configs" / filename
+    if not cfg_path.exists():
+        raise FileNotFoundError(f"Reward support ablation expected default config at {cfg_path}.")
+    return _load_config(str(cfg_path))
+
+def _resolve_tuned_variants(tuned: dict) -> dict:
+    if not tuned:
+        return {"forward_gta": {}, "full_gta": {}}
+
+    if "forward_gta" in tuned or "full_gta" in tuned:
+        if "forward_gta" not in tuned or "full_gta" not in tuned:
+            raise ValueError("Reward support ablation expects both tuned.forward_gta and tuned.full_gta when using explicit method names.")
+        forward_cfg = dict(tuned.get("forward_gta") or {})
+        full_cfg = dict(tuned.get("full_gta") or {})
+    elif "gta_base" in tuned or "gta_beta" in tuned:
+        if "gta_beta" not in tuned:
+            raise ValueError("Reward support ablation expects tuned.gta_beta when using legacy method names.")
+        # Forward-GTA is the full GTA-Beta family with alpha fixed to zero.
+        forward_cfg = dict(tuned.get("gta_beta") or {})
+        full_cfg = dict(tuned.get("gta_beta") or {})
+    else:
+        raise ValueError("Reward support ablation expected tuned.forward_gta/full_gta or tuned.gta_base/gta_beta.")
+
+    forward_cfg["alpha"] = 0.0
+    return {
+        "forward_gta": forward_cfg,
+        "full_gta": full_cfg,
+    }
+
+def _build_method_cfgs(cfg: dict) -> dict:
+    root_defaults = {k: cfg.get(k) for k in ["alpha", "beta", "beta1", "beta2", "eta", "b"] if cfg.get(k) is not None}
+    default_block = cfg.get("default") or {}
+    base_params = {**root_defaults, **default_block}
+    tuned = _resolve_tuned_variants(cfg.get("tuned") or {})
+    result = {}
+    for variant in ("forward_gta", "full_gta"):
+        variant_cfg = {k: v for k, v in base_params.items() if v is not None}
+        overrides = {k: v for k, v in (tuned.get(variant) or {}).items() if v is not None}
+        result[variant] = {**variant_cfg, **overrides}
+    result["forward_gta"]["alpha"] = 0.0
+    return result
 
 def run_seed_worker(support: int, n_states: int, variants: List[dict], n_shifts: int, n_steps_per_shift: int, k_planning: int, seed: int):
     """
@@ -53,10 +104,11 @@ def run_seed_worker(support: int, n_states: int, variants: List[dict], n_shifts:
         agent_rng = np.random.default_rng(np.random.SeedSequence([seed, support, idx, 0x5EED]))
         agent = make_agent(
             variant=var['variant'],
-            host="dyna",
+            host="dp",
             P=env.P,
             r=env.r,
             gamma=env.gamma,
+            model_type="count",
             rng=agent_rng,
             **var.get('kwargs', {})
         )
@@ -65,22 +117,17 @@ def run_seed_worker(support: int, n_states: int, variants: List[dict], n_shifts:
         for shift in range(n_shifts):
             r_new = env.shift_reward()
             V_star = env.value_iteration(r_new)
-            agent.reward_update(r_new)
             
             for step in range(n_steps_per_shift):
-                # Dyna interaction
-                burst_size = 5 * n_states if step == 0 else 1
-                for _ in range(burst_size):
-                    s_rand = sim_rng.integers(n_states)
-                    a_rand = sim_rng.integers(n_actions)
-                    s_next_rand = sim_rng.choice(n_states, p=env.P[a_rand, s_rand])
-                    r_rand = r_new[s_rand]
-                    agent.real_step(s_rand, a_rand, r_rand, s_next_rand)
+                # DP agent planning with reward update on first step
+                if step == 0:
+                    agent.plan(K=k_planning, r=r_new)
+                else:
+                    agent.plan(K=k_planning)
                 
-                agent.plan_steps(K=k_planning)
-                
+                # If last step of shift, record error
                 if step == n_steps_per_shift - 1:
-                    V_after = agent.Q.max(axis=0)
+                    V_after = agent.V
                     error = value_error_l1(V_after, V_star)
                     shift_end_errors.append(error)
             
@@ -95,11 +142,11 @@ def plot_ablation(stats: Dict[int, Dict[str, dict]], seeds: int, k: int, steps: 
     apply_style()
     fig, ax = plt.subplots(figsize=(8, 5))
     
-    p_line = get_palette("line")
+    p_point = get_palette("point")
     label_to_key = {
         "Standard-PS": "standard_ps",
-        "GTA-Base":    "gta_base",
-        "GTA-Beta":    "gta_beta"
+        "Forward-GTA": "forward_gta",
+        "Full-GTA":    "full_gta"
     }
     
     support_sizes = sorted(stats.keys())
@@ -111,7 +158,7 @@ def plot_ablation(stats: Dict[int, Dict[str, dict]], seeds: int, k: int, steps: 
         cis = [stats[s][label]['ci95'] for s in support_sizes]
         
         ax.errorbar(support_sizes, means, yerr=cis, marker='o', capsize=5, 
-                     label=label, color=p_line[key], linewidth=1.5)
+                     label=label, color=p_point[key], linewidth=1.5)
     
     ax.set_title(f"GARNET Ablation (N={seeds}, K={k}, T={steps})\nMean L1 Error at Shift End")
     ax.set_xlabel("Reward Support Size (Number of non-zero reward states)")
@@ -149,29 +196,17 @@ if __name__ == "__main__":
     parser.add_argument("--n-states", type=int, default=60)
     args = parser.parse_args()
 
-    # Load configuration
-    import yaml
     if args.config:
-        with open(args.config) as f:
-            cfg = yaml.safe_load(f)
-        root_defaults = {k: cfg.get(k) for k in ["alpha", "beta", "beta1", "beta2", "eta", "b"] if cfg.get(k) is not None}
-        default_block = cfg.get("default") or {}
-        base_params = {**root_defaults, **default_block}
-        tuned = cfg.get("tuned") or {}
-        method_cfgs = {}
-        for variant in ("gta_base", "gta_beta"):
-            variant_cfg = {k: v for k, v in base_params.items() if v is not None}
-            overrides = {k: v for k, v in (tuned.get(variant) or {}).items() if v is not None}
-            method_cfgs[variant] = {**variant_cfg, **overrides}
+        method_cfgs = _build_method_cfgs(_load_config(args.config))
     else:
-        method_cfgs = load_tuned_for_env("garnet")
+        method_cfgs = _build_method_cfgs(_load_default_env_config("garnet"))
 
     print(f"Starting Reward Support Ablation...")
     
     variants = [
         {"label": "Standard-PS", "variant": "standard_ps", "kwargs": {}},
-        {"label": "GTA-Base",    "variant": "gta_base",    "kwargs": method_cfgs.get("gta_base", {})},
-        {"label": "GTA-Beta",    "variant": "gta_beta",    "kwargs": method_cfgs.get("gta_beta", {})},
+        {"label": "Forward-GTA", "variant": "forward_gta", "kwargs": method_cfgs.get("forward_gta", {"alpha": 0.0})},
+        {"label": "Full-GTA",    "variant": "full_gta",    "kwargs": method_cfgs.get("full_gta", {})},
     ]
     variant_labels = [v['label'] for v in variants]
     
