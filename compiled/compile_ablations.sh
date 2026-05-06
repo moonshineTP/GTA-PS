@@ -19,7 +19,6 @@ ABLS=(
     "misc/mixing_threshold_ablation.py"
     "misc/shift_rate_ablation.py"
     "misc/boltzmann_b_ablation.py"
-    "misc/scheduler_ablation.py"
     "misc/gamma_ablation.py"
     "misc/periodicity_ablation.py"
     "misc/reward_support_ablation.py"

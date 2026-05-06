@@ -5,7 +5,7 @@ This directory contains the core implementation of the GTA-PS Research Questions
 ## Research Questions
 
 ### RQ1: Proactiveness & Convergence
-- **Convergence Trajectory** (`rq1_proactiveness.py`): Measures the value error trajectory ($L_\infty$ norm) in stationary environments with no reward shifts.
+- **Convergence Trajectory** (`rq1_convergence.py`): Measures stationary value-error trajectories on GARNET and FourRooms, comparing planning budgets within the same figure.
 - **Dynamic Timelines** (`rq1_dp_timeline.py`, `rq1_dyna_timeline.py`): Measures error across sequences of reward shifts in DP (oracle model) and Dyna (learned model) settings.
 
 ### RQ2: Topology Allocation & Schedules
@@ -41,5 +41,5 @@ This directory contains the core implementation of the GTA-PS Research Questions
 ## Execution Example
 ```bash
 # Run RQ1 proactiveness with 50 seeds
-python experiments/rq1_proactiveness.py --seeds 50 --workers auto
+python experiments/rq1_convergence.py --seeds 50 --workers auto
 ```

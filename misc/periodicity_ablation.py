@@ -117,8 +117,8 @@ def plot_periodicity(stats: Dict[str, Dict[str, dict]], seeds: int, k: int, n_st
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--workers", default="3")
-    parser.add_argument("--seeds", type=int, default=15)
+    parser.add_argument("--workers", default=3, type=int)
+    parser.add_argument("--seeds", type=int, default=30)
     parser.add_argument("--K", type=int, default=20)
     args = parser.parse_args()
 

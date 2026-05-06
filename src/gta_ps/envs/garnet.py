@@ -16,7 +16,7 @@ class GarnetEnv:
         n_states: int = 75,
         n_actions: int = 4,
         branching: int = 3,
-        reward_support: int = 4,
+        reward_support: int = 3,
         gamma: float = 0.95,
         n_nbr_rate: float = 0.15,
         reversible: float = 0.0,

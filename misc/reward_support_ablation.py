@@ -176,7 +176,7 @@ if __name__ == "__main__":
     variant_labels = [v['label'] for v in variants]
     
     n_seeds = args.seeds
-    support_points = [1, 2, 4, 8, 16, 32]
+    support_points = [1, 2, 4, 8, 16]
     runner = RunManager(n_workers=args.workers)
     
     final_stats = {}
