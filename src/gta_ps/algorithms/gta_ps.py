@@ -301,11 +301,11 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
     def _rekey_residual_queue(self) -> None:
         # Gate on ξ[s] > 0 (per memo §Algorithm: Q_ξ = {s : ξ[s] > 0}).
         # Score = ξ + β_t·τ.
-        #   β_t > 0 → topology amplifies priority (proactive).
+        #   β_t > 0 → topology amplifies priority via magnitude of discounted reachability.
         #   β_t < 0 → topology dampens priority (conservative on fast-mixing).
         #   β_t = 0 → pure Standard-PS (no topology signal).
         # Floor at 0 (not at ξ): a residual state must stay in the queue
-        # (positive priority) but its relative rank can be reduced by negative τ.
+        # (positive priority) but its relative rank can still be damped when β_t < 0.
         hot = np.where(self.xi > 1e-4)[0]
         self._version_xi = {int(s): 0 for s in hot}
         entries = [
@@ -350,13 +350,15 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
 
 
     def _refresh_tau(self) -> None:
-        """Compute τ = G·ξ (two tri-solves) and rebuild all queues.
+        """Compute a magnitude-based topology field τ and rebuild all queues.
 
-        τ_t(s) = γΦ_t(s) at η=η*, where Φ_t = (I−γP_t)^{-1}·ξ_t is the
-        expected discounted future Bellman residual (exact-sorter identity).
+        ξ is already an absolute Bellman residual. Each directed resolvent
+        response is also converted to magnitude before mixing, so τ reflects
+        propagation strength rather than signed cancellation between the
+        out- and in-directed fields.
         """
-        tau_out = self._solve_out(self.xi)
-        tau_in  = self._solve_in(self.xi)
+        tau_out = np.abs(self._solve_out(self.xi))
+        tau_in  = np.abs(self._solve_in(self.xi))
         self.tau = (1.0 - self.alpha_t) * tau_out + self.alpha_t * tau_in
         self._rebuild_q_tau()
         self._refresh_top_q()
