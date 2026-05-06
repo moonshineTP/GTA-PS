@@ -68,7 +68,7 @@ except ImportError:
 N_STATES    = 75            # default, overridden by --n-states
 N_ACTIONS   = 4
 BRANCHING   = 3
-N_NBR_RATE  = 0.07          # slow mixing;
+N_NBR_RATE  = 0.07   # slow mixing;
 REWARD_SUP  = 4
 GAMMA       = 0.95
 
@@ -76,7 +76,7 @@ N_EPISODES  = 20
 T_WARMUP    = 200           # real steps before episodes begin
 T_REAL      = 50            # real steps per episode (after shift)
 K           = 20            # planning steps per real step
-EPS_GREEDY  = 0.2   # epsilon-greedy exploration rate
+EPS_GREEDY  = 0.2    # epsilon-greedy exploration rate
 
 VARIANTS    = ["standard_ps", "gta_beta"]
 

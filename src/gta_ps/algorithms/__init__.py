@@ -29,10 +29,11 @@ def make_agent(
     r: "np.ndarray | None" = None,
     gamma: float = 0.95,
     q: int = 20,
-    # Dyna host args (count-based model)
+    # Dyna host args (empirical model)
     n_states: int | None = None,
     n_actions: int | None = None,
     eta_td: float = 0.1,
+    model_type: str = "count",
     rng: "np.random.Generator | None" = None,
     **module_kwargs,
 ) -> "DpHost | DynaHost":
@@ -45,7 +46,7 @@ def make_agent(
         One of ``VARIANTS``.
     host : {'dp', 'dyna'}
         ``'dp'``   — oracle model (DpHost + OracleModel). Requires ``P`` and ``r``.
-        ``'dyna'`` — count-based model (DynaHost + CountModel).
+        ``'dyna'`` — empirical model (DynaHost + CountModel / SampleModel).
                      Requires ``n_states`` and ``n_actions``; ``P`` / ``r`` are
                      used to warm-start the GTA-PS topology if provided.
     P, r : ndarray
@@ -60,6 +61,8 @@ def make_agent(
         not supplied; inferred from ``P.shape`` otherwise.
     eta_td : float
         TD learning rate (Dyna host only).
+    model_type : {'count', 'sample'}
+        Empirical transition model used by ``host='dyna'``.
     rng : np.random.Generator | None
         Optional RNG used by Dyna planning rollouts.
     **module_kwargs
@@ -107,7 +110,16 @@ def make_agent(
         model = OracleModel(P, r)
         return DpHost(model, r, gamma, module)
     else:
-        return DynaHost(_n_states, _n_actions, gamma, eta_td, module, r_init=r, rng=rng)
+        return DynaHost(
+            _n_states,
+            _n_actions,
+            gamma,
+            eta_td,
+            module,
+            model_type=model_type,
+            r_init=r,
+            rng=rng,
+        )
 
 
 
