@@ -72,12 +72,7 @@ FOURROOMS_BASE_KWARGS = {
     "k": 2,
 }
 
-FOURROOMS_MODES = (
-    ("Symmetric", {}),
-    ("Windy (Div)", {"drift": (0, 1)}),
-    ("Belt-like (Curl)", {"one_way_prob": 0.1}),
-    ("Mixed", {"drift": (0, 1), "one_way_prob": 0.1}),
-)
+FOURROOMS_BELT_LEAK = 0.05
 
 
 def _load_config(path: str) -> dict:
@@ -175,7 +170,7 @@ def _make_directed_garnet_env(
     return env
 
 
-def _geometry_stats(env: GarnetEnv) -> dict:
+def _geometry_stats(env) -> dict:
     P_mean = env.P.mean(axis=0)
     S, A = operator_split(P_mean)
     curl_norm = float(np.linalg.norm(A, ord="fro"))
@@ -189,22 +184,120 @@ def _geometry_stats(env: GarnetEnv) -> dict:
     }
 
 
+def _make_fourrooms_env(
+    *,
+    seed: int,
+    gamma: float,
+    env_kwargs: dict,
+) -> FourRoomsTabular:
+    env = FourRoomsTabular(
+        seed=seed,
+        gamma=gamma,
+        **env_kwargs,
+    )
+    return env
+
+
+def _fourrooms_transition_delta(gamma: float, base_kwargs: dict, mode_kwargs: dict) -> float:
+    symmetric_env = _make_fourrooms_env(seed=0, gamma=gamma, env_kwargs=base_kwargs)
+    env_kwargs = dict(base_kwargs)
+    env_kwargs.update(mode_kwargs)
+    env = _make_fourrooms_env(seed=0, gamma=gamma, env_kwargs=env_kwargs)
+    return float(np.abs(env.P - symmetric_env.P).sum())
+
+
+def _match_drift_strength_to_belt(gamma: float, base_kwargs: dict, one_way_prob: float) -> float:
+    target_delta = _fourrooms_transition_delta(gamma, base_kwargs, {"one_way_prob": one_way_prob})
+    lo = 0.0
+    hi = 1.0
+    for _ in range(32):
+        mid = 0.5 * (lo + hi)
+        delta = _fourrooms_transition_delta(gamma, base_kwargs, {"drift": (0, 1), "drift_strength": mid})
+        if delta < target_delta:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def _resolve_fourrooms_modes(gamma: float, base_kwargs: dict) -> List[tuple[str, dict]]:
+    matched_drift_strength = _match_drift_strength_to_belt(
+        gamma=gamma,
+        base_kwargs=base_kwargs,
+        one_way_prob=FOURROOMS_BELT_LEAK,
+    )
+    return [
+        ("Symmetric", {}),
+        ("Windy (Div)", {"drift": (0, 1), "drift_strength": matched_drift_strength}),
+        ("Cyclic (Curl)", {"one_way_prob": FOURROOMS_BELT_LEAK}),
+        ("Mixed", {"drift": (0, 1), "drift_strength": matched_drift_strength, "one_way_prob": FOURROOMS_BELT_LEAK}),
+    ]
+
+
+def _fourrooms_transport_diagnostics(
+    *,
+    gamma: float,
+    base_kwargs: dict,
+    modes: List[tuple[str, dict]],
+) -> dict:
+    symmetric_env = _make_fourrooms_env(seed=0, gamma=gamma, env_kwargs=base_kwargs)
+    symmetric_P = symmetric_env.P.copy()
+    belt_positions = [list(symmetric_env._pos_list[s]) for s in symmetric_env.belt_cycle_states()]
+    if not belt_positions:
+        raise RuntimeError("FourRooms transport diagnostics found no belt cycle states for the current geometry.")
+
+    diagnostics = {}
+    mode_kernels = {"Symmetric": symmetric_P}
+    for mode_name, mode_kwargs in modes:
+        env_kwargs = dict(base_kwargs)
+        env_kwargs.update(mode_kwargs)
+        env = _make_fourrooms_env(seed=0, gamma=gamma, env_kwargs=env_kwargs)
+        diff = np.abs(env.P - symmetric_P)
+        changed_states = int(np.count_nonzero(np.any(diff > 1e-12, axis=(0, 2))))
+        diagnostics[mode_name] = {
+            "transport_l1_vs_symmetric": float(diff.sum()),
+            "changed_states": changed_states,
+            "geometry": _geometry_stats(env),
+        }
+        if mode_name != "Symmetric" and diagnostics[mode_name]["transport_l1_vs_symmetric"] <= 1e-12:
+            raise RuntimeError(f"FourRooms mode {mode_name!r} did not modify the transition kernel.")
+        mode_kernels[mode_name] = env.P.copy()
+
+    pairwise_l1 = {}
+    mode_names = [mode_name for mode_name, _ in modes]
+    for i, lhs in enumerate(mode_names):
+        for rhs in mode_names[i + 1:]:
+            pair_key = f"{lhs} vs {rhs}"
+            pair_delta = float(np.abs(mode_kernels[lhs] - mode_kernels[rhs]).sum())
+            if pair_delta <= 1e-12:
+                raise RuntimeError(f"FourRooms modes {lhs!r} and {rhs!r} produced the same transition kernel.")
+            pairwise_l1[pair_key] = pair_delta
+
+    diagnostics["belt_cycle_positions"] = belt_positions
+    diagnostics["pairwise_transport_l1"] = pairwise_l1
+    return diagnostics
+
+
+def _print_fourrooms_transport_diagnostics(diagnostics: dict) -> None:
+    print("FourRooms transport diagnostics:")
+    for mode_name, _ in diagnostics["resolved_modes"]:
+        stats = diagnostics[mode_name]
+        geom = stats["geometry"]
+        print(
+            f"  {mode_name}: delta_vs_symmetric={stats['transport_l1_vs_symmetric']:.3f}, "
+            f"changed_states={stats['changed_states']}, "
+            f"curl={geom['curl_norm']:.3f}, div={geom['div_norm']:.3f}, slem={geom['slem']:.4f}"
+        )
+    print(f"  belt_cycle_positions: {diagnostics['belt_cycle_positions']}")
+    print(f"  pairwise_transport_l1: {diagnostics['pairwise_transport_l1']}")
+
+
 def _build_variants(method_cfgs: dict) -> List[dict]:
     return [
         {"label": AGENT_LABELS["standard_ps"], "variant": "standard_ps", "kwargs": {}},
         {"label": AGENT_LABELS["gta_base"], "variant": "gta_base", "kwargs": {**method_cfgs.get("gta_base", {}), "alpha": 0.0}},
         {"label": AGENT_LABELS["gta_beta"], "variant": "gta_beta", "kwargs": method_cfgs.get("gta_beta", {})},
     ]
-
-
-def _apply_reward_update(agent, r_new: np.ndarray) -> None:
-    if hasattr(agent, "reward_update"):
-        agent.reward_update(r_new)
-        return
-    module_r = getattr(agent.module, "r", None)
-    if module_r is None:
-        raise RuntimeError("Agent does not expose reward_update or module.r for reward shifts.")
-    agent.module.reward_update(r_new - np.asarray(module_r))
 
 
 def run_seed_worker(
@@ -225,10 +318,10 @@ def run_seed_worker(
             kernel_kwargs=env_params["kernel_kwargs"],
         )
     elif env_name == "fourrooms":
-        env = FourRoomsTabular(
+        env = _make_fourrooms_env(
             seed=seed,
             gamma=env_params["gamma"],
-            **env_params["env_kwargs"],
+            env_kwargs=env_params["env_kwargs"],
         )
     else:
         raise ValueError(f"Unknown env_name {env_name!r}")
@@ -251,7 +344,7 @@ def run_seed_worker(
         for _ in range(n_shifts):
             r_new = env.shift_reward()
             V_star = env.value_iteration(r_new)
-            _apply_reward_update(agent, r_new)
+            agent.reward_update(r_new)
 
             for step in range(n_steps_per_shift):
                 burst_size = 5 * n_states if step == 0 else 1
@@ -336,7 +429,7 @@ def plot_rq6_results(garnet_stats: dict, fourrooms_stats: dict) -> bool:
     ax1.legend(frameon=False, fontsize=7)
     ax1.grid(True, alpha=0.3, color=grid_color)
 
-    fr_order = [name for name, _ in FOURROOMS_MODES]
+    fr_order = list(fourrooms_stats.keys())
     fr_ticks = np.arange(len(fr_order))
     for i, label in enumerate(labels):
         key = label_to_key[label]
@@ -357,7 +450,7 @@ def plot_rq6_results(garnet_stats: dict, fourrooms_stats: dict) -> bool:
     ax2.set_title("FourRooms Transport Sweep", fontsize=11, pad=8)
     ax2.set_xlabel("Transport mode", fontsize=10)
     ax2.set_xticks(fr_ticks)
-    ax2.set_xticklabels(["Symmetric", "Windy", "Belt", "Mixed"])
+    ax2.set_xticklabels(fr_order)
     ax2.set_ylabel("L1 error", fontsize=9)
     ax2.tick_params(axis="both", labelsize=8)
     ax2.legend(frameon=False, fontsize=7)
@@ -426,6 +519,20 @@ if __name__ == "__main__":
         "window_offset": args.window_offset,
         "k": args.k_fourrooms,
     }
+    fourrooms_modes = _resolve_fourrooms_modes(
+        gamma=args.gamma,
+        base_kwargs=fourrooms_base,
+    )
+    fourrooms_diagnostics = _fourrooms_transport_diagnostics(
+        gamma=args.gamma,
+        base_kwargs=fourrooms_base,
+        modes=fourrooms_modes,
+    )
+    fourrooms_diagnostics["resolved_modes"] = [
+        [label, kwargs]
+        for label, kwargs in fourrooms_modes
+    ]
+    _print_fourrooms_transport_diagnostics(fourrooms_diagnostics)
 
     garnet_results = {}
     for family_name, kind in FLOW_FAMILIES:
@@ -452,7 +559,7 @@ if __name__ == "__main__":
 
     fourrooms_results = {}
     print(f"Running FourRooms transport sweep (Seeds: {args.seeds})...")
-    for mode_name, mode_kwargs in FOURROOMS_MODES:
+    for mode_name, mode_kwargs in fourrooms_modes:
         env_kwargs = dict(fourrooms_base)
         env_kwargs.update(mode_kwargs)
         res = runner.run(
@@ -486,8 +593,9 @@ if __name__ == "__main__":
                     "flow_families": [{"label": label, "kind": kind} for label, kind in FLOW_FAMILIES],
                     "flow_env_kwargs": garnet_env_kwargs,
                     "kernel_kwargs": kernel_kwargs,
-                    "fourrooms_modes": [{"label": label, "kwargs": kwargs} for label, kwargs in FOURROOMS_MODES],
+                    "fourrooms_modes": [{"label": label, "kwargs": kwargs} for label, kwargs in fourrooms_modes],
                     "fourrooms_base_kwargs": fourrooms_base,
+                    "fourrooms_transport_diagnostics": fourrooms_diagnostics,
                 },
             },
             f,

@@ -133,6 +133,25 @@ def test_total_backups_bounded_by_K_times_n_shifts(cls):
     )
 
 
+def test_gtaps_tau_uses_termwise_magnitudes_before_mixing():
+    P, r = _tiny()
+    alg = _make_alg(GtaPS, P, r)
+
+    tau_out = np.array([1.0, -4.0, 2.0, -3.0, 0.5, -0.25])
+    tau_in = np.array([-2.0, 1.0, -5.0, 0.5, -1.5, 4.0])
+    alg.alpha_t = 0.25
+    alg.xi = np.linspace(0.1, 0.6, num=P.shape[1])
+    alg._solve_out = lambda rhs: tau_out.copy()  # type: ignore[method-assign]
+    alg._solve_in = lambda rhs: tau_in.copy()    # type: ignore[method-assign]
+
+    alg._refresh_tau()
+
+    expected = (1.0 - alg.alpha_t) * np.abs(tau_out) + alg.alpha_t * np.abs(tau_in)
+    mixed_abs = np.abs((1.0 - alg.alpha_t) * tau_out + alg.alpha_t * tau_in)
+    np.testing.assert_allclose(alg.tau, expected, atol=1e-12)
+    assert not np.allclose(expected, mixed_abs)
+
+
 # ---------------------------------------------------------------------------
 # 4. convergence_benchmark uses distinct names for per-step vs total-cap
 # ---------------------------------------------------------------------------

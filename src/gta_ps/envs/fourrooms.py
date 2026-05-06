@@ -1,8 +1,8 @@
 """
 FourRooms tabular MDP with adjustable corridor bottlenecks.
 
-The environment is position-only with 5 actions:
-left / up / right / down / stay.
+The environment is position-only with 4 actions:
+left / up / right / down.
 """
 from __future__ import annotations
 
@@ -17,6 +17,12 @@ ACTION_LEFT = 0
 ACTION_UP = 1
 ACTION_RIGHT = 2
 ACTION_DOWN = 3
+_DRIFT_TO_ACTION = {
+    (0, -1): ACTION_LEFT,
+    (-1, 0): ACTION_UP,
+    (0, 1): ACTION_RIGHT,
+    (1, 0): ACTION_DOWN,
+}
 _DELTAS = [
     (0, -1),  # left
     (-1, 0),  # up
@@ -119,6 +125,7 @@ class FourRoomsTabular(TabularEnv):
     ACTION_UP = ACTION_UP
     ACTION_RIGHT = ACTION_RIGHT
     ACTION_DOWN = ACTION_DOWN
+    DEFAULT_DRIFT_STRENGTH = 0.35
 
     def __init__(
         self,
@@ -130,6 +137,7 @@ class FourRoomsTabular(TabularEnv):
         gamma: float = 0.95,
         one_way_prob: float = 1.0,
         drift: Optional[tuple[int, int]] = None,
+        drift_strength: float = DEFAULT_DRIFT_STRENGTH,
         seed: int = 0,
         n_peaks_per_room: int = 2,
         sigma_range: tuple = (0.3, 0.9),
@@ -141,8 +149,9 @@ class FourRoomsTabular(TabularEnv):
         self.window_offset = window_offset
         self.k = k
         self.gamma = gamma
-        self.one_way_prob = one_way_prob
-        self.drift = drift
+        self.one_way_prob = self._validate_one_way_prob(one_way_prob)
+        self.drift = self._validate_drift(drift)
+        self.drift_strength = self._validate_drift_strength(drift_strength)
         self._seed = seed
         self._rng = np.random.default_rng(seed)
 
@@ -164,6 +173,29 @@ class FourRoomsTabular(TabularEnv):
         self.base_r = self._sample_reward()
         self.r = self.base_r.copy()
         self.P = self._build_transition()
+
+    @staticmethod
+    def _validate_one_way_prob(one_way_prob: float) -> float:
+        one_way_prob = float(one_way_prob)
+        if not 0.0 <= one_way_prob <= 1.0:
+            raise ValueError(f"one_way_prob must lie in [0, 1], got {one_way_prob!r}")
+        return one_way_prob
+
+    @staticmethod
+    def _validate_drift(drift: Optional[tuple[int, int]]) -> Optional[tuple[int, int]]:
+        if drift is None:
+            return None
+        drift = tuple(int(x) for x in drift)
+        if drift not in _DRIFT_TO_ACTION:
+            raise ValueError(f"Unsupported drift vector {drift!r}")
+        return drift
+
+    @staticmethod
+    def _validate_drift_strength(drift_strength: float) -> float:
+        drift_strength = float(drift_strength)
+        if not 0.0 <= drift_strength <= 1.0:
+            raise ValueError(f"drift_strength must lie in [0, 1], got {drift_strength!r}")
+        return drift_strength
 
     def _detect_rooms(self) -> list[list[int]]:
         rooms = [[] for _ in range(4)]
@@ -211,14 +243,68 @@ class FourRoomsTabular(TabularEnv):
         next_pos = self._pos2idx.get((nr, nc), pos)
         return next_pos
 
+    def belt_action(self, state: int) -> int | None:
+        row, col = self._pos_list[state]
+        c_start_r1 = self.room_size + self.corridor_len + 1
+        r_start_r2 = self.room_size + self.corridor_len + 1
+        mid_base = (self.room_size + 1) // 2
+        mid = max(1, min(self.room_size, mid_base + self.window_offset))
+        w_half = self.corridor_width // 2
+        w_extra = self.corridor_width % 2
+
+        top_rows = {mid + w for w in range(-w_half, w_half + w_extra)}
+        bottom_rows = {r_start_r2 + mid - 1 + w for w in range(-w_half, w_half + w_extra)}
+        left_cols = {mid + w for w in range(-w_half, w_half + w_extra)}
+        right_cols = {c_start_r1 + mid - 1 + w for w in range(-w_half, w_half + w_extra)}
+
+        if row in top_rows and self.room_size < col < c_start_r1:
+            return self.ACTION_RIGHT
+        if col in right_cols and self.room_size < row < r_start_r2:
+            return self.ACTION_DOWN
+        if row in bottom_rows and self.room_size < col < c_start_r1:
+            return self.ACTION_LEFT
+        if col in left_cols and self.room_size < row < r_start_r2:
+            return self.ACTION_UP
+        return None
+
+    def belt_cycle_states(self) -> list[int]:
+        return [state for state in range(self.n_states) if self.belt_action(state) is not None]
+
+    def _apply_transport(self, P: np.ndarray) -> np.ndarray:
+        P = P.copy()
+
+        if self.one_way_prob < 1.0:
+            belt_states = self.belt_cycle_states()
+            if not belt_states:
+                raise ValueError("one_way_prob < 1.0 requires at least one belt state in the current geometry")
+            leak_prob = self.one_way_prob
+            belt_weight = 1.0 - leak_prob
+            belt_P = P.copy()
+            for state in belt_states:
+                belt_row = P[self.belt_action(state), state]
+                for action in range(self.n_actions):
+                    belt_P[action, state] = leak_prob * P[action, state] + belt_weight * belt_row
+            P = belt_P
+
+        if self.drift is not None and self.drift_strength > 0.0:
+            drift_action = _DRIFT_TO_ACTION[self.drift]
+            drift_P = P.copy()
+            for state in range(self.n_states):
+                drift_row = P[drift_action, state]
+                for action in range(self.n_actions):
+                    drift_P[action, state] = (1.0 - self.drift_strength) * P[action, state] + self.drift_strength * drift_row
+            P = drift_P
+
+        P /= P.sum(axis=2, keepdims=True)
+        return P
+
     def _build_transition(self) -> np.ndarray:
         P = np.zeros((self.n_actions, self.n_states, self.n_states), dtype=np.float64)
         for pos in range(self.n_positions):
             for action in range(self.n_actions):
                 next_pos = self._next_position(pos, action)
                 P[action, pos, next_pos] = 1.0
-        P /= P.sum(axis=2, keepdims=True)
-        return P
+        return self._apply_transport(P)
 
     def shift_reward(self) -> np.ndarray:
         self.base_r = self._sample_reward()
