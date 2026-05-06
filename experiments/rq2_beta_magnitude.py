@@ -120,10 +120,11 @@ def plot_rq2_results(results_dir: Path, plot_dir: Path) -> Path | None:
     except FileNotFoundError:
         return None
 
+    # Use the discrete point palette here; Viridis is reserved for time-series plots.
     point_colors = get_palette("point")
     colors = {
         "garnet": point_colors["standard_ps"],
-        "fourrooms": point_colors["gta_base"],
+        "fourrooms": point_colors["full_gta"],
     }
     grid_color = get_utility_color("grid")
 

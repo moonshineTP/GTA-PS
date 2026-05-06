@@ -141,7 +141,7 @@ class CountModel(EmpiricalModel):
         """
         row_sums = self._counts.sum(axis=2, keepdims=True)
         # Avoid div by zero; unvisited rows will be handled via mask
-        P_hat = self._counts / np.maximum(row_sums, 1e-12)
+        P_hat = self._counts / np.maximum(row_sums, 1e-6)
         
         unvisited = (row_sums.squeeze(2) == 0)
         if np.any(unvisited):

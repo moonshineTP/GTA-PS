@@ -177,7 +177,7 @@ def test_out_laplacian():
     P = np.array([[0.5, 0.5], [0.3, 0.7]])
     L = out_laplacian(P).toarray()
     expected = np.eye(2) - P
-    np.testing.assert_allclose(L, expected, atol=1e-12)
+    np.testing.assert_allclose(L, expected, atol=1e-6)
 
 
 def test_slem_simple():

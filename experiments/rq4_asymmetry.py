@@ -33,7 +33,7 @@ from gta_ps.algorithms import make_agent
 from gta_ps.envs.garnet import GarnetEnv
 from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.utils.metrics import value_error_l1
-from gta_ps.utils.hyperparams import load_tuned_for_env
+from gta_ps.utils.hyperparams import ENV_DEFAULT_CONFIG
 from runner import RunManager
 from plot_academic import (
     LABELS as AGENT_LABELS,
@@ -47,16 +47,59 @@ def _load_config(path: str) -> dict:
     with open(path) as f:
         return yaml.safe_load(f) or {}
 
+def _load_default_env_config(env_name: str) -> dict:
+    filename = ENV_DEFAULT_CONFIG.get(env_name)
+    if filename is None:
+        raise ValueError(f"RQ4 has no default config mapping for env '{env_name}'.")
+    cfg_path = ROOT / "configs" / filename
+    if not cfg_path.exists():
+        raise FileNotFoundError(f"RQ4 expected default config at {cfg_path}.")
+    return _load_config(str(cfg_path))
+
+def _resolve_tuned_variants(tuned: dict) -> dict:
+    if not tuned:
+        return {"forward_gta": {}, "full_gta": {}}
+
+    if "forward_gta" in tuned or "full_gta" in tuned:
+        if "forward_gta" not in tuned or "full_gta" not in tuned:
+            raise ValueError("RQ4 expects both tuned.forward_gta and tuned.full_gta when using explicit method names.")
+        forward_cfg = dict(tuned.get("forward_gta") or {})
+        full_cfg = dict(tuned.get("full_gta") or {})
+    else:
+        forward_cfg = None
+        full_cfg = None
+        for cfg in tuned.values():
+            cfg_dict = dict(cfg or {})
+            is_full = any(cfg_dict.get(key) is not None for key in ("beta1", "beta2")) or bool(cfg_dict.get("adaptive_beta"))
+            is_forward = cfg_dict.get("beta") is not None and not is_full
+            if is_full:
+                if full_cfg is not None:
+                    raise ValueError("RQ4 could not infer a unique Full-GTA tuned block.")
+                full_cfg = cfg_dict
+            elif is_forward:
+                if forward_cfg is not None:
+                    raise ValueError("RQ4 could not infer a unique Forward-GTA tuned block.")
+                forward_cfg = cfg_dict
+        if forward_cfg is None or full_cfg is None:
+            raise ValueError("RQ4 could not infer Forward-GTA / Full-GTA tuned blocks from the config.")
+
+    forward_cfg["alpha"] = 0.0
+    return {
+        "forward_gta": forward_cfg,
+        "full_gta": full_cfg,
+    }
+
 def _build_method_cfgs(cfg: dict) -> dict:
     root_defaults = {k: cfg.get(k) for k in ["alpha", "beta", "beta1", "beta2", "eta", "b"] if cfg.get(k) is not None}
     default_block = cfg.get("default") or {}
     base_params = {**root_defaults, **default_block}
-    tuned = cfg.get("tuned") or {}
-    result  = {}
-    for variant in ("gta_base", "gta_beta"):
+    tuned = _resolve_tuned_variants(cfg.get("tuned") or {})
+    result = {}
+    for variant in ("forward_gta", "full_gta"):
         variant_cfg = {k: v for k, v in base_params.items() if v is not None}
         overrides = {k: v for k, v in (tuned.get(variant) or {}).items() if v is not None}
         result[variant] = {**variant_cfg, **overrides}
+    result["forward_gta"]["alpha"] = 0.0
     return result
 
 def _fourrooms_mode_diagnostics(gamma: float, modes: List[tuple[str, dict]]) -> dict:
@@ -70,9 +113,9 @@ def _fourrooms_mode_diagnostics(gamma: float, modes: List[tuple[str, dict]]) -> 
         diff = np.abs(env.P - symmetric_P)
         diagnostics[mode_name] = {
             "transport_l1_vs_symmetric": float(diff.sum()),
-            "changed_states": int(np.count_nonzero(np.any(diff > 1e-12, axis=(0, 2)))),
+            "changed_states": int(np.count_nonzero(np.any(diff > 1e-6, axis=(0, 2)))),
         }
-        if mode_name != "Symmetric" and diagnostics[mode_name]["transport_l1_vs_symmetric"] <= 1e-12:
+        if mode_name != "Symmetric" and diagnostics[mode_name]["transport_l1_vs_symmetric"] <= 1e-6:
             raise RuntimeError(f"FourRooms mode {mode_name!r} did not modify the transition kernel.")
         kernels[mode_name] = env.P.copy()
 
@@ -82,7 +125,7 @@ def _fourrooms_mode_diagnostics(gamma: float, modes: List[tuple[str, dict]]) -> 
         for rhs in mode_names[i + 1:]:
             pair_key = f"{lhs} vs {rhs}"
             pair_delta = float(np.abs(kernels[lhs] - kernels[rhs]).sum())
-            if pair_delta <= 1e-12:
+            if pair_delta <= 1e-6:
                 raise RuntimeError(f"FourRooms modes {lhs!r} and {rhs!r} produced the same transition kernel.")
             pairwise_l1[pair_key] = pair_delta
 
@@ -168,13 +211,10 @@ def plot_rq4_schema(garnet_stats: Dict[float, Dict[str, dict]], fourrooms_stats:
     p_point = get_palette("point")
     grid_color = get_utility_color("grid")
     
-    # Robust mapping from display label back to palette keys for color lookup
     label_to_key = {
         AGENT_LABELS["standard_ps"]: "standard_ps",
         AGENT_LABELS["forward_gta"]: "forward_gta",
         AGENT_LABELS["full_gta"]:    "full_gta",
-        AGENT_LABELS["gta_base"]:    "gta_base",
-        AGENT_LABELS["gta_beta"]:    "gta_beta",
     }
     
     # --- 1. GARNET Plot (Connected Line) ---
@@ -246,14 +286,14 @@ if __name__ == "__main__":
     if args.config:
         method_cfgs = _build_method_cfgs(_load_config(args.config))
     else:
-        method_cfgs = load_tuned_for_env("garnet")
+        method_cfgs = _build_method_cfgs(_load_default_env_config("garnet"))
 
     print(f"Starting RQ4 Consistency Sweep...")
     
     variants = [
         {"label": AGENT_LABELS["standard_ps"],  "variant": "standard_ps", "kwargs": {}},
-        {"label": AGENT_LABELS["forward_gta"], "variant": "forward_gta", "kwargs": method_cfgs.get("gta_base", {})},
-        {"label": AGENT_LABELS["full_gta"],    "variant": "full_gta", "kwargs": method_cfgs.get("gta_beta", {})},
+        {"label": AGENT_LABELS["forward_gta"], "variant": "forward_gta", "kwargs": method_cfgs.get("forward_gta", {"alpha": 0.0})},
+        {"label": AGENT_LABELS["full_gta"],    "variant": "full_gta", "kwargs": method_cfgs.get("full_gta", {})},
     ]
     variant_labels = [v['label'] for v in variants]
     runner = RunManager(n_workers=args.workers)
@@ -306,6 +346,10 @@ if __name__ == "__main__":
             "experiment": "rq4_asymmetry",
             "config": {
                 **vars(args),
+                "method_variants": [
+                    {"label": variant["label"], "variant": variant["variant"], "kwargs": variant["kwargs"]}
+                    for variant in variants
+                ],
                 "fourrooms_modes": [{"label": label, "kwargs": kwargs} for label, kwargs in modes],
                 "fourrooms_transport_diagnostics": fourrooms_diagnostics,
             },
