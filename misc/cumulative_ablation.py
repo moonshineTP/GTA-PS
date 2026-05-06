@@ -65,7 +65,7 @@ except ImportError:
     plt = None
 
 # Slow-mixing GARNET: n_nbr_rate ≈ 0.07 → SLEM ~ 0.99 → t_mix >> K
-N_STATES    = 75  # default, overridden by --n-states
+N_STATES    = 75            # default, overridden by --n-states
 N_ACTIONS   = 4
 BRANCHING   = 3
 N_NBR_RATE  = 0.07          # slow mixing;

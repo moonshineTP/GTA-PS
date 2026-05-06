@@ -59,6 +59,40 @@ def _build_method_cfgs(cfg: dict) -> dict:
         result[variant] = {**variant_cfg, **overrides}
     return result
 
+def _fourrooms_mode_diagnostics(gamma: float, modes: List[tuple[str, dict]]) -> dict:
+    symmetric_env = FourRoomsTabular(gamma=gamma, seed=0, one_way_prob=1.0)
+    symmetric_P = symmetric_env.P.copy()
+    diagnostics = {}
+    kernels = {"Symmetric": symmetric_P}
+
+    for mode_name, mode_kwargs in modes:
+        env = FourRoomsTabular(gamma=gamma, seed=0, **mode_kwargs)
+        diff = np.abs(env.P - symmetric_P)
+        diagnostics[mode_name] = {
+            "transport_l1_vs_symmetric": float(diff.sum()),
+            "changed_states": int(np.count_nonzero(np.any(diff > 1e-12, axis=(0, 2)))),
+        }
+        if mode_name != "Symmetric" and diagnostics[mode_name]["transport_l1_vs_symmetric"] <= 1e-12:
+            raise RuntimeError(f"FourRooms mode {mode_name!r} did not modify the transition kernel.")
+        kernels[mode_name] = env.P.copy()
+
+    pairwise_l1 = {}
+    mode_names = [mode_name for mode_name, _ in modes]
+    for i, lhs in enumerate(mode_names):
+        for rhs in mode_names[i + 1:]:
+            pair_key = f"{lhs} vs {rhs}"
+            pair_delta = float(np.abs(kernels[lhs] - kernels[rhs]).sum())
+            if pair_delta <= 1e-12:
+                raise RuntimeError(f"FourRooms modes {lhs!r} and {rhs!r} produced the same transition kernel.")
+            pairwise_l1[pair_key] = pair_delta
+
+    diagnostics["pairwise_transport_l1"] = pairwise_l1
+    diagnostics["belt_cycle_positions"] = [
+        list(symmetric_env._pos_list[state])
+        for state in symmetric_env.belt_cycle_states()
+    ]
+    return diagnostics
+
 def run_seed_worker(env_name: str, env_params: dict, variants: List[dict], n_shifts: int, n_steps_per_shift: int, k_planning: int, seed: int):
     """
     Worker function for RunManager.
@@ -214,9 +248,9 @@ if __name__ == "__main__":
     print(f"Starting RQ4 Consistency Sweep...")
     
     variants = [
-        {"label": AGENT_LABELS["standard_ps"], "variant": "standard_ps", "kwargs": {}},
-        {"label": AGENT_LABELS["gta_base"],    "variant": "gta_base",    "kwargs": {**method_cfgs.get("gta_base", {}), "alpha": 0.0}},
-        {"label": AGENT_LABELS["gta_beta"],    "variant": "gta_beta",    "kwargs": method_cfgs.get("gta_beta", {})},
+        {"label": AGENT_LABELS["standard_ps"],  "variant": "standard_ps", "kwargs": {}},
+        {"label": AGENT_LABELS["forward_gta"], "variant": "gta_base", "kwargs": {**method_cfgs.get("gta_base", {}), "alpha": 0.0}},
+        {"label": AGENT_LABELS["full_gta"],    "variant": "gta_beta", "kwargs": method_cfgs.get("gta_beta", {})},
     ]
     variant_labels = [v['label'] for v in variants]
     runner = RunManager(n_workers=args.workers)
@@ -243,6 +277,7 @@ if __name__ == "__main__":
     print(f"Running FourRooms sweep...")
     fourrooms_final_stats = {}
     modes = [("Symmetric", {"one_way_prob": 1.0}), ("One-Way", {"one_way_prob": 0.05}), ("Windy", {"drift": (0, 1)})]
+    fourrooms_diagnostics = _fourrooms_mode_diagnostics(args.gamma, modes)
     for mode_name, params in modes:
         p_copy = params.copy()
         p_copy["gamma"] = args.gamma
@@ -266,7 +301,11 @@ if __name__ == "__main__":
     with open(results_dir / "rq4_asymmetry.json", "w") as f:
         json.dump({
             "experiment": "rq4_asymmetry",
-            "config": vars(args),
+            "config": {
+                **vars(args),
+                "fourrooms_modes": [{"label": label, "kwargs": kwargs} for label, kwargs in modes],
+                "fourrooms_transport_diagnostics": fourrooms_diagnostics,
+            },
             "results": {"garnet": {str(k): v for k, v in garnet_final_stats.items()}, "fourrooms": fourrooms_final_stats}
         }, f, indent=2)
     
