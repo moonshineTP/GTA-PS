@@ -170,7 +170,7 @@
     "K": 15,
     "seeds": 1000,
     "gamma": 0.95,
-    "workers": "8",
+    "workers": "10",
     "out_dir": "D:\\GTA-PS\\results\\misc\\shift_rate_ablation",
     "plot_dir": "D:\\GTA-PS\\plots"
   }
