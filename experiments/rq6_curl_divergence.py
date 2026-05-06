@@ -20,6 +20,7 @@ from typing import Dict, List
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 # Setup path
 ROOT = Path(__file__).resolve().parents[1]
 if not (ROOT / "configs").exists():
@@ -31,11 +32,12 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "threads"))
 sys.path.insert(0, str(ROOT / "misc"))
 
-from gta_ps.algorithms import make_agent
+from gta_ps.algorithms import make_agent, DynaHost
 from gta_ps.envs.garnet import GarnetEnv
 from gta_ps.envs.fourrooms import FourRoomsTabular
 from gta_ps.utils.metrics import value_error_l1
 from gta_ps.utils.hyperparams import load_tuned_for_env
+from gta_ps.utils import operator_split, slem_arnoldi
 from runner import RunManager
 from plot_academic import (
     LABELS as AGENT_LABELS,
@@ -73,8 +75,8 @@ FOURROOMS_BASE_KWARGS = {
 FOURROOMS_MODES = (
     ("Symmetric", {}),
     ("Windy (Div)", {"drift": (0, 1)}),
-    ("Belt-like (Curl)", {"one_way_prob": 0.05}),
-    ("Mixed", {"drift": (0, 1), "one_way_prob": 0.05}),
+    ("Belt-like (Curl)", {"one_way_prob": 0.1}),
+    ("Mixed", {"drift": (0, 1), "one_way_prob": 0.1}),
 )
 
 
@@ -186,13 +188,56 @@ def _geometry_stats(env: GarnetEnv) -> dict:
         "slem": float(slem),
     }
 
-def run_seed_worker(kind: str, gamma: float, variants: List[dict], n_shifts: int, n_steps_per_shift: int, k_planning: int, seed: int):
-    env = _make_directed_garnet_env(kind, seed=seed, gamma=gamma)
+
+def _build_variants(method_cfgs: dict) -> List[dict]:
+    return [
+        {"label": AGENT_LABELS["standard_ps"], "variant": "standard_ps", "kwargs": {}},
+        {"label": AGENT_LABELS["gta_base"], "variant": "gta_base", "kwargs": {**method_cfgs.get("gta_base", {}), "alpha": 0.0}},
+        {"label": AGENT_LABELS["gta_beta"], "variant": "gta_beta", "kwargs": method_cfgs.get("gta_beta", {})},
+    ]
+
+
+def _apply_reward_update(agent, r_new: np.ndarray) -> None:
+    if hasattr(agent, "reward_update"):
+        agent.reward_update(r_new)
+        return
+    module_r = getattr(agent.module, "r", None)
+    if module_r is None:
+        raise RuntimeError("Agent does not expose reward_update or module.r for reward shifts.")
+    agent.module.reward_update(r_new - np.asarray(module_r))
+
+
+def run_seed_worker(
+    env_name: str,
+    env_params: dict,
+    variants: List[dict],
+    n_shifts: int,
+    n_steps_per_shift: int,
+    k_planning: int,
+    seed: int,
+):
+    if env_name == "garnet":
+        env = _make_directed_garnet_env(
+            kind=env_params["kind"],
+            seed=seed,
+            gamma=env_params["gamma"],
+            env_kwargs=env_params["env_kwargs"],
+            kernel_kwargs=env_params["kernel_kwargs"],
+        )
+    elif env_name == "fourrooms":
+        env = FourRoomsTabular(
+            seed=seed,
+            gamma=env_params["gamma"],
+            **env_params["env_kwargs"],
+        )
+    else:
+        raise ValueError(f"Unknown env_name {env_name!r}")
+
     sim_rng = np.random.default_rng(np.random.SeedSequence([seed, 0xC06E, 6]))
     n_states = env.n_states
     seed_results = {}
     for idx, var in enumerate(variants):
-        agent = make_agent(
+        agent: DynaHost = make_agent(
             variant=var["variant"],
             host="dyna",
             P=env.P,
@@ -245,7 +290,9 @@ def get_stats(seed_results: List[Dict[str, float]], labels: List[str]):
     return stats
 
 
-def plot_rq6_results(garnet_stats: dict, fourrooms_stats: dict):
+def plot_rq6_results(garnet_stats: dict, fourrooms_stats: dict) -> bool:
+    if plt is None:
+        return False
     apply_style()
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.2, 5.0))
 
@@ -322,6 +369,7 @@ def plot_rq6_results(garnet_stats: dict, fourrooms_stats: dict):
     fig.savefig(plot_path, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"Plot saved to {plot_path}")
+    return True
 
 
 if __name__ == "__main__":
@@ -349,16 +397,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.config:
-        method_cfgs = _build_method_cfgs(_load_config(args.config))
+        garnet_method_cfgs = _build_method_cfgs(_load_config(args.config))
+        fourrooms_method_cfgs = garnet_method_cfgs
     else:
-        method_cfgs = load_tuned_for_env("garnet")
+        garnet_method_cfgs = load_tuned_for_env("garnet")
+        fourrooms_method_cfgs = load_tuned_for_env("fourrooms")
 
-    variants = [
-        {"label": AGENT_LABELS["standard_ps"], "variant": "standard_ps", "kwargs": {}},
-        {"label": AGENT_LABELS["gta_base"], "variant": "gta_base", "kwargs": {**method_cfgs.get("gta_base", {}), "alpha": 0.0}},
-        {"label": AGENT_LABELS["gta_beta"], "variant": "gta_beta", "kwargs": method_cfgs.get("gta_beta", {})},
-    ]
-    variant_labels = [v["label"] for v in variants]
+    garnet_variants = _build_variants(garnet_method_cfgs)
+    fourrooms_variants = _build_variants(fourrooms_method_cfgs)
+    variant_labels = [v["label"] for v in garnet_variants]
     runner = RunManager(n_workers=args.workers)
 
     garnet_env_kwargs = {
@@ -394,7 +441,7 @@ if __name__ == "__main__":
                     "env_kwargs": garnet_env_kwargs,
                     "kernel_kwargs": kernel_kwargs,
                 },
-                variants=variants,
+                variants=garnet_variants,
                 n_shifts=args.n_shifts,
                 n_steps_per_shift=args.n_steps_per_shift,
                 k_planning=args.K,
@@ -417,7 +464,7 @@ if __name__ == "__main__":
                     "gamma": args.gamma,
                     "env_kwargs": env_kwargs,
                 },
-                variants=variants,
+                variants=fourrooms_variants,
                 n_shifts=args.n_shifts,
                 n_steps_per_shift=args.n_steps_per_shift,
                 k_planning=args.K,
@@ -426,7 +473,7 @@ if __name__ == "__main__":
         )
         fourrooms_results[mode_name] = get_stats(res, variant_labels)
 
-    plot_rq6_results(garnet_results, fourrooms_results)
+    plot_written = plot_rq6_results(garnet_results, fourrooms_results)
 
     os.makedirs(ROOT / "results", exist_ok=True)
     with open(ROOT / "results" / "rq6_curl_divergence.json", "w") as f:
@@ -448,3 +495,5 @@ if __name__ == "__main__":
         )
 
     print("\nRQ6 Directed Flow Audit Complete.")
+    if not plot_written:
+        print("Plot skipped: matplotlib is not installed in the active interpreter.")
