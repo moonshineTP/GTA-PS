@@ -9,8 +9,7 @@ This directory contains the core implementation of the GTA-PS Research Questions
 - **Dynamic Timelines** (`rq1_dp_timeline.py`, `rq1_dyna_timeline.py`): Measures error across sequences of reward shifts in DP (oracle model) and Dyna (learned model) settings.
 
 ### RQ2: Topology Allocation & Schedules
-- **Allocation Audit** (`rq2_allocation.py`): Evaluates how topology signals correlate with priority queue ordering.
-- **Beta Schedule** (`rq2_beta_magnitude.py`): Compares fixed $\beta$ vs. linear and adaptive $\beta_t$ schedules.
+- **Beta Audit** (`rq2_beta_magnitude.py`): Evaluates how topology signals correlate with priority queue ordering, varying over beta magnitudee.
 
 ### RQ3: Convergence vs. Propagation Tradeoff (`rq3_mixing_tradeoff.py`)
 - **Mission:** Audits the accuracy-coverage tradeoff controlled by the mixing weight $\alpha$.

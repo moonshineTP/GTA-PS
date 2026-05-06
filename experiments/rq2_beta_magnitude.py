@@ -113,9 +113,9 @@ def plot_rq2_results(results_dir: Path, plot_dir: Path) -> Path | None:
 
     apply_style()
     try:
-        with open(results_dir / "rq2_ablation_garnet_s75.json") as f:
+        with open(results_dir / "rq2_beta_magnitude_garnet_s75.json") as f:
             garnet_data = json.load(f)
-        with open(results_dir / "rq2_ablation_fourrooms_k4.json") as f:
+        with open(results_dir / "rq2_beta_magnitude_fourrooms_k4.json") as f:
             fr_data = json.load(f)
     except FileNotFoundError:
         return None
@@ -155,7 +155,7 @@ def plot_rq2_results(results_dir: Path, plot_dir: Path) -> Path | None:
     ax.grid(True, color=grid_color)
     plt.tight_layout()
     plot_dir.mkdir(parents=True, exist_ok=True)
-    out_path = plot_dir / "rq2_beta_ablation.png"
+    out_path = plot_dir / "rq2_beta_magnitude.png"
     plt.savefig(out_path, dpi=300)
     plt.close(fig)
     return out_path
@@ -189,7 +189,7 @@ def main():
         **env_kwargs
     }
     
-    print(f"Running beta ablation on {args.env} ({args.seeds} seeds)...")
+    print(f"Running beta experiment on {args.env} ({args.seeds} seeds)...")
     results = runner.run(run_beta_sweep, list(range(args.seeds)), fn_kwargs)
     
     # Aggregate
@@ -205,14 +205,14 @@ def main():
 
     # Output to JSON
     payload = {
-        "experiment": "rq2_beta_ablation",
+        "experiment": "rq2_beta_magnitude",
         "env": args.env,
         "beta_vals": beta_vals,
         "mean_rhos": mean_rhos.tolist(),
         "sem_rhos": std_rhos.tolist()
     }
     out_dir = Path(args.out_dir).resolve()
-    out_path = (out_dir / f"rq2_ablation_{tag}.json").resolve()
+    out_path = (out_dir / f"rq2_beta_magnitude_{tag}.json").resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2)
@@ -222,7 +222,7 @@ def main():
     if plot_path is not None:
         print(f"Plot saved to:    {plot_path}")
     else:
-        print("Plot skipped:     waiting for both rq2_ablation_garnet_s75.json and rq2_ablation_fourrooms_k4.json")
+        print("Plot skipped:     waiting for both rq2_beta_magnitude_garnet_s75.json and rq2_beta_magnitude_fourrooms_k4.json")
 
 if __name__ == "__main__":
     main()

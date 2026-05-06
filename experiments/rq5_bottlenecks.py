@@ -12,6 +12,7 @@ Setup:
     - GARNET: n_nbr_rate sweep (localized vs. global connectivity).
     - FourRooms: Corridor length sweep (MFPT barrier scaling).
 - Agent: Dyna host (count-based on GARNET, sample-based on FourRooms).
+- Tracking: Standard-PS, Forward-GTA, GTA-beta.
 """
 import sys
 import os
@@ -129,6 +130,7 @@ def plot_rq5_schema(garnet_stats: Dict[float, Dict[str, dict]], fourrooms_stats:
     # Robust mapping from display label back to palette keys
     label_to_key = {
         AGENT_LABELS["standard_ps"]: "standard_ps",
+        AGENT_LABELS["forward_gta"]: "forward_gta",
         AGENT_LABELS["gta_beta"]:    "gta_beta",
         AGENT_LABELS["full_gta"]:    "full_gta",
     }
@@ -204,6 +206,7 @@ if __name__ == "__main__":
     
     variants = [
         {"label": AGENT_LABELS["standard_ps"], "variant": "standard_ps", "kwargs": {}},
+        {"label": AGENT_LABELS["forward_gta"], "variant": "forward_gta", "kwargs": method_cfgs.get("gta_base", {})},
         {"label": AGENT_LABELS["gta_beta"],    "variant": "gta_beta",    "kwargs": method_cfgs.get("gta_beta", {})},
     ]
     variant_labels = [v['label'] for v in variants]

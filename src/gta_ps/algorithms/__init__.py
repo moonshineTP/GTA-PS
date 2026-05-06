@@ -15,6 +15,20 @@ _ADAPTIVE_FLAGS: dict = {
     "standard_ps": {},
     "gta_base":    {},
     "gta_beta":    {"adaptive_beta":  True},
+    "forward_gta": {},
+    "full_gta":    {"adaptive_beta":  True},
+}
+
+_CANONICAL_VARIANT: dict[str, str] = {
+    "standard_ps": "standard_ps",
+    "gta_base": "gta_base",
+    "gta_beta": "gta_beta",
+    "forward_gta": "gta_base",
+    "full_gta": "gta_beta",
+}
+
+_FIXED_MODULE_KWARGS: dict[str, dict] = {
+    "forward_gta": {"alpha": 0.0},
 }
 
 VARIANTS = list(_ADAPTIVE_FLAGS.keys())
@@ -90,7 +104,9 @@ def make_agent(
         raise ValueError("Provide P (shape (|A|,|S|,|S|)) or explicit n_states+n_actions.")
 
     # --- build PS module ---
-    if variant == "standard_ps":
+    canonical_variant = _CANONICAL_VARIANT[variant]
+
+    if canonical_variant == "standard_ps":
         if P is None or r is None:
             raise ValueError("standard_ps requires P and r.")
         module = StandardPS(P, r, gamma=gamma)
@@ -99,6 +115,7 @@ def make_agent(
         # _ADAPTIVE_FLAGS is authoritative for adaptive_beta
         module_kwargs = {k: v for k, v in module_kwargs.items()
                          if k not in ("adaptive_beta",)}
+        module_kwargs.update(_FIXED_MODULE_KWARGS.get(variant, {}))
         if P is None or r is None:
             raise ValueError(f"variant '{variant}' requires P and r for topology initialisation.")
         module = GtaPS(P, r, gamma=gamma, q=q, **flags, **module_kwargs)

@@ -92,15 +92,6 @@ GROUPS: dict[str, tuple[ScriptSpec, ...]] = {
             },
         ),
         ScriptSpec(
-            path="experiments/rq2_allocation.py",
-            label="RQ2 allocation",
-            forwarded_flags={
-                "workers": "--workers",
-                "seeds": "--seeds",
-                "n_shifts": "--n-shifts",
-            },
-        ),
-        ScriptSpec(
             path="experiments/rq2_beta_magnitude.py",
             label="RQ2 beta",
             forwarded_flags={

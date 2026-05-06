@@ -125,7 +125,7 @@ if __name__ == "__main__":
     method_cfgs = load_tuned_for_env("garnet")
     variants = [
         {"label": "Standard-PS", "variant": "standard_ps", "kwargs": {}},
-        {"label": "Full-GTA",     "variant": "gta_beta",    "kwargs": method_cfgs.get("gta_beta", {})},
+        {"label": "Full-GTA",     "variant": "full_gta",    "kwargs": method_cfgs.get("gta_beta", {})},
     ]
     variant_labels = [v['label'] for v in variants]
     runner = RunManager(n_workers=args.workers)

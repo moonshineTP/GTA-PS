@@ -252,8 +252,8 @@ if __name__ == "__main__":
     
     variants = [
         {"label": AGENT_LABELS["standard_ps"],  "variant": "standard_ps", "kwargs": {}},
-        {"label": AGENT_LABELS["forward_gta"], "variant": "gta_base", "kwargs": {**method_cfgs.get("gta_base", {}), "alpha": 0.0}},
-        {"label": AGENT_LABELS["full_gta"],    "variant": "gta_beta", "kwargs": method_cfgs.get("gta_beta", {})},
+        {"label": AGENT_LABELS["forward_gta"], "variant": "forward_gta", "kwargs": method_cfgs.get("gta_base", {})},
+        {"label": AGENT_LABELS["full_gta"],    "variant": "full_gta", "kwargs": method_cfgs.get("gta_beta", {})},
     ]
     variant_labels = [v['label'] for v in variants]
     runner = RunManager(n_workers=args.workers)

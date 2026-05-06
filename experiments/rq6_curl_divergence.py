@@ -295,8 +295,8 @@ def _print_fourrooms_transport_diagnostics(diagnostics: dict) -> None:
 def _build_variants(method_cfgs: dict) -> List[dict]:
     return [
         {"label": AGENT_LABELS["standard_ps"], "variant": "standard_ps", "kwargs": {}},
-        {"label": AGENT_LABELS["gta_base"], "variant": "gta_base", "kwargs": {**method_cfgs.get("gta_base", {}), "alpha": 0.0}},
-        {"label": AGENT_LABELS["gta_beta"], "variant": "gta_beta", "kwargs": method_cfgs.get("gta_beta", {})},
+        {"label": AGENT_LABELS["forward_gta"], "variant": "forward_gta", "kwargs": method_cfgs.get("gta_base", {})},
+        {"label": AGENT_LABELS["full_gta"], "variant": "full_gta", "kwargs": method_cfgs.get("gta_beta", {})},
     ]
 
 
@@ -396,10 +396,10 @@ def plot_rq6_results(garnet_stats: dict, fourrooms_stats: dict) -> bool:
     grid_color = get_utility_color("grid")
     label_to_key = {
         AGENT_LABELS["standard_ps"]: "standard_ps",
-        AGENT_LABELS["gta_base"]: "gta_base",
-        AGENT_LABELS["gta_beta"]: "gta_beta",
+        AGENT_LABELS["forward_gta"]: "forward_gta",
+        AGENT_LABELS["full_gta"]: "full_gta",
     }
-    labels = [AGENT_LABELS["standard_ps"], AGENT_LABELS["gta_base"], AGENT_LABELS["gta_beta"]]
+    labels = [AGENT_LABELS["standard_ps"], AGENT_LABELS["forward_gta"], AGENT_LABELS["full_gta"]]
 
     garnet_order = [name for name, _ in FLOW_FAMILIES]
     garnet_ticks = np.arange(len(garnet_order))

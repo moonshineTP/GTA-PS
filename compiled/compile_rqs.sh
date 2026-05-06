@@ -20,7 +20,6 @@ RQS=(
     "experiments/rq1_convergence.py"
     "experiments/rq1_dp_timeline.py"
     "experiments/rq1_dyna_timeline.py"
-    "experiments/rq2_allocation.py"
     "experiments/rq2_beta_magnitude.py"
     "experiments/rq3_mixing_tradeoff.py"
     "experiments/rq4_asymmetry.py"
