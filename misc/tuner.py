@@ -5,7 +5,7 @@ GtaPSTuner
     Single-env Optuna study. Uses GtaPSSearchSpace to sample hyperparameters
     and measures GTA-PS error against the Standard PS baseline on the DP host.
 
-For parallel grid-search tuning (used by rq1_proactiveness.py --tune),
+For parallel grid-search tuning (used by rq1_convergence.py --tune),
 see code/threads/tuner.py (TuningEngine + RunManager).
 """
 import sys

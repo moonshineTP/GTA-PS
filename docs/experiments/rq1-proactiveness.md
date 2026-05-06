@@ -1,6 +1,6 @@
-# RQ1: Proactiveness & Convergence
+# RQ1: Convergence & Timelines
 
-**File:** `experiments/rq1_proactiveness.py`
+**File:** `experiments/rq1_convergence.py`
 
 ## Research Question
 Does GTA‑PS reduce value error faster than Standard‑PS (Dyna‑PS) in both stationary and non-stationary (reward shift) settings?
@@ -25,7 +25,7 @@ Does GTA‑PS reduce value error faster than Standard‑PS (Dyna‑PS) in both s
 
 ### Stationary Convergence
 ```bash
-python experiments/rq1_proactiveness.py --env garnet --seeds 20
+python experiments/rq1_convergence.py --seeds 20
 ```
 
 ### Timeline (Reward Shifts)

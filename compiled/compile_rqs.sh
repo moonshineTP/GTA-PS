@@ -17,7 +17,7 @@ echo "Starting RQs Compilation (Linux)..."
 echo ""
 
 RQS=(
-    "experiments/rq1_proactiveness.py"
+    "experiments/rq1_convergence.py"
     "experiments/rq1_dp_timeline.py"
     "experiments/rq1_dyna_timeline.py"
     "experiments/rq2_allocation.py"
