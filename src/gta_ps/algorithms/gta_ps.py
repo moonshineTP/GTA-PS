@@ -309,7 +309,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         hot = np.where(self.xi > 1e-4)[0]
         self._version_xi = {int(s): 0 for s in hot}
         entries = [
-            (-float(max(0.0, self.xi[s] + self.beta_t * self.tau[s])), 0, int(s))
+            (-float(self.xi[s] + self.beta_t * self.tau[s]), 0, int(s))
             for s in hot
         ]
         heapq.heapify(entries)
@@ -492,10 +492,8 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
             )
             self.xi[pred] = xi_pred
             if xi_pred > 1e-4:
-                # Score = ξ + β_t·τ, floored at 0 so the state stays
-                # EMA-style update to the score: incorporate latest tau into the existing residual priority.
-                # This ensures the global field update reflects in the queue ranks.
-                score = max(0.0, xi_pred + self.beta_t * self.tau[pred])
+                # Score = ξ + β_t·τ
+                score = xi_pred + self.beta_t * self.tau[pred]
                 v = self._version_xi.get(pred, -1) + 1
                 self._version_xi[pred] = v
                 heapq.heappush(self._Q_xi, (-score, v, pred))
