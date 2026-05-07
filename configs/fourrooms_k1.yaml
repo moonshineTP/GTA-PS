@@ -8,20 +8,18 @@ sigma_range:
 - 0.5
 - 2.0
 room_peak_ranges:
+- - 0.6
+  - 1.2
 - - 0.3
-  - 1.0
-- - 0.3
-  - 1.0
-- - 0.3
-  - 1.0
-- - 0.3
-  - 1.0
-
+  - 0.6
+- - 0.2
+  - 0.8
+- - 0.25
+  - 0.5
 budgets:
 - 10
 - 20
 - 50
-
 arnoldi_k: 15
 slem_recompute_every: null
 default:
