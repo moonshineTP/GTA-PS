@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 pytest.importorskip("matplotlib")
 
@@ -20,47 +21,13 @@ sys.path.insert(0, str(ROOT / "src"))
 
 rq4 = importlib.import_module("rq4_asymmetry")
 rq5 = importlib.import_module("rq5_bottlenecks")
+rq6 = importlib.import_module("rq6_curl_divergence")
 rq1_dyna = importlib.import_module("rq1_dyna_timeline")
 from gta_ps.algorithms import make_agent
 from gta_ps.algorithms.empirical_model import SampleModel
+from gta_ps.utils.hyperparams import ENV_DEFAULT_CONFIG, load_tuned_for_env
 
 RQ_MODULES = [rq4, rq5, rq6]
-
-EXPECTED_DEFAULT_METHOD_CFGS = {
-    "garnet": {
-        "forward_gta": {
-            "alpha": 0.0,
-            "beta1": 0.346922,
-            "beta2": 0.269094,
-            "eta": 0.015734,
-            "b": 3.82617,
-        },
-        "full_gta": {
-            "alpha": 0.455302,
-            "beta1": 0.346922,
-            "beta2": 0.269094,
-            "eta": 0.015734,
-            "b": 3.82617,
-        },
-    },
-    "fourrooms": {
-        "forward_gta": {
-            "alpha": 0.0,
-            "beta1": 1.281478,
-            "beta2": 1.356273,
-            "eta": 0.018831,
-            "b": 2.801307,
-        },
-        "full_gta": {
-            "alpha": 0.870918,
-            "beta1": 1.281478,
-            "beta2": 1.356273,
-            "eta": 0.018831,
-            "b": 2.801307,
-        },
-    },
-}
-
 
 def _legacy_cfg() -> dict:
     return {
@@ -88,6 +55,90 @@ def _legacy_cfg() -> dict:
             },
         },
     }
+
+
+def _load_default_env_cfg(env_name: str) -> dict:
+    cfg_path = ROOT / "configs" / ENV_DEFAULT_CONFIG[env_name]
+    with cfg_path.open(encoding="utf-8") as handle:
+        return yaml.safe_load(handle) or {}
+
+
+def _expected_default_method_cfgs(env_name: str) -> dict:
+    cfg = _load_default_env_cfg(env_name)
+    tuned = load_tuned_for_env(env_name)
+    assert tuned == (cfg.get("tuned") or {})
+
+    base_params = {
+        key: cfg.get(key)
+        for key in ["alpha", "beta", "beta1", "beta2", "eta", "b"]
+        if cfg.get(key) is not None
+    }
+    base_params.update(
+        {
+            key: value
+            for key, value in (cfg.get("default") or {}).items()
+            if value is not None
+        }
+    )
+    gta_beta = {
+        key: value
+        for key, value in (tuned.get("gta_beta") or {}).items()
+        if value is not None
+    }
+    expected_full = {**base_params, **gta_beta}
+    expected_forward = dict(expected_full)
+    expected_forward["alpha"] = 0.0
+    return {
+        "forward_gta": expected_forward,
+        "full_gta": expected_full,
+    }
+
+
+def _expected_default_fourrooms_base_kwargs() -> dict:
+    cfg = _load_default_env_cfg("fourrooms")
+    return {
+        "k": cfg["k_fourrooms"],
+        "n_peaks_per_room": cfg["n_peaks_per_room"],
+        "sigma_range": cfg["sigma_range"],
+        "room_peak_ranges": cfg["room_peak_ranges"],
+    }
+
+
+def _write_rq4_fourrooms_cfg(path: Path) -> None:
+    cfg = {
+        "env": "fourrooms",
+        "room_size": 3,
+        "corridor_len": 5,
+        "corridor_width": 1,
+        "window_offset": 0,
+        "k_fourrooms": 4,
+        "n_peaks_per_room": 3,
+        "sigma_range": [0.2, 0.4],
+        "room_peak_ranges": [
+            [0.7, 1.2],
+            [0.4, 0.8],
+            [0.2, 0.6],
+            [0.1, 0.5],
+        ],
+        "default": {
+            "alpha": 0.5,
+            "beta": 1.0,
+            "beta1": 1.0,
+            "beta2": 0.1,
+            "eta": 0.01,
+            "b": 1.0,
+        },
+        "tuned": {
+            "gta_beta": {
+                "alpha": 0.73,
+                "beta1": 0.55,
+                "beta2": 0.77,
+                "eta": 0.44,
+                "b": 3.3,
+            },
+        },
+    }
+    path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
 
 
 @pytest.mark.parametrize("module", RQ_MODULES, ids=lambda m: m.__name__)
@@ -185,7 +236,7 @@ def test_rq_no_config_path_uses_env_specific_default_method_cfgs(module):
 
 
 @pytest.mark.parametrize("module", RQ_MODULES, ids=lambda m: m.__name__)
-def test_rq_default_method_cfgs_match_expected_yaml_values(module):
+def test_rq_default_method_cfgs_follow_default_config_contract(module):
     garnet_method_cfgs, fourrooms_method_cfgs = module._resolve_env_method_cfgs(None)
 
     print(f"\n[{module.__name__}] resolved default method cfgs")
@@ -196,13 +247,61 @@ def test_rq_default_method_cfgs_match_expected_yaml_values(module):
         ("garnet", garnet_method_cfgs),
         ("fourrooms", fourrooms_method_cfgs),
     ):
-        expected = EXPECTED_DEFAULT_METHOD_CFGS[env_name]
-        for variant, expected_values in expected.items():
-            for key, value in expected_values.items():
-                assert resolved[variant][key] == pytest.approx(value), (
-                    f"{module.__name__} {env_name} {variant} {key} "
-                    f"expected {value} but got {resolved[variant][key]}"
-                )
+        expected = _expected_default_method_cfgs(env_name)
+        assert resolved == expected
+        assert resolved["forward_gta"]["alpha"] == pytest.approx(0.0)
+        assert resolved["full_gta"]["alpha"] == pytest.approx(expected["full_gta"]["alpha"])
+        assert resolved["forward_gta"]["beta"] == pytest.approx(resolved["full_gta"]["beta"])
+        assert resolved["forward_gta"]["beta1"] == pytest.approx(resolved["full_gta"]["beta1"])
+        assert resolved["forward_gta"]["beta2"] == pytest.approx(resolved["full_gta"]["beta2"])
+        assert resolved["forward_gta"]["eta"] == pytest.approx(resolved["full_gta"]["eta"])
+        assert resolved["forward_gta"]["b"] == pytest.approx(resolved["full_gta"]["b"])
+
+
+def test_rq4_default_fourrooms_base_kwargs_follow_default_config_contract():
+    assert rq4._resolve_fourrooms_base_kwargs(None) == _expected_default_fourrooms_base_kwargs()
+
+
+def test_rq4_explicit_fourrooms_config_overrides_base_geometry(tmp_path):
+    cfg_path = tmp_path / "rq4_fourrooms.yaml"
+    _write_rq4_fourrooms_cfg(cfg_path)
+
+    resolved = rq4._resolve_fourrooms_base_kwargs(str(cfg_path))
+
+    assert resolved == {
+        "room_size": 3,
+        "corridor_len": 5,
+        "corridor_width": 1,
+        "window_offset": 0,
+        "k": 4,
+        "n_peaks_per_room": 3,
+        "sigma_range": [0.2, 0.4],
+        "room_peak_ranges": [
+            [0.7, 1.2],
+            [0.4, 0.8],
+            [0.2, 0.6],
+            [0.1, 0.5],
+        ],
+    }
+
+
+def test_rq4_transport_modes_use_resolved_fourrooms_geometry(tmp_path):
+    cfg_path = tmp_path / "rq4_fourrooms.yaml"
+    _write_rq4_fourrooms_cfg(cfg_path)
+
+    base_kwargs = rq4._resolve_fourrooms_base_kwargs(str(cfg_path))
+    modes = rq4._resolve_fourrooms_modes(0.95, base_kwargs)
+    diagnostics = rq4._fourrooms_mode_diagnostics(0.95, base_kwargs, modes)
+
+    assert [label for label, _ in modes] == ["Symmetric", "One-Way", "Windy"]
+    assert modes[1][1]["one_way_prob"] == pytest.approx(rq4.FOURROOMS_BELT_LEAK)
+    assert modes[2][1]["drift"] == (0, 1)
+    assert modes[2][1]["drift_strength"] > 0.0
+    assert len(diagnostics["belt_cycle_positions"]) > 4
+    assert diagnostics["One-Way"]["transport_l1_vs_symmetric"] > 0.0
+    assert diagnostics["Windy"]["transport_l1_vs_symmetric"] > 0.0
+    assert diagnostics["pairwise_transport_l1"]["Symmetric vs One-Way"] > 0.0
+    assert diagnostics["pairwise_transport_l1"]["Symmetric vs Windy"] > 0.0
 
 
 @pytest.mark.parametrize("module", RQ_MODULES, ids=lambda m: m.__name__)

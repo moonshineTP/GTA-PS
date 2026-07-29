@@ -1,25 +1,25 @@
 {
-  "garnet": {
+  "fourrooms": {
     "gta_base": {
-      "env": "garnet",
+      "env": "fourrooms",
       "tuned_params": [
         "beta",
         "alpha",
         "eta",
         "b"
       ],
-      "baseline_error": 0.740627,
-      "best_error": 0.684133,
-      "improvement_pct": 7.63,
+      "baseline_error": 2.463221,
+      "best_error": 0.1283,
+      "improvement_pct": 94.79,
       "best_params": {
-        "beta": 0.117935,
-        "alpha": 0.489958,
-        "eta": 0.014118,
-        "b": 3.94896
+        "beta": 1.124551,
+        "alpha": 0.05143,
+        "eta": 0.019939,
+        "b": 3.684276
       }
     },
     "gta_beta": {
-      "env": "garnet",
+      "env": "fourrooms",
       "tuned_params": [
         "beta1",
         "beta2",
@@ -27,15 +27,15 @@
         "eta",
         "b"
       ],
-      "baseline_error": 0.740627,
-      "best_error": 0.68236,
-      "improvement_pct": 7.87,
+      "baseline_error": 2.463221,
+      "best_error": 0.118083,
+      "improvement_pct": 95.21,
       "best_params": {
-        "beta1": 0.346922,
-        "beta2": 0.269094,
-        "alpha": 0.455302,
-        "eta": 0.015734,
-        "b": 3.82617
+        "beta1": 0.159673,
+        "beta2": 1.361556,
+        "alpha": 0.051719,
+        "eta": 0.018037,
+        "b": 2.849322
       }
     }
   }

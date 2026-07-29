@@ -1,0 +1,232 @@
+{
+  "code_root": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "target_count": 45,
+  "targets": [
+    {
+      "name": "experiments__rq1__dp__timeline",
+      "source": "experiments/rq1_dp_timeline.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/experiments/rq1_dp_timeline.py"
+    },
+    {
+      "name": "experiments__rq1__dyna__timeline",
+      "source": "experiments/rq1_dyna_timeline.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/experiments/rq1_dyna_timeline.py"
+    },
+    {
+      "name": "experiments__rq1__proactiveness",
+      "source": "experiments/rq1_proactiveness.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/experiments/rq1_proactiveness.py"
+    },
+    {
+      "name": "experiments__rq2__allocation",
+      "source": "experiments/rq2_allocation.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/experiments/rq2_allocation.py"
+    },
+    {
+      "name": "experiments__rq2__beta",
+      "source": "experiments/rq2_beta.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/experiments/rq2_beta.py"
+    },
+    {
+      "name": "experiments__rq3__tradeoff",
+      "source": "experiments/rq3_tradeoff.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/experiments/rq3_tradeoff.py"
+    },
+    {
+      "name": "experiments__rq4__asymmetry",
+      "source": "experiments/rq4_asymmetry.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/experiments/rq4_asymmetry.py"
+    },
+    {
+      "name": "experiments__rq5__bottlenecks",
+      "source": "experiments/rq5_bottlenecks.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/experiments/rq5_bottlenecks.py"
+    },
+    {
+      "name": "experiments__rq6__curl__divergence",
+      "source": "experiments/rq6_curl_divergence.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/experiments/rq6_curl_divergence.py"
+    },
+    {
+      "name": "misc__beta__dynamics",
+      "source": "misc/beta_dynamics.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/beta_dynamics.py"
+    },
+    {
+      "name": "misc__boltzmann__b__ablation",
+      "source": "misc/boltzmann_b_ablation.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/boltzmann_b_ablation.py"
+    },
+    {
+      "name": "misc__convergence__benchmark",
+      "source": "misc/convergence_benchmark.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/convergence_benchmark.py"
+    },
+    {
+      "name": "misc__cumulative__ablation",
+      "source": "misc/cumulative_ablation.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/cumulative_ablation.py"
+    },
+    {
+      "name": "misc__dummy__compile",
+      "source": "misc/dummy_compile.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/dummy_compile.py"
+    },
+    {
+      "name": "misc__gamma__ablation",
+      "source": "misc/gamma_ablation.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/gamma_ablation.py"
+    },
+    {
+      "name": "misc__mixing__ablation",
+      "source": "misc/mixing_ablation.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/mixing_ablation.py"
+    },
+    {
+      "name": "misc__mixing__threshold__ablation",
+      "source": "misc/mixing_threshold_ablation.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/mixing_threshold_ablation.py"
+    },
+    {
+      "name": "misc__periodicity__ablation",
+      "source": "misc/periodicity_ablation.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/periodicity_ablation.py"
+    },
+    {
+      "name": "misc__plot__academic",
+      "source": "misc/plot_academic.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/plot_academic.py"
+    },
+    {
+      "name": "misc__reward__support__ablation",
+      "source": "misc/reward_support_ablation.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/reward_support_ablation.py"
+    },
+    {
+      "name": "misc__scheduler__ablation",
+      "source": "misc/scheduler_ablation.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/scheduler_ablation.py"
+    },
+    {
+      "name": "misc__shift__rate__ablation",
+      "source": "misc/shift_rate_ablation.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/shift_rate_ablation.py"
+    },
+    {
+      "name": "misc__showcase",
+      "source": "misc/showcase.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/showcase.py"
+    },
+    {
+      "name": "misc__smoothness__ablation",
+      "source": "misc/smoothness_ablation.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/smoothness_ablation.py"
+    },
+    {
+      "name": "misc__time__benchmark",
+      "source": "misc/time_benchmark.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/time_benchmark.py"
+    },
+    {
+      "name": "misc__tuner",
+      "source": "misc/tuner.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/misc/tuner.py"
+    },
+    {
+      "name": "src__gta__ps__init",
+      "source": "src/gta_ps/__init__.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/__init__.py"
+    },
+    {
+      "name": "src__gta__ps__algorithms__init",
+      "source": "src/gta_ps/algorithms/__init__.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/algorithms/__init__.py"
+    },
+    {
+      "name": "src__gta__ps__algorithms__base",
+      "source": "src/gta_ps/algorithms/base.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/algorithms/base.py"
+    },
+    {
+      "name": "src__gta__ps__algorithms__dp__host",
+      "source": "src/gta_ps/algorithms/dp_host.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/algorithms/dp_host.py"
+    },
+    {
+      "name": "src__gta__ps__algorithms__dyna__host",
+      "source": "src/gta_ps/algorithms/dyna_host.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/algorithms/dyna_host.py"
+    },
+    {
+      "name": "src__gta__ps__algorithms__empirical__model",
+      "source": "src/gta_ps/algorithms/empirical_model.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/algorithms/empirical_model.py"
+    },
+    {
+      "name": "src__gta__ps__algorithms__gta__ps",
+      "source": "src/gta_ps/algorithms/gta_ps.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/algorithms/gta_ps.py"
+    },
+    {
+      "name": "src__gta__ps__algorithms__oracle__model",
+      "source": "src/gta_ps/algorithms/oracle_model.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/algorithms/oracle_model.py"
+    },
+    {
+      "name": "src__gta__ps__algorithms__standard__ps",
+      "source": "src/gta_ps/algorithms/standard_ps.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/algorithms/standard_ps.py"
+    },
+    {
+      "name": "src__gta__ps__envs__init",
+      "source": "src/gta_ps/envs/__init__.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/envs/__init__.py"
+    },
+    {
+      "name": "src__gta__ps__envs__base",
+      "source": "src/gta_ps/envs/base.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/envs/base.py"
+    },
+    {
+      "name": "src__gta__ps__envs__cargoal",
+      "source": "src/gta_ps/envs/cargoal.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/envs/cargoal.py"
+    },
+    {
+      "name": "src__gta__ps__envs__fourrooms",
+      "source": "src/gta_ps/envs/fourrooms.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/envs/fourrooms.py"
+    },
+    {
+      "name": "src__gta__ps__envs__garnet",
+      "source": "src/gta_ps/envs/garnet.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/envs/garnet.py"
+    },
+    {
+      "name": "src__gta__ps__envs__reacher",
+      "source": "src/gta_ps/envs/reacher.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/envs/reacher.py"
+    },
+    {
+      "name": "src__gta__ps__utils__init",
+      "source": "src/gta_ps/utils/__init__.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/utils/__init__.py"
+    },
+    {
+      "name": "src__gta__ps__utils__hyperparams",
+      "source": "src/gta_ps/utils/hyperparams.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/utils/hyperparams.py"
+    },
+    {
+      "name": "src__gta__ps__utils__metrics",
+      "source": "src/gta_ps/utils/metrics.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/utils/metrics.py"
+    },
+    {
+      "name": "src__gta__ps__utils__spectral",
+      "source": "src/gta_ps/utils/spectral.py",
+      "path": "/mnt/c/Users/admin/OS_project/root/main/lab/GTA-PS/code/src/gta_ps/utils/spectral.py"
+    }
+  ]
+}

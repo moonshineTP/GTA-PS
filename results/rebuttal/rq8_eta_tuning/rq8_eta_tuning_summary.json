@@ -1,0 +1,2672 @@
+{
+  "protocol": {
+    "host": "oracle_dp",
+    "environment": "FourRoomsTabular",
+    "room_size": 5,
+    "outer_grid_size": 13,
+    "n_states": 104,
+    "gamma": 0.95,
+    "eta_star": 0.052631578947368474,
+    "eta_multipliers": [
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      4.0,
+      8.0
+    ],
+    "eta_values": [
+      0.013157894736842118,
+      0.026315789473684237,
+      0.052631578947368474,
+      0.10526315789473695,
+      0.2105263157894739,
+      0.4210526315789478
+    ],
+    "seeds": 30,
+    "workers": 6,
+    "n_shifts": 8,
+    "n_calls": 12,
+    "budget": 50,
+    "sharp_threshold": 0.75,
+    "max_shift_attempts": 100,
+    "bootstrap_resamples": 10000,
+    "compression_capacity": 104,
+    "frozen_batch_size": 1,
+    "gta_top_q": null,
+    "notation": {
+      "a": "compact-state capacity; identity tabular case equals the state count",
+      "m": "frozen-priority batch size; fixed at 1",
+      "q": "topology-frontier width; null means the full state frontier",
+      "b": "GTA Boltzmann topology-policy temperature",
+      "c": "eta multiplier eta / eta_star"
+    },
+    "gta_parameters": {
+      "alpha": 0.051719,
+      "beta1": 0.159673,
+      "beta2": 1.361556,
+      "b": 2.849322,
+      "arnoldi_k": 15
+    },
+    "elapsed_seconds": 319.0593140000128
+  },
+  "shift_metadata": [
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 1.0000000000000002,
+      "seed": 0,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9999999999072349,
+      "seed": 0,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999999999,
+      "seed": 0,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9984304770272601,
+      "seed": 0,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 0.9999999999994907,
+      "seed": 0,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 2,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9999206237028493,
+      "seed": 0,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999999999374772,
+      "seed": 0,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999999116344428,
+      "seed": 0,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999999976179069,
+      "seed": 1,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999999997652068,
+      "seed": 1,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999999584148054,
+      "seed": 1,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.999999999999844,
+      "seed": 1,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 0.9999999999999997,
+      "seed": 1,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 1,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 0.9999999999999816,
+      "seed": 1,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9999999999989733,
+      "seed": 1,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999999981015124,
+      "seed": 2,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999999998312653,
+      "seed": 2,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 1.0000000000000002,
+      "seed": 2,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9999892910815275,
+      "seed": 2,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9983317192025185,
+      "seed": 2,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9999999999999951,
+      "seed": 2,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 1.0000000000000002,
+      "seed": 2,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9997475165667961,
+      "seed": 2,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 1.0,
+      "seed": 3,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 1.0,
+      "seed": 3,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9998641850951561,
+      "seed": 3,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999999999999714,
+      "seed": 3,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999999999999996,
+      "seed": 3,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999999956434598,
+      "seed": 3,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 3,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9998409999464191,
+      "seed": 3,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999999998939736,
+      "seed": 3,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999996279866836,
+      "seed": 4,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 1.0000000000000002,
+      "seed": 4,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999999999977202,
+      "seed": 4,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.9999946037133601,
+      "seed": 4,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9820248742019533,
+      "seed": 4,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.999934124667468,
+      "seed": 4,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999999999789521,
+      "seed": 4,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999996771,
+      "seed": 4,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 3,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999986016398488,
+      "seed": 5,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9696530267481805,
+      "seed": 5,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999999669361094,
+      "seed": 5,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.999999999999321,
+      "seed": 5,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999999890068172,
+      "seed": 5,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9926563670828208,
+      "seed": 5,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999998823025729,
+      "seed": 5,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999999926873799,
+      "seed": 5,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.999999824887579,
+      "seed": 6,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9998902567062825,
+      "seed": 6,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 2,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9687678345834247,
+      "seed": 6,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999923224656971,
+      "seed": 6,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 6,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9990049646466631,
+      "seed": 6,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999756760626659,
+      "seed": 6,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 6,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 3,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 0.9999999999357151,
+      "seed": 7,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9999993288106321,
+      "seed": 7,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 3,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999999999999961,
+      "seed": 7,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.999999981376068,
+      "seed": 7,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 1.0000000000000002,
+      "seed": 7,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999999999991824,
+      "seed": 7,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999287062936933,
+      "seed": 7,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9999999999999994,
+      "seed": 7,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 4,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999999157048444,
+      "seed": 8,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.9999999999999998,
+      "seed": 8,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.999966049264772,
+      "seed": 8,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999336825044584,
+      "seed": 8,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999946549110476,
+      "seed": 8,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 1.0,
+      "seed": 8,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 8,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.999999998500295,
+      "seed": 8,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999975465970045,
+      "seed": 9,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9834178869999213,
+      "seed": 9,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999986989554308,
+      "seed": 9,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999999996,
+      "seed": 9,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999346286007144,
+      "seed": 9,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9962789388561377,
+      "seed": 9,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999937878916639,
+      "seed": 9,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9818798441595491,
+      "seed": 9,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999999999983423,
+      "seed": 10,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999971188142721,
+      "seed": 10,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999999392983068,
+      "seed": 10,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999991567092285,
+      "seed": 10,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9999999993105245,
+      "seed": 10,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 2,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.999999980492696,
+      "seed": 10,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 10,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 1.0000000000000002,
+      "seed": 10,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9999999999971889,
+      "seed": 11,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999999999999735,
+      "seed": 11,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999999992884099,
+      "seed": 11,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 2,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999999996237533,
+      "seed": 11,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 1.0000000000000002,
+      "seed": 11,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 11,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999999998224188,
+      "seed": 11,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999999991121464,
+      "seed": 11,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.999999975163292,
+      "seed": 12,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 12,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999999999999956,
+      "seed": 12,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 3,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 1.0,
+      "seed": 12,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.999999999999363,
+      "seed": 12,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999770067,
+      "seed": 12,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999993632811565,
+      "seed": 12,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 12,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999999998581846,
+      "seed": 13,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999999999999998,
+      "seed": 13,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.9999978875039043,
+      "seed": 13,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999999999976535,
+      "seed": 13,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999994780214994,
+      "seed": 13,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999999335171549,
+      "seed": 13,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 2,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9983786025262316,
+      "seed": 13,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999999999485986,
+      "seed": 13,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9999999755388811,
+      "seed": 14,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9853698448292346,
+      "seed": 14,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.999999965273647,
+      "seed": 14,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 0.999999999999856,
+      "seed": 14,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.9999999999999839,
+      "seed": 14,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999714012967466,
+      "seed": 14,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 2,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999999999998053,
+      "seed": 14,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.9999999999999999,
+      "seed": 14,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 0.9999999999999982,
+      "seed": 15,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 15,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999589002731634,
+      "seed": 15,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999905116652965,
+      "seed": 15,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.9999999999583282,
+      "seed": 15,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 0.9999999999583032,
+      "seed": 15,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 2,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9999857292389536,
+      "seed": 15,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999725035815811,
+      "seed": 15,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9998507564547048,
+      "seed": 16,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999999947554336,
+      "seed": 16,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.999775896459892,
+      "seed": 16,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999998818067384,
+      "seed": 16,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9860976379081438,
+      "seed": 16,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999999999996246,
+      "seed": 16,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9966641799381076,
+      "seed": 16,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9998068707921783,
+      "seed": 16,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999999999999998,
+      "seed": 17,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 1.0,
+      "seed": 17,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 2,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9999999967224149,
+      "seed": 17,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 2,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999999999999382,
+      "seed": 17,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999889781957388,
+      "seed": 17,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999998574064639,
+      "seed": 17,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999800695467744,
+      "seed": 17,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 0.999999989174519,
+      "seed": 17,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999913986329408,
+      "seed": 18,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999999999999976,
+      "seed": 18,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999999999,
+      "seed": 18,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 1.0,
+      "seed": 18,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999987822,
+      "seed": 18,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999999999969461,
+      "seed": 18,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.999957433201773,
+      "seed": 18,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999998152539525,
+      "seed": 18,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999999813748507,
+      "seed": 19,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9552102213322777,
+      "seed": 19,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9964917148597486,
+      "seed": 19,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.999999606060414,
+      "seed": 19,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 4,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999999202091121,
+      "seed": 19,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.9999999999999998,
+      "seed": 19,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999999999999997,
+      "seed": 19,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999999960864836,
+      "seed": 19,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 0.9999999998360755,
+      "seed": 20,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 2,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.999999999862079,
+      "seed": 20,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999999504371783,
+      "seed": 20,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 1.0000000000000002,
+      "seed": 20,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999999471711202,
+      "seed": 20,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 2,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999553712052167,
+      "seed": 20,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999996472,
+      "seed": 20,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 2,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 1.0,
+      "seed": 20,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 2,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999999999999999,
+      "seed": 21,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 21,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999850494547047,
+      "seed": 21,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 1.0,
+      "seed": 21,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 2,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999999999984724,
+      "seed": 21,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.9999999999913307,
+      "seed": 21,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 2,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 0.9999997524603688,
+      "seed": 21,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9999885310513184,
+      "seed": 21,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999998272761391,
+      "seed": 22,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 5,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999543811626836,
+      "seed": 22,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999999992,
+      "seed": 22,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 3,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 22,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9998938775396251,
+      "seed": 22,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999987760210846,
+      "seed": 22,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 0.9999999999960877,
+      "seed": 22,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9999865867647937,
+      "seed": 22,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9855996369240992,
+      "seed": 23,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999993284981,
+      "seed": 23,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999999999983584,
+      "seed": 23,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999999999977333,
+      "seed": 23,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9958136554911518,
+      "seed": 23,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 2,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9977755939342443,
+      "seed": 23,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.999992598445889,
+      "seed": 23,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.9999999982900544,
+      "seed": 23,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999999981140005,
+      "seed": 24,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9999999999999998,
+      "seed": 24,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999999402,
+      "seed": 24,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999999999380351,
+      "seed": 24,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 1.0,
+      "seed": 24,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 3,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.9999999999992198,
+      "seed": 24,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9998717887975588,
+      "seed": 24,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999735639,
+      "seed": 24,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.999999999857174,
+      "seed": 25,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999999999888336,
+      "seed": 25,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 1,
+      "reward_distance": 0.9999999994936682,
+      "seed": 25,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999999999913326,
+      "seed": 25,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999997894,
+      "seed": 25,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999999483220782,
+      "seed": 25,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.99999996316157,
+      "seed": 25,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 25,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999831392719487,
+      "seed": 26,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999998848874965,
+      "seed": 26,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 1.0000000000000002,
+      "seed": 26,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 2,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9999999996262462,
+      "seed": 26,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999878377,
+      "seed": 26,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999999999999379,
+      "seed": 26,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999998443110847,
+      "seed": 26,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 0.9999979839907472,
+      "seed": 26,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9987197440692063,
+      "seed": 27,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.999999043079338,
+      "seed": 27,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999965257746305,
+      "seed": 27,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 2,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999937434645337,
+      "seed": 27,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999991436533061,
+      "seed": 27,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 0,
+      "reward_distance": 1.0,
+      "seed": 27,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 2,
+      "reward_distance": 0.9999953140172135,
+      "seed": 27,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9996634509831455,
+      "seed": 27,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 0.9999999943499747,
+      "seed": 28,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9797966348254165,
+      "seed": 28,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999755922143556,
+      "seed": 28,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.9999999999999998,
+      "seed": 28,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 2,
+      "previous_room": 2,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 28,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.999998591757597,
+      "seed": 28,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999998889,
+      "seed": 28,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 3,
+      "reward_distance": 0.9999794934316238,
+      "seed": 28,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 0,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 2,
+      "reward_distance": 0.999999999760194,
+      "seed": 29,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 1,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 1,
+      "reward_distance": 0.9999999999999999,
+      "seed": 29,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 2,
+      "attempts": 1,
+      "previous_room": 1,
+      "current_room": 0,
+      "reward_distance": 0.9999999999999295,
+      "seed": 29,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 3,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0000000000000002,
+      "seed": 29,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 4,
+      "attempts": 1,
+      "previous_room": 3,
+      "current_room": 1,
+      "reward_distance": 0.9999999999142082,
+      "seed": 29,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 5,
+      "attempts": 3,
+      "previous_room": 1,
+      "current_room": 2,
+      "reward_distance": 0.9999999998168687,
+      "seed": 29,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 6,
+      "attempts": 1,
+      "previous_room": 2,
+      "current_room": 0,
+      "reward_distance": 0.9999999961597655,
+      "seed": 29,
+      "eta_star": 0.052631578947368474
+    },
+    {
+      "shift": 7,
+      "attempts": 1,
+      "previous_room": 0,
+      "current_room": 3,
+      "reward_distance": 1.0,
+      "seed": 29,
+      "eta_star": 0.052631578947368474
+    }
+  ],
+  "summary": {
+    "0.25": {
+      "n": 30,
+      "auc_mean": 0.6258105961611591,
+      "auc_std": 0.046644040667868855,
+      "auc_median": 0.6358706035425498,
+      "auc_iqr": [
+        0.5892561217774607,
+        0.6589915556375843
+      ],
+      "auc_ci95": [
+        0.6093103709321023,
+        0.6418898881360522
+      ],
+      "first_call_mean": 0.9293570950540235,
+      "first_call_std": 0.02170526929050673,
+      "first_call_median": 0.9297632544548418,
+      "first_call_iqr": [
+        0.9198990037880167,
+        0.947675362033152
+      ],
+      "first_call_ci95": [
+        0.9215287271937807,
+        0.9368307745136216
+      ],
+      "end_mean": 0.2542896278593924,
+      "end_std": 0.06239011464545825,
+      "end_median": 0.2576548510237361,
+      "end_iqr": [
+        0.21038448932084175,
+        0.28693008717729185
+      ],
+      "end_ci95": [
+        0.23273904101156734,
+        0.276580152773219
+      ],
+      "roughness_mean": 0.12776203366429986,
+      "roughness_std": 0.051986978939190256,
+      "roughness_median": 0.11987025622170677,
+      "roughness_iqr": [
+        0.10144089493484026,
+        0.1564734559209981
+      ],
+      "roughness_ci95": [
+        0.11001405706361882,
+        0.1463706213085544
+      ],
+      "auc_p90_mean": 0.7971385340755349,
+      "auc_p90_std": 0.09126553483398052,
+      "auc_p90_median": 0.7895039335546277,
+      "auc_p90_iqr": [
+        0.7294218092200846,
+        0.8599565981132222
+      ],
+      "auc_p90_ci95": [
+        0.765370459526774,
+        0.8294752572165613
+      ],
+      "queue_ndcg_mean": 0.6985264470342362,
+      "queue_ndcg_std": 0.02353969330213323,
+      "queue_ndcg_median": 0.6976748749953817,
+      "queue_ndcg_iqr": [
+        0.6852410263777865,
+        0.7167673021437722
+      ],
+      "queue_ndcg_ci95": [
+        0.6901400878095927,
+        0.7066899132799982
+      ],
+      "threshold_backups_mean": 456.16666666666663
+    },
+    "0.5": {
+      "n": 30,
+      "auc_mean": 0.5961223081655155,
+      "auc_std": 0.04155747401798097,
+      "auc_median": 0.5847286142361744,
+      "auc_iqr": [
+        0.5627379901622995,
+        0.6220301260722128
+      ],
+      "auc_ci95": [
+        0.5820003986950053,
+        0.6112085198886595
+      ],
+      "first_call_mean": 0.9246451510771241,
+      "first_call_std": 0.021947458804846276,
+      "first_call_median": 0.923673975531532,
+      "first_call_iqr": [
+        0.9082121048903243,
+        0.9361451697804728
+      ],
+      "first_call_ci95": [
+        0.9170887795856573,
+        0.9324908840484997
+      ],
+      "end_mean": 0.23349557150724543,
+      "end_std": 0.05372722896051172,
+      "end_median": 0.22166993567597776,
+      "end_iqr": [
+        0.19618932032303593,
+        0.27891516108290926
+      ],
+      "end_ci95": [
+        0.2146058246292788,
+        0.2522414794787082
+      ],
+      "roughness_mean": 0.11145966387179841,
+      "roughness_std": 0.055774032110754906,
+      "roughness_median": 0.09775473658364368,
+      "roughness_iqr": [
+        0.07943057612822882,
+        0.1332657743124675
+      ],
+      "roughness_ci95": [
+        0.09285763762506741,
+        0.13211396217772833
+      ],
+      "auc_p90_mean": 0.7537806207391069,
+      "auc_p90_std": 0.07737521772094512,
+      "auc_p90_median": 0.7476949357689447,
+      "auc_p90_iqr": [
+        0.6995067414275344,
+        0.7818449446474615
+      ],
+      "auc_p90_ci95": [
+        0.7278217014335191,
+        0.7818374341734606
+      ],
+      "queue_ndcg_mean": 0.704313013476001,
+      "queue_ndcg_std": 0.01968804590997289,
+      "queue_ndcg_median": 0.7037731931818725,
+      "queue_ndcg_iqr": [
+        0.6888580991597961,
+        0.7190394676531155
+      ],
+      "queue_ndcg_ci95": [
+        0.6975590147647938,
+        0.7112368872342157
+      ],
+      "threshold_backups_mean": 452.75
+    },
+    "1": {
+      "n": 30,
+      "auc_mean": 0.594776697689252,
+      "auc_std": 0.04404271800814761,
+      "auc_median": 0.5914451239852695,
+      "auc_iqr": [
+        0.5550865366520226,
+        0.6281756658897948
+      ],
+      "auc_ci95": [
+        0.579518003347321,
+        0.6104842402763563
+      ],
+      "first_call_mean": 0.9183263266107049,
+      "first_call_std": 0.019185827517617795,
+      "first_call_median": 0.9200768383691014,
+      "first_call_iqr": [
+        0.9078176613591555,
+        0.9307833797679362
+      ],
+      "first_call_ci95": [
+        0.9113887814448456,
+        0.9250418385170915
+      ],
+      "end_mean": 0.2560698263450985,
+      "end_std": 0.07506981193626644,
+      "end_median": 0.2526556513146432,
+      "end_iqr": [
+        0.20092141838104027,
+        0.3047738681280969
+      ],
+      "end_ci95": [
+        0.23027891190915384,
+        0.2824224437702283
+      ],
+      "roughness_mean": 0.11378096549784798,
+      "roughness_std": 0.05502703420181062,
+      "roughness_median": 0.11027417757264477,
+      "roughness_iqr": [
+        0.06946647741155168,
+        0.15738164444696134
+      ],
+      "roughness_ci95": [
+        0.09462763121893349,
+        0.13337909744361545
+      ],
+      "auc_p90_mean": 0.7603463191787347,
+      "auc_p90_std": 0.08294650139502265,
+      "auc_p90_median": 0.747792327681234,
+      "auc_p90_iqr": [
+        0.6937894363958184,
+        0.828314934770868
+      ],
+      "auc_p90_ci95": [
+        0.7308702742287982,
+        0.7892472139233818
+      ],
+      "queue_ndcg_mean": 0.7103805882028394,
+      "queue_ndcg_std": 0.020225342236775398,
+      "queue_ndcg_median": 0.7088456421937983,
+      "queue_ndcg_iqr": [
+        0.6946950029196592,
+        0.7191823591791414
+      ],
+      "queue_ndcg_ci95": [
+        0.7033477305520626,
+        0.717739957270866
+      ],
+      "threshold_backups_mean": 451.93253968253964
+    },
+    "2": {
+      "n": 30,
+      "auc_mean": 0.639655964051142,
+      "auc_std": 0.04510311245646876,
+      "auc_median": 0.6315741191574287,
+      "auc_iqr": [
+        0.6029725586213996,
+        0.6784349557155188
+      ],
+      "auc_ci95": [
+        0.6237618609525883,
+        0.6559370252228891
+      ],
+      "first_call_mean": 0.9116785883797826,
+      "first_call_std": 0.014731112415695847,
+      "first_call_median": 0.9105382505573593,
+      "first_call_iqr": [
+        0.9023352351169207,
+        0.9198803286096999
+      ],
+      "first_call_ci95": [
+        0.9065425886568458,
+        0.9167762344900783
+      ],
+      "end_mean": 0.3622425752076275,
+      "end_std": 0.07891060297300773,
+      "end_median": 0.34078267303525694,
+      "end_iqr": [
+        0.3174956978001731,
+        0.4414614787113704
+      ],
+      "end_ci95": [
+        0.3350816531155366,
+        0.3897514645167102
+      ],
+      "roughness_mean": 0.13327990084839236,
+      "roughness_std": 0.06084126449781139,
+      "roughness_median": 0.12132758197772436,
+      "roughness_iqr": [
+        0.09851288653889415,
+        0.17368367669839557
+      ],
+      "roughness_ci95": [
+        0.11230024478908449,
+        0.15475413376251984
+      ],
+      "auc_p90_mean": 0.8070672586281415,
+      "auc_p90_std": 0.09332408198534059,
+      "auc_p90_median": 0.8112750455189947,
+      "auc_p90_iqr": [
+        0.7263078852646782,
+        0.8775440998293401
+      ],
+      "auc_p90_ci95": [
+        0.7751516076860451,
+        0.8396328446258879
+      ],
+      "queue_ndcg_mean": 0.7170761952260272,
+      "queue_ndcg_std": 0.023019322474280776,
+      "queue_ndcg_median": 0.7157022655021386,
+      "queue_ndcg_iqr": [
+        0.7019423219386973,
+        0.7351382012116985
+      ],
+      "queue_ndcg_ci95": [
+        0.7090439151620498,
+        0.7253966195090804
+      ],
+      "threshold_backups_mean": 462.6111111111111
+    },
+    "4": {
+      "n": 30,
+      "auc_mean": 0.7333699110408101,
+      "auc_std": 0.06007339582072192,
+      "auc_median": 0.7455673527237416,
+      "auc_iqr": [
+        0.6955079528910888,
+        0.7777101030700528
+      ],
+      "auc_ci95": [
+        0.7123459655640816,
+        0.7545418317792502
+      ],
+      "first_call_mean": 0.9109343840162855,
+      "first_call_std": 0.023095949106729713,
+      "first_call_median": 0.9142576494914967,
+      "first_call_iqr": [
+        0.9048364698010096,
+        0.9222721969296506
+      ],
+      "first_call_ci95": [
+        0.9024490093024269,
+        0.9186758704857148
+      ],
+      "end_mean": 0.5609521440286666,
+      "end_std": 0.08252995738597534,
+      "end_median": 0.5781672210160018,
+      "end_iqr": [
+        0.5001302537916414,
+        0.6429210594318984
+      ],
+      "end_ci95": [
+        0.5324265924869037,
+        0.5893803262712002
+      ],
+      "roughness_mean": 0.15958470363547414,
+      "roughness_std": 0.057790430136274495,
+      "roughness_median": 0.15864106569509284,
+      "roughness_iqr": [
+        0.10968555862024347,
+        0.2060508687880822
+      ],
+      "roughness_ci95": [
+        0.13933902795613767,
+        0.1801804388229774
+      ],
+      "auc_p90_mean": 0.9126466164667212,
+      "auc_p90_std": 0.08592605583043093,
+      "auc_p90_median": 0.9336976662880303,
+      "auc_p90_iqr": [
+        0.8630798989255833,
+        0.965085461607864
+      ],
+      "auc_p90_ci95": [
+        0.8810979038637506,
+        0.9419251882954266
+      ],
+      "queue_ndcg_mean": 0.7101356124436398,
+      "queue_ndcg_std": 0.025502106095886698,
+      "queue_ndcg_median": 0.7059843591124764,
+      "queue_ndcg_iqr": [
+        0.6902351843940482,
+        0.7231932066908201
+      ],
+      "queue_ndcg_ci95": [
+        0.7012224654919808,
+        0.7190053485738122
+      ],
+      "threshold_backups_mean": 443.3333333333333
+    },
+    "8": {
+      "n": 30,
+      "auc_mean": 0.7843964756519929,
+      "auc_std": 0.06352726854362685,
+      "auc_median": 0.79972520233453,
+      "auc_iqr": [
+        0.729325651955538,
+        0.830239439702191
+      ],
+      "auc_ci95": [
+        0.7623680562369237,
+        0.8066045718231117
+      ],
+      "first_call_mean": 0.9124788810391108,
+      "first_call_std": 0.026189285992911523,
+      "first_call_median": 0.9154622226158551,
+      "first_call_iqr": [
+        0.9025772214012177,
+        0.9283960447328705
+      ],
+      "first_call_ci95": [
+        0.9029289332107715,
+        0.9212874843903498
+      ],
+      "end_mean": 0.6634026187418007,
+      "end_std": 0.08722283584499992,
+      "end_median": 0.6865503653184422,
+      "end_iqr": [
+        0.5945363560317609,
+        0.7433437552348044
+      ],
+      "end_ci95": [
+        0.6318501394558714,
+        0.6930345891025824
+      ],
+      "roughness_mean": 0.17639541439694642,
+      "roughness_std": 0.04916480212107138,
+      "roughness_median": 0.17217652008482454,
+      "roughness_iqr": [
+        0.1350165497358793,
+        0.21117821135100964
+      ],
+      "roughness_ci95": [
+        0.15974777233424495,
+        0.1937569920545918
+      ],
+      "auc_p90_mean": 0.9686874366204223,
+      "auc_p90_std": 0.07542622852524003,
+      "auc_p90_median": 0.983114021278978,
+      "auc_p90_iqr": [
+        0.9279897009561007,
+        1.004513083085841
+      ],
+      "auc_p90_ci95": [
+        0.9410875129117929,
+        0.9950780334091002
+      ],
+      "queue_ndcg_mean": 0.6896787937425952,
+      "queue_ndcg_std": 0.023488827211059278,
+      "queue_ndcg_median": 0.690334968178276,
+      "queue_ndcg_iqr": [
+        0.6743927588148637,
+        0.7035063106578558
+      ],
+      "queue_ndcg_ci95": [
+        0.6815208256019687,
+        0.69811723950912
+      ],
+      "threshold_backups_mean": 431.25
+    }
+  },
+  "paired_auc_comparisons": [
+    {
+      "eta_multiplier": 2.0,
+      "n": 30,
+      "auc_difference_mean": 0.04487926636188991,
+      "auc_difference_ci95": [
+        0.029152654639313273,
+        0.061014955230979245
+      ],
+      "p_value": 0.00019998000199980003,
+      "holm_p_value": 0.0005999400059994001
+    },
+    {
+      "eta_multiplier": 4.0,
+      "n": 30,
+      "auc_difference_mean": 0.13859321335155794,
+      "auc_difference_ci95": [
+        0.11738736291259179,
+        0.15879274443632777
+      ],
+      "p_value": 0.00019998000199980003,
+      "holm_p_value": 0.0005999400059994001
+    },
+    {
+      "eta_multiplier": 8.0,
+      "n": 30,
+      "auc_difference_mean": 0.18961977796274068,
+      "auc_difference_ci95": [
+        0.1668765464098919,
+        0.21157304557707432
+      ],
+      "p_value": 0.00019998000199980003,
+      "holm_p_value": 0.0005999400059994001
+    }
+  ]
+}

@@ -24,6 +24,25 @@ This directory contains the core implementation of the GTA-PS Research Questions
 ### RQ6: Curl & Divergence (`rq6_curl_divergence.py`)
 - **Mission:** Compares a directed path-flow GARNET against a directed cyclic GARNET to isolate curl/divergence geometry.
 
+### RQ7: GPS Batch Audit (`rq7_gps_batch_topq.py`)
+- **Mission:** Compares GPS H2 partition solves with simultaneous top-\(m\) Standard-PS and GTA-PS updates, then retains the Linear VaST-VI and GTA-PS-FA abstraction panel.
+- **Default pass:** 30 seeds over six worker processes.
+
+### RQ8: Eta Tuning
+- **Status:** Implemented in `rq8_eta_tuning.py`; design in `code/docs/rebuttal/rq8-eta-tuning.md`.
+- **Mission:** Tests shorter topology diffusion horizons after sharp reward shifts.
+- **Metrics:** Normalized planning-error AUC and queue nDCG against oracle statewise value error.
+- **Default pass:** 30 paired seeds over six worker processes.
+- **Table data:** `results/rebuttal/rq8_eta_tuning/rq8_eta_tuning_data.json`.
+
+RQ7 uses \(m\) for partition or batch size and \(q\) for topology-frontier
+width. The GTA Boltzmann policy temperature remains \(b\). RQ8 uses
+\(c=\eta/\eta^\star\).
+
+### Solver threshold (`solver_threshold_ablation.py`)
+- **Mission:** Uses a state-size ternary search on calibrated sparse, localized GARNETs to locate the LU-Woodbury to GMRES timing crossover under the wall-clock calibration's fixed rank (k=10).
+- **Default pass:** 30 seeds over six worker processes, with seed-level 95% confidence intervals.
+
 ---
 
 ## Common Arguments

@@ -53,7 +53,7 @@ class GtaPSConfig:
     # topology weight schedule
     beta: float = 1.0           # fixed β_t when adaptive_beta=False
     beta1: float = 1.0          # GTA-PS^β amplitude
-    beta2: float = 0.1          # GTA-PS^β offset threshold (linear schedule)
+    beta2: float = 0.1          # GTA-PS^β additive offset (linear schedule)
     # forward / backward mix
     alpha: float = 0.5          # fixed α_t
     # resolvent regularizer
@@ -119,7 +119,7 @@ class GtaPSSearchSpace:
     # Range (0.10, 0.5) is environment-agnostic: covers both slow-mixing
     # chains (FourRooms SLEM≈0.98 ⇒ 1−SLEM≈0.02) and fast-mixing ones (GARNET).
     beta2_bounds: tuple = (0.05, 1.5)   
-    alpha_bounds: tuple = (0.3, 0.9)
+    alpha_bounds: tuple = (0.05, 0.9)
     eta_bounds: tuple = (5e-4, 2e-2)
     b_bounds: tuple = (2.8, 4.8)  # interpretable as b̃ = b·max|r| ∈ [1, 20]
 
@@ -193,6 +193,8 @@ SPACES: Dict[str, GtaPSSearchSpace] = {
 # "garnet" tunes on n_states=75; "garnet_s200" inherits the same params.
 ENV_DEFAULT_CONFIG: Dict[str, str] = {
     "garnet":    "garnet_s75.yaml",
+    "garnet_s200": "garnet_s200.yaml",
+    "garnet_s200_dense": "garnet_s200_dense.yaml",
     "fourrooms": "fourrooms_k1.yaml",
     "reacher":   "reacher.yaml",
     "cargoal":   "cargoal.yaml",

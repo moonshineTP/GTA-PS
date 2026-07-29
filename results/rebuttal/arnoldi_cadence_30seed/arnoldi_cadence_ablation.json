@@ -1,0 +1,164 @@
+{
+  "experiment": "arnoldi_cadence_ablation",
+  "environment": "GARNET-200",
+  "host": "DP",
+  "reward_support": 20,
+  "period_seconds": 5.0,
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+  ],
+  "interpretation_scope": "Reward shifts preserve the transition kernel. Initialization-only SLEM is exact for this protocol and does not test transition drift.",
+  "conditions": [
+    {
+      "cadence_backups": 15,
+      "label": "15",
+      "slem_refreshes_per_period": {
+        "mean": 80.7,
+        "ci95": 2.0573008384377753
+      },
+      "gta_backups_per_second": {
+        "mean": 241.3430406149875,
+        "ci95": 6.185565695133421
+      },
+      "standard_backups_per_second": {
+        "mean": 1432.3498220860413,
+        "ci95": 19.40860296204761
+      },
+      "relative_throughput": {
+        "mean": 0.16876786541992259,
+        "ci95": 0.005140294656357056
+      },
+      "gta_l1_recovery_auc": {
+        "mean": 7.740084517888746,
+        "ci95": 0.2203484050840439
+      },
+      "gta_linf_recovery_auc": {
+        "mean": 9.560663116254556,
+        "ci95": 0.2695762525241324
+      }
+    },
+    {
+      "cadence_backups": 200,
+      "label": "200",
+      "slem_refreshes_per_period": {
+        "mean": 16.633333333333333,
+        "ci95": 0.2682532518317011
+      },
+      "gta_backups_per_second": {
+        "mean": 678.8941694131307,
+        "ci95": 9.630239700370836
+      },
+      "standard_backups_per_second": {
+        "mean": 1416.9446471359079,
+        "ci95": 20.686894579158928
+      },
+      "relative_throughput": {
+        "mean": 0.47964841064808994,
+        "ci95": 0.008367127057170508
+      },
+      "gta_l1_recovery_auc": {
+        "mean": 4.186033574041639,
+        "ci95": 0.1340588300751288
+      },
+      "gta_linf_recovery_auc": {
+        "mean": 5.048529225339004,
+        "ci95": 0.159193767915223
+      }
+    },
+    {
+      "cadence_backups": 1000000,
+      "label": "Initialization only",
+      "slem_refreshes_per_period": {
+        "mean": 0.0,
+        "ci95": 0.0
+      },
+      "gta_backups_per_second": {
+        "mean": 862.9847976948863,
+        "ci95": 16.964064182870427
+      },
+      "standard_backups_per_second": {
+        "mean": 1521.400390438828,
+        "ci95": 37.060711402794034
+      },
+      "relative_throughput": {
+        "mean": 0.5704569707840589,
+        "ci95": 0.021360569613180756
+      },
+      "gta_l1_recovery_auc": {
+        "mean": 3.486063429308079,
+        "ci95": 0.12935196323885403
+      },
+      "gta_linf_recovery_auc": {
+        "mean": 4.189933479336123,
+        "ci95": 0.15054184049990182
+      }
+    }
+  ],
+  "paired_comparisons": {
+    "period_200_minus_period_15": {
+      "gta_backups_per_second_delta": {
+        "mean": 437.5511287981432,
+        "ci95": 9.69933736150729
+      },
+      "relative_throughput_delta": {
+        "mean": 0.31088054522816727,
+        "ci95": 0.009495254138299014
+      },
+      "gta_l1_recovery_auc_delta": {
+        "mean": -3.554050943847107,
+        "ci95": 0.10423353800987313
+      },
+      "gta_linf_recovery_auc_delta": {
+        "mean": -4.512133890915552,
+        "ci95": 0.1328548470802286
+      }
+    },
+    "initialization_only_minus_period_200": {
+      "gta_backups_per_second_delta": {
+        "mean": 184.0906282817554,
+        "ci95": 20.417225186535717
+      },
+      "relative_throughput_delta": {
+        "mean": 0.09080856013596893,
+        "ci95": 0.02050680400000073
+      },
+      "gta_l1_recovery_auc_delta": {
+        "mean": -0.6999701447335593,
+        "ci95": 0.06424761640158316
+      },
+      "gta_linf_recovery_auc_delta": {
+        "mean": -0.8585957460028797,
+        "ci95": 0.080747616394675
+      }
+    }
+  }
+}

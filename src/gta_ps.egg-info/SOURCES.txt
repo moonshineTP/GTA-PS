@@ -11,6 +11,7 @@ src/gta_ps/algorithms/base.py
 src/gta_ps/algorithms/dp_host.py
 src/gta_ps/algorithms/dyna_host.py
 src/gta_ps/algorithms/empirical_model.py
+src/gta_ps/algorithms/gps_h2.py
 src/gta_ps/algorithms/gta_ps.py
 src/gta_ps/algorithms/oracle_model.py
 src/gta_ps/algorithms/standard_ps.py
@@ -24,5 +25,10 @@ src/gta_ps/utils/__init__.py
 src/gta_ps/utils/hyperparams.py
 src/gta_ps/utils/metrics.py
 src/gta_ps/utils/spectral.py
+tests/test_gps_h2.py
+tests/test_gta_ps_beta_scheduler.py
 tests/test_k_unit.py
+tests/test_rq_method_configs.py
+tests/test_showcase.py
 tests/test_smoke.py
+tests/test_spectral_laplacian.py

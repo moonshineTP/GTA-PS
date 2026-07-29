@@ -47,6 +47,9 @@ class DynaHost(TdMixin):
         self.module = module
         self.rng = rng if rng is not None else np.random.default_rng()
         self.Q = np.zeros((n_actions, n_states))
+        self.completed_backups = 0
+        self.backup_counts = np.zeros(n_states, dtype=np.int64)
+        self.completed_real_updates = 0
         self.r_oracle = None if r_init is None else r_init.copy()
         if model_type == "sample":
             self.model = SampleModel(n_states, n_actions)
@@ -74,6 +77,7 @@ class DynaHost(TdMixin):
         Syncs only the affected transition row to the module (O(S) complexity).
         """
         self.model.update(s, a, s_next, r)
+        self.completed_real_updates += 1
         p_row = self.model.get_row(s, a)
         r_model = self.r_oracle[s] if self.r_oracle is not None else float(r)
         
@@ -94,6 +98,7 @@ class DynaHost(TdMixin):
         Efficient batch update for high-volume interaction bursts.
         """
         self.model.update_batch(states, actions, next_states, rewards)
+        self.completed_real_updates += len(states)
         
         # Track which (s, a) pairs were updated to sync rows at the end
         updated_pairs = set()
@@ -138,6 +143,8 @@ class DynaHost(TdMixin):
 
             # TD update
             abs_delta = self.apply_td_backup(s, a, r_sim, s_sim, gamma, eta_td, self.Q)
+            self.completed_backups += 1
+            self.backup_counts[s] += 1
 
             # Sync updated value into module
             self.module.update_value(s, float(self.Q[:, s].max()))
@@ -149,5 +156,8 @@ class DynaHost(TdMixin):
 
     def reset(self) -> None:
         self.Q = np.zeros((self.n_actions, self.n_states))
+        self.completed_backups = 0
+        self.backup_counts.fill(0)
+        self.completed_real_updates = 0
         self.model.reset()
         self.module.reset()

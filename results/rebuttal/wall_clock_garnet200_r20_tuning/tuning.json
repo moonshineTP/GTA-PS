@@ -1,0 +1,224 @@
+{
+  "protocol": {
+    "environment": "GARNET",
+    "n_states": 200,
+    "n_actions": 5,
+    "branching": 3,
+    "n_nbr_rate": 0.1,
+    "reward_support": 20,
+    "gamma": 0.95,
+    "n_shifts": 1,
+    "backups_per_shift": 1000,
+    "seeds": [
+      10000,
+      10001
+    ],
+    "workers": 6,
+    "objective": "mean post-shift L1 value error under a fixed backup budget"
+  },
+  "fixed_gta_config": {
+    "alpha": 0.455302,
+    "beta2": 0.269094,
+    "b": 3.82617,
+    "slem_recompute_every": 200
+  },
+  "best": {
+    "beta1": 0.1,
+    "eta": 0.0526315789
+  },
+  "best_nonzero": {
+    "beta1": 0.1,
+    "eta": 0.0526315789
+  },
+  "best_sufficient_nonzero": {
+    "beta1": 0.025,
+    "eta": 0.0526315789
+  },
+  "recommended": {
+    "beta1": 0.1,
+    "eta": 0.2
+  },
+  "recommendation_rule": "lowest mean error among nonzero candidates satisfying beta1*(1+beta2)<eta and eta>=0.1",
+  "records": [
+    {
+      "params": {
+        "beta1": 0.1,
+        "eta": 0.0526315789
+      },
+      "mean_score": 5.478435212572718,
+      "seed_scores": [
+        4.658417158533606,
+        6.29845326661183
+      ],
+      "sufficient_condition_margin": -0.0742778211
+    },
+    {
+      "params": {
+        "beta1": 0.1,
+        "eta": 0.1
+      },
+      "mean_score": 5.5028884308249255,
+      "seed_scores": [
+        5.10828006789843,
+        5.897496793751421
+      ],
+      "sufficient_condition_margin": -0.0269094
+    },
+    {
+      "params": {
+        "beta1": 0.05,
+        "eta": 0.0526315789
+      },
+      "mean_score": 5.670100739654733,
+      "seed_scores": [
+        5.332050885934203,
+        6.008150593375262
+      ],
+      "sufficient_condition_margin": -0.0108231211
+    },
+    {
+      "params": {
+        "beta1": 0.025,
+        "eta": 0.0526315789
+      },
+      "mean_score": 5.692548971164247,
+      "seed_scores": [
+        5.317178144369825,
+        6.06791979795867
+      ],
+      "sufficient_condition_margin": 0.020904228900000002
+    },
+    {
+      "params": {
+        "beta1": 0.1,
+        "eta": 0.2
+      },
+      "mean_score": 5.714081683515071,
+      "seed_scores": [
+        5.260476019496048,
+        6.167687347534095
+      ],
+      "sufficient_condition_margin": 0.0730906
+    },
+    {
+      "params": {
+        "beta1": 0.025,
+        "eta": 0.1
+      },
+      "mean_score": 5.772363692322067,
+      "seed_scores": [
+        5.303896674284338,
+        6.240830710359797
+      ],
+      "sufficient_condition_margin": 0.06827265
+    },
+    {
+      "params": {
+        "beta1": 0.01,
+        "eta": 0.0526315789
+      },
+      "mean_score": 5.877428192528981,
+      "seed_scores": [
+        5.470037437052501,
+        6.284818948005462
+      ],
+      "sufficient_condition_margin": 0.039940638900000006
+    },
+    {
+      "params": {
+        "beta1": 0.01,
+        "eta": 0.1
+      },
+      "mean_score": 5.880117174581038,
+      "seed_scores": [
+        5.474200382937538,
+        6.286033966224538
+      ],
+      "sufficient_condition_margin": 0.08730906000000001
+    },
+    {
+      "params": {
+        "beta1": 0.05,
+        "eta": 0.1
+      },
+      "mean_score": 5.885347033925917,
+      "seed_scores": [
+        5.545947347436383,
+        6.2247467204154505
+      ],
+      "sufficient_condition_margin": 0.0365453
+    },
+    {
+      "params": {
+        "beta1": 0.05,
+        "eta": 0.2
+      },
+      "mean_score": 5.930871607921652,
+      "seed_scores": [
+        5.498397700587194,
+        6.3633455152561105
+      ],
+      "sufficient_condition_margin": 0.1365453
+    },
+    {
+      "params": {
+        "beta1": 0.0,
+        "eta": 0.0526315789
+      },
+      "mean_score": 5.938441784956012,
+      "seed_scores": [
+        5.45379792713457,
+        6.423085642777455
+      ],
+      "sufficient_condition_margin": 0.0526315789
+    },
+    {
+      "params": {
+        "beta1": 0.0,
+        "eta": 0.1
+      },
+      "mean_score": 5.938441784956012,
+      "seed_scores": [
+        5.45379792713457,
+        6.423085642777455
+      ],
+      "sufficient_condition_margin": 0.1
+    },
+    {
+      "params": {
+        "beta1": 0.0,
+        "eta": 0.2
+      },
+      "mean_score": 5.938441784956012,
+      "seed_scores": [
+        5.45379792713457,
+        6.423085642777455
+      ],
+      "sufficient_condition_margin": 0.2
+    },
+    {
+      "params": {
+        "beta1": 0.01,
+        "eta": 0.2
+      },
+      "mean_score": 5.947311434951226,
+      "seed_scores": [
+        5.483086760580285,
+        6.411536109322167
+      ],
+      "sufficient_condition_margin": 0.18730906
+    },
+    {
+      "params": {
+        "beta1": 0.025,
+        "eta": 0.2
+      },
+      "mean_score": 5.958424965445268,
+      "seed_scores": [
+        5.4506414357377135,
+        6.466208495152821
+      ],
+      "sufficient_condition_margin": 0.16827265000000002
+    }
+  ]
+}

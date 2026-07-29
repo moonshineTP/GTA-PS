@@ -24,18 +24,15 @@ def out_laplacian(P: np.ndarray) -> sp.csr_array:
 
 
 def in_laplacian(P: np.ndarray) -> sp.csr_array:
-    """L^in = D^in - P^T  (left eigenvectors u_k)."""
+    """L^in = I - P^T  (left eigenvectors u_k)."""
+    n = P.shape[0]
     if sp.issparse(P):
-        Pdense = P.toarray()
+        Psp_T = P.transpose().copy()
     else:
-        Pdense = np.asarray(P)
-    d_in = Pdense.sum(axis=0)          # column sums = in-degree
-    n = Pdense.shape[0]
-    D = sp.diags(d_in, format="csr")
-    Psp_T = sp.csr_array(Pdense.T)
+        Psp_T = sp.csr_array(P.T)
     Psp_T.data[np.abs(Psp_T.data) < 1e-6] = 0.0
     Psp_T.eliminate_zeros()
-    return D - Psp_T
+    return sp.eye(n, format="csr") - Psp_T
 
 
 def operator_split(P: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -182,7 +179,7 @@ def resolvent_backward(
     solver: str = "auto",
 ) -> np.ndarray:
     """
-    Compute f^in = (L^in + eta*I)^{-1} r = (D^in - P^T + eta*I)^{-1} r.
+    Compute f^in = (L^in + eta*I)^{-1} r = (I - P^T + eta*I)^{-1} r.
 
     Captures backward attribution (left eigenvector direction).
     """

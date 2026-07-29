@@ -24,7 +24,7 @@ from .base import PrioritizedSweepingModule, BellmanMixin, TdMixin
 from ..utils.spectral import slem_arnoldi, in_laplacian
 
 # LU + Sherman-Morrison column cache for n ≤ threshold; GMRES above.
-_LU_THRESHOLD = 300
+_LU_THRESHOLD = 750
 
 
 class GtaPS(PrioritizedSweepingModule, BellmanMixin):
@@ -63,7 +63,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         b: float = 1.0,
         arnoldi_k: int = 15,
         q: Optional[int] = None,
-        # legacy kwarg — accepted but ignored (schedule was always linear in old code)
+        solver_threshold: int = _LU_THRESHOLD,
         slem_recompute_every: Optional[int] = None,
     ):
         self.P = P                  # oracle — topology always uses this
@@ -85,6 +85,12 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self.arnoldi_k = arnoldi_k
         self.q = q
         self.beta_mode = beta_mode
+        if solver_threshold < 0:
+            raise ValueError("solver_threshold must be non-negative")
+        self.solver_threshold = int(solver_threshold)
+        if slem_recompute_every is not None and slem_recompute_every <= 0:
+            raise ValueError("slem_recompute_every must be positive or None")
+        self.slem_recompute_every = slem_recompute_every
 
         self._init_topology()
 
@@ -96,7 +102,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
 
     def _solve_out(self, rhs: np.ndarray, x0: np.ndarray | None = None) -> np.ndarray:
         if self._lu_out is not None:
-            return self._lu_out.solve(rhs)
+            return self._solve_rank_k(self._lu_out, rhs, direction="out")
         f, info = spla.gmres(self._A_out, rhs, x0=x0, restart=30, maxiter=500, atol=1e-4)
         if info != 0:
             f = spla.spsolve(self._A_out.tocsc(), rhs)
@@ -104,11 +110,48 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
 
     def _solve_in(self, rhs: np.ndarray, x0: np.ndarray | None = None) -> np.ndarray:
         if self._lu_in is not None:
-            return self._lu_in.solve(rhs)
+            return self._solve_rank_k(self._lu_in, rhs, direction="in")
         f, info = spla.gmres(self._A_in, rhs, x0=x0, restart=30, maxiter=500, atol=1e-4)
         if info != 0:
             f = spla.spsolve(self._A_in.tocsc(), rhs)
         return f
+
+    def _solve_rank_k(
+        self,
+        factor: spla.SuperLU,
+        rhs: np.ndarray,
+        *,
+        direction: str,
+    ) -> np.ndarray:
+        """Solve the current system from its base LU and a Woodbury correction."""
+        delta_P = self.P_pi - self._factor_P_pi
+        states = np.flatnonzero(np.max(np.abs(delta_P), axis=1) > 1e-12)
+        if states.size == 0:
+            return factor.solve(rhs)
+
+        selector = np.zeros((self.n_states, states.size), dtype=float)
+        selector[states, np.arange(states.size)] = 1.0
+        changed_rows = delta_P[states]
+        if direction == "out":
+            U = -selector
+            Vt = changed_rows
+            current_system = self._A_out
+        elif direction == "in":
+            U = -changed_rows.T
+            Vt = selector.T
+            current_system = self._A_in
+        else:
+            raise ValueError(f"unknown rank-k direction {direction!r}")
+
+        base_solution = factor.solve(rhs)
+        inverse_U = factor.solve(U)
+        middle = np.eye(states.size) + Vt @ inverse_U
+        if not np.all(np.isfinite(middle)) or np.linalg.cond(middle) > 1e12:
+            return spla.spsolve(current_system.tocsc(), rhs)
+        return base_solution - inverse_U @ np.linalg.solve(
+            middle,
+            Vt @ base_solution,
+        )
 
     def _rebuild_sparse_systems(self) -> None:
         """Rebuild _A_out/_A_in from current P_pi (large-n path, after policy change)."""
@@ -117,7 +160,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         Psp.data[np.abs(Psp.data) < 1e-6] = 0.0
         Psp.eliminate_zeros()
         self._A_out = sp.eye(n, format="csr") * (1.0 + eta) - Psp
-        self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * eta
+        self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * (eta + 1e-6)
 
 
 
@@ -128,7 +171,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
     def _init_topology(self) -> None:
         n = self.n_states
         eta = self.eta
-        use_lu = n <= _LU_THRESHOLD
+        use_lu = n <= self.solver_threshold
 
         self.V = np.zeros(n)
         self.xi = np.zeros(n)
@@ -141,6 +184,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         pi_all = _sp_softmax(self.b * Q_0, axis=0)   # (|A|, |S|) softmax over actions
         self.pi_PS = pi_all.T.copy()                   # (|S|, |A|)
         self.P_pi = np.einsum("sa,ast->st", self.pi_PS, self.P)  # (|S|, |S|)
+        self._factor_P_pi = self.P_pi.copy()
 
         # Always store sparse system matrices (needed for large-n GMRES path and rebuilds)
         Psp = sp.csr_array(self.P_pi)
@@ -165,12 +209,17 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self.beta_t = self._beta_t(self.slem)
         self.alpha_t = self._alpha_t(self.slem)
         self._v0_arnoldi = None
+        self._slem_refresh_count = 0
         self._refresh_slem()
 
         # Priority queues and counters
         self.q_t = self.q if self.q is not None else n
         self._step_count = 0.
-        self._T_arn = max(1, math.isqrt(max(1, n) - 1) + 1)
+        self._T_arn = (
+            int(self.slem_recompute_every)
+            if self.slem_recompute_every is not None
+            else max(1, math.isqrt(max(1, n) - 1) + 1)
+        )
         self._T_topo = max(1, n)
         self._T_tau = max(1, n)
         self._tau_refresh_count = 0
@@ -206,6 +255,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
 
     def _refresh_slem(self) -> None:
         """Recompute SLEM and the derived beta/alpha schedules."""
+        self._slem_refresh_count += 1
         try:
             if self.n_states < 3:
                 self.slem = 0.0
@@ -245,11 +295,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         if self.beta_mode == "fixed":
             return self.beta1
         if self.beta_mode == "linear":
-            # β_t = β₁ · ((1−SLEM) + β₂)
-            # β₂ is a plain additive offset in spectral-gap space.
-            # β₂ < 0  → dampening threshold (dampen; β_t=0 when |β₂| > 1−SLEM)
-            # β₂ = 0  → pure spectral-gap scaling (β_t > 0 iff SLEM < 1)
-            # β₂ > 0  → positive floor (β_t always > 0 when β₁ > 0)
+            # β₂ is an additive offset in spectral-gap space.
             return self.beta1 * ((1.0 - slem) + self.beta2)
         if self.beta_mode == "log":
             # β_t = β₁ · (−log SLEM + β₂)
@@ -304,12 +350,12 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         #   β_t > 0 → topology amplifies priority via magnitude of discounted reachability.
         #   β_t < 0 → topology dampens priority (conservative on fast-mixing).
         #   β_t = 0 → pure Standard-PS (no topology signal).
-        # Floor at 0 (not at ξ): a residual state must stay in the queue
-        # (positive priority) but its relative rank can still be damped when β_t < 0.
+        # Floor at ξ: topology may amplify residual priority, but slow-mixing
+        # dampening must not demote a residual below Standard-PS priority.
         hot = np.where(self.xi > 1e-4)[0]
         self._version_xi = {int(s): 0 for s in hot}
         entries = [
-            (-float(self.xi[s] + self.beta_t * self.tau[s]), 0, int(s))
+            (-max(float(self.xi[s]), float(self.xi[s] + self.beta_t * self.tau[s])), 0, int(s))
             for s in hot
         ]
         heapq.heapify(entries)
@@ -363,6 +409,8 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self._rebuild_q_tau()
         self._refresh_top_q()
         self._rekey_residual_queue()
+        self._tau_refresh_count += 1
+        self._last_tau_refresh_step = int(self._step_count)
 
 
     # ------------------------------------------------------------------
@@ -386,10 +434,8 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * (eta + 1e-6)
         
         if self._lu_out is not None:
-            self._lu_out = spla.splu(self._A_out.tocsc())
-            self._lu_in = spla.splu(self._A_in.tocsc())
-            self.f_out = self._lu_out.solve(self.r)
-            self.f_in = self._lu_in.solve(self.r)
+            self.f_out = self._solve_out(self.r)
+            self.f_in = self._solve_in(self.r)
         else:
             self.f_out = self._solve_out(self.r, x0=self.f_out)
             self.f_in = self._solve_in(self.r, x0=self.f_in)
@@ -419,8 +465,8 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         # A_out/A_in are unchanged by a reward shift — only rhs changes.
         if self._lu_out is not None:
             # Small n: use LU tri-solve (O(n)) instead of g @ delta_r (O(n²)).
-            self.f_out += self._lu_out.solve(delta_r)
-            self.f_in  += self._lu_in.solve(delta_r)
+            self.f_out += self._solve_out(delta_r)
+            self.f_in += self._solve_in(delta_r)
         else:
             # Large n: GMRES re-solve with updated rhs.
             self.f_out = self._solve_out(self.r)
@@ -493,7 +539,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
             self.xi[pred] = xi_pred
             if xi_pred > 1e-4:
                 # Score = ξ + β_t·τ
-                score = xi_pred + self.beta_t * self.tau[pred]
+                score = max(float(xi_pred), float(xi_pred + self.beta_t * self.tau[pred]))
                 v = self._version_xi.get(pred, -1) + 1
                 self._version_xi[pred] = v
                 heapq.heappush(self._Q_xi, (-score, v, pred))

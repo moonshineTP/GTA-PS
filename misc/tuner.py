@@ -227,10 +227,7 @@ def _make_env(run_cfg: TunerRunConfig, seed: int):
 
 
 def _eval_agent(agent, env, run_cfg: TunerRunConfig) -> float:
-    # K = backups per host step; n_steps_per_shift = host steps between reward shifts.
-    # Total backup budget per shift = K × n_steps_per_shift, matching the Dyna protocol.
-    # DP host has oracle P/r so there are no model updates between host steps;
-    # plan(K * n_steps_per_shift) is equivalent to calling plan(K) n_steps_per_shift times.
+    # Evaluating agent via L_inf error of value function vs DP oracle after each reward shift, averaged over shifts.
     budget = run_cfg.backups_per_shift
     errs = []
     for _ in range(run_cfg.n_shifts):
@@ -334,7 +331,7 @@ class GtaPSTuner:
             desc=f"trial-{trial.number}", verbose=False,
         )
         mean_err = float(np.mean(results))
-        trial.set_user_attr("mean_inf_norm_error", mean_err)
+        trial.set_user_attr("L_inf_norm_error", mean_err)
         trial.set_user_attr("baseline_error", self.baseline_error)
         return mean_err
 
@@ -450,8 +447,7 @@ def main():
                 space=space,
                 variant=variant,
             )
-            print(f" [DP + Standard PS] baseline: {tuner.baseline_error:.4f}"
-                  f"  (K={run_cfg.K} × {run_cfg.n_steps_per_shift} steps/shift = {run_cfg.backups_per_shift} backups/shift)")
+            print(f" [DP + Standard PS] baseline: {tuner.baseline_error:.4f}")
             result = tuner.run(n_trials=args.n_trials)
             results[env_name][variant] = result
             print(

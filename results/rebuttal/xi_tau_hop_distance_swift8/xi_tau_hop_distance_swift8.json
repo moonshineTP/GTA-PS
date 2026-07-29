@@ -1,0 +1,1113 @@
+{
+  "protocol": {
+    "host": "oracle_dp",
+    "environment": "FourRoomsTabular",
+    "states": 104,
+    "room_size": 5,
+    "k": 2,
+    "gamma": 0.95,
+    "budget_K": 20,
+    "n_shifts": 6,
+    "calls_per_shift": 25,
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "workers": 4,
+    "batch_size_m": 1,
+    "gta_top_q": null,
+    "gta_parameters": {
+      "alpha": 0.051719,
+      "beta1": 0.159673,
+      "beta2": 1.361556,
+      "eta": 0.018037,
+      "b": 2.849322,
+      "arnoldi_k": 15
+    },
+    "reward_profile": {
+      "n_peaks_per_room": 2,
+      "sigma_range": [
+        0.5,
+        2.0
+      ],
+      "room_peak_ranges": [
+        [
+          0.6,
+          1.2
+        ],
+        [
+          0.3,
+          0.6
+        ],
+        [
+          0.2,
+          0.8
+        ],
+        [
+          0.25,
+          0.5
+        ]
+      ]
+    },
+    "initialization": "exact pre-shift value function",
+    "shift_source": "argmax absolute reward change",
+    "hop_distance": "directed shortest path from state to shift source",
+    "hop_bins": [
+      {
+        "label": "0-2",
+        "lower": 0,
+        "upper": 2
+      },
+      {
+        "label": "3-5",
+        "lower": 3,
+        "upper": 5
+      },
+      {
+        "label": "6-8",
+        "lower": 6,
+        "upper": 8
+      },
+      {
+        "label": "9-11",
+        "lower": 9,
+        "upper": 11
+      },
+      {
+        "label": "12+",
+        "lower": 12,
+        "upper": null
+      }
+    ],
+    "auc": "trapezoidal mean over call 0 through call 25",
+    "aggregation": "mean states within hop bin, mean shifts within seed, Student-t 95% CI across seeds",
+    "elapsed_seconds": 26.2243949000258
+  },
+  "metric_definitions": {
+    "xi_auc": "AUC of mean absolute residual xi per state",
+    "tau_auc": "AUC of mean absolute topology signal tau per state",
+    "beta_tau_auc": "AUC of mean absolute beta_t times tau per state",
+    "topology_share": "beta_tau_auc / (xi_auc + beta_tau_auc)"
+  },
+  "summary": {
+    "0-2": {
+      "xi_auc": {
+        "mean": 0.20367644921680245,
+        "ci95": 0.038343432349429385,
+        "lower": 0.16533301686737306,
+        "upper": 0.24201988156623183,
+        "n": 8
+      },
+      "tau_auc": {
+        "mean": 11.770948022351345,
+        "ci95": 1.2236666641840737,
+        "lower": 10.547281358167272,
+        "upper": 12.994614686535417,
+        "n": 8
+      },
+      "beta_tau_auc": {
+        "mean": 2.605060937456489,
+        "ci95": 0.2632617873295004,
+        "lower": 2.3417991501269886,
+        "upper": 2.868322724785989,
+        "n": 8
+      },
+      "topology_share": {
+        "mean": 0.9279579357354055,
+        "ci95": 0.008652100704454184,
+        "lower": 0.9193058350309513,
+        "upper": 0.9366100364398597,
+        "n": 8
+      },
+      "mean_states": 9.9375
+    },
+    "3-5": {
+      "xi_auc": {
+        "mean": 0.2020594819587163,
+        "ci95": 0.028705325697659802,
+        "lower": 0.17335415626105652,
+        "upper": 0.2307648076563761,
+        "n": 8
+      },
+      "tau_auc": {
+        "mean": 11.117963042164543,
+        "ci95": 1.0277081724562884,
+        "lower": 10.090254869708255,
+        "upper": 12.145671214620831,
+        "n": 8
+      },
+      "beta_tau_auc": {
+        "mean": 2.460216378806697,
+        "ci95": 0.21803267882836794,
+        "lower": 2.2421836999783293,
+        "upper": 2.678249057635065,
+        "n": 8
+      },
+      "topology_share": {
+        "mean": 0.9244039262707536,
+        "ci95": 0.006054028008670909,
+        "lower": 0.9183498982620827,
+        "upper": 0.9304579542794246,
+        "n": 8
+      },
+      "mean_states": 18.208333333333336
+    },
+    "6-8": {
+      "xi_auc": {
+        "mean": 0.16126491715111146,
+        "ci95": 0.021774225068861043,
+        "lower": 0.13949069208225043,
+        "upper": 0.1830391422199725,
+        "n": 8
+      },
+      "tau_auc": {
+        "mean": 10.57760905231546,
+        "ci95": 0.9918231751218356,
+        "lower": 9.585785877193624,
+        "upper": 11.569432227437295,
+        "n": 8
+      },
+      "beta_tau_auc": {
+        "mean": 2.3414473450769138,
+        "ci95": 0.2118743032564435,
+        "lower": 2.1295730418204704,
+        "upper": 2.553321648333357,
+        "n": 8
+      },
+      "topology_share": {
+        "mean": 0.9357739046690026,
+        "ci95": 0.003670062478288625,
+        "lower": 0.932103842190714,
+        "upper": 0.9394439671472912,
+        "n": 8
+      },
+      "mean_states": 22.770833333333336
+    },
+    "9-11": {
+      "xi_auc": {
+        "mean": 0.15587177322389983,
+        "ci95": 0.01474981397410093,
+        "lower": 0.1411219592497989,
+        "upper": 0.17062158719800077,
+        "n": 8
+      },
+      "tau_auc": {
+        "mean": 10.35198180540819,
+        "ci95": 0.8712981001363459,
+        "lower": 9.480683705271844,
+        "upper": 11.223279905544537,
+        "n": 8
+      },
+      "beta_tau_auc": {
+        "mean": 2.2906373207015625,
+        "ci95": 0.18430900185429705,
+        "lower": 2.1063283188472655,
+        "upper": 2.4749463225558594,
+        "n": 8
+      },
+      "topology_share": {
+        "mean": 0.9362630133715988,
+        "ci95": 0.0035590169887279813,
+        "lower": 0.9327039963828708,
+        "upper": 0.9398220303603267,
+        "n": 8
+      },
+      "mean_states": 26.166666666666668
+    },
+    "12+": {
+      "xi_auc": {
+        "mean": 0.16459041919504322,
+        "ci95": 0.025696959046928623,
+        "lower": 0.1388934601481146,
+        "upper": 0.19028737824197184,
+        "n": 8
+      },
+      "tau_auc": {
+        "mean": 10.503792716724236,
+        "ci95": 0.8839513448169276,
+        "lower": 9.61984137190731,
+        "upper": 11.387744061541163,
+        "n": 8
+      },
+      "beta_tau_auc": {
+        "mean": 2.3237849304908513,
+        "ci95": 0.1874252087089261,
+        "lower": 2.1363597217819255,
+        "upper": 2.511210139199777,
+        "n": 8
+      },
+      "topology_share": {
+        "mean": 0.9341394471974493,
+        "ci95": 0.007504651933886296,
+        "lower": 0.9266347952635631,
+        "upper": 0.9416440991313356,
+        "n": 8
+      },
+      "mean_states": 26.916666666666668
+    }
+  },
+  "seed_results": [
+    {
+      "seed": 0,
+      "bins": {
+        "0-2": {
+          "xi_auc": 0.16128720183891299,
+          "tau_auc": 11.164252341105252,
+          "beta_tau_auc": 2.4689399733663855,
+          "topology_share": 0.938679364520548,
+          "mean_states": 11.333333333333334,
+          "observed_shifts": 6
+        },
+        "3-5": {
+          "xi_auc": 0.18825380448421605,
+          "tau_auc": 10.619098186673435,
+          "beta_tau_auc": 2.351337269344406,
+          "topology_share": 0.925872394802361,
+          "mean_states": 18.0,
+          "observed_shifts": 6
+        },
+        "6-8": {
+          "xi_auc": 0.1310552483990243,
+          "tau_auc": 9.986575615562872,
+          "beta_tau_auc": 2.207175507071387,
+          "topology_share": 0.9439511057270914,
+          "mean_states": 24.0,
+          "observed_shifts": 6
+        },
+        "9-11": {
+          "xi_auc": 0.15742472531131932,
+          "tau_auc": 9.75244513294294,
+          "beta_tau_auc": 2.157325558649632,
+          "topology_share": 0.9319906227457342,
+          "mean_states": 26.333333333333332,
+          "observed_shifts": 6
+        },
+        "12+": {
+          "xi_auc": 0.14450645039304244,
+          "tau_auc": 9.89542737080321,
+          "beta_tau_auc": 2.1913589360313517,
+          "topology_share": 0.9381357970228565,
+          "mean_states": 24.333333333333332,
+          "observed_shifts": 6
+        }
+      },
+      "shifts": [
+        {
+          "shift": 0,
+          "source_state": 17,
+          "source_position": [
+            2,
+            9
+          ],
+          "max_reward_change": 0.9971204391160028,
+          "max_hop": 17
+        },
+        {
+          "shift": 1,
+          "source_state": 17,
+          "source_position": [
+            2,
+            9
+          ],
+          "max_reward_change": 0.9307459313270766,
+          "max_hop": 17
+        },
+        {
+          "shift": 2,
+          "source_state": 84,
+          "source_position": [
+            10,
+            1
+          ],
+          "max_reward_change": 0.9999987521852942,
+          "max_hop": 19
+        },
+        {
+          "shift": 3,
+          "source_state": 13,
+          "source_position": [
+            2,
+            4
+          ],
+          "max_reward_change": 0.9992309348331225,
+          "max_hop": 16
+        },
+        {
+          "shift": 4,
+          "source_state": 33,
+          "source_position": [
+            4,
+            3
+          ],
+          "max_reward_change": 0.9732418206970593,
+          "max_hop": 15
+        },
+        {
+          "shift": 5,
+          "source_state": 12,
+          "source_position": [
+            2,
+            3
+          ],
+          "max_reward_change": 0.7287173072460598,
+          "max_hop": 17
+        }
+      ]
+    },
+    {
+      "seed": 1,
+      "bins": {
+        "0-2": {
+          "xi_auc": 0.21191164079538186,
+          "tau_auc": 11.052698917364507,
+          "beta_tau_auc": 2.4551653769159345,
+          "topology_share": 0.9205453613119773,
+          "mean_states": 9.5,
+          "observed_shifts": 6
+        },
+        "3-5": {
+          "xi_auc": 0.2288184155152452,
+          "tau_auc": 10.593089029904258,
+          "beta_tau_auc": 2.3548587174038857,
+          "topology_share": 0.9114369157818423,
+          "mean_states": 18.0,
+          "observed_shifts": 6
+        },
+        "6-8": {
+          "xi_auc": 0.1703450678573066,
+          "tau_auc": 10.659619475162772,
+          "beta_tau_auc": 2.37818875968722,
+          "topology_share": 0.9331595813968726,
+          "mean_states": 23.166666666666668,
+          "observed_shifts": 6
+        },
+        "9-11": {
+          "xi_auc": 0.14229380756607524,
+          "tau_auc": 10.019502530288772,
+          "beta_tau_auc": 2.226257950618097,
+          "topology_share": 0.9399237077786455,
+          "mean_states": 25.666666666666668,
+          "observed_shifts": 6
+        },
+        "12+": {
+          "xi_auc": 0.14708721129744987,
+          "tau_auc": 10.026655886658729,
+          "beta_tau_auc": 2.229539069903323,
+          "topology_share": 0.9381109211570551,
+          "mean_states": 27.666666666666668,
+          "observed_shifts": 6
+        }
+      },
+      "shifts": [
+        {
+          "shift": 0,
+          "source_state": 65,
+          "source_position": [
+            8,
+            3
+          ],
+          "max_reward_change": 0.9964378554125155,
+          "max_hop": 15
+        },
+        {
+          "shift": 1,
+          "source_state": 10,
+          "source_position": [
+            2,
+            1
+          ],
+          "max_reward_change": 0.8451304176379907,
+          "max_hop": 19
+        },
+        {
+          "shift": 2,
+          "source_state": 5,
+          "source_position": [
+            1,
+            7
+          ],
+          "max_reward_change": 0.9910199859653046,
+          "max_hop": 16
+        },
+        {
+          "shift": 3,
+          "source_state": 5,
+          "source_position": [
+            1,
+            7
+          ],
+          "max_reward_change": 0.9999691363102806,
+          "max_hop": 16
+        },
+        {
+          "shift": 4,
+          "source_state": 12,
+          "source_position": [
+            2,
+            3
+          ],
+          "max_reward_change": 0.9958358673987594,
+          "max_hop": 17
+        },
+        {
+          "shift": 5,
+          "source_state": 12,
+          "source_position": [
+            2,
+            3
+          ],
+          "max_reward_change": 0.9998402645179333,
+          "max_hop": 17
+        }
+      ]
+    },
+    {
+      "seed": 2,
+      "bins": {
+        "0-2": {
+          "xi_auc": 0.19550043023196206,
+          "tau_auc": 12.50704728990253,
+          "beta_tau_auc": 2.7867752818652796,
+          "topology_share": 0.9344458899494309,
+          "mean_states": 10.833333333333334,
+          "observed_shifts": 6
+        },
+        "3-5": {
+          "xi_auc": 0.21172983770383466,
+          "tau_auc": 11.573072852569672,
+          "beta_tau_auc": 2.567344028649579,
+          "topology_share": 0.9238128067528993,
+          "mean_states": 17.5,
+          "observed_shifts": 6
+        },
+        "6-8": {
+          "xi_auc": 0.16152661788025902,
+          "tau_auc": 10.662144318740305,
+          "beta_tau_auc": 2.3674273131354693,
+          "topology_share": 0.9361290785493339,
+          "mean_states": 25.333333333333332,
+          "observed_shifts": 6
+        },
+        "9-11": {
+          "xi_auc": 0.13979146720378188,
+          "tau_auc": 10.41375056454431,
+          "beta_tau_auc": 2.3115484697749413,
+          "topology_share": 0.9429734468504296,
+          "mean_states": 25.666666666666668,
+          "observed_shifts": 6
+        },
+        "12+": {
+          "xi_auc": 0.16018174672519894,
+          "tau_auc": 10.56922049438741,
+          "beta_tau_auc": 2.342807668727342,
+          "topology_share": 0.9360038257707781,
+          "mean_states": 24.666666666666668,
+          "observed_shifts": 6
+        }
+      },
+      "shifts": [
+        {
+          "shift": 0,
+          "source_state": 17,
+          "source_position": [
+            2,
+            9
+          ],
+          "max_reward_change": 0.8298028662380386,
+          "max_hop": 17
+        },
+        {
+          "shift": 1,
+          "source_state": 91,
+          "source_position": [
+            10,
+            9
+          ],
+          "max_reward_change": 0.9991780331327107,
+          "max_hop": 17
+        },
+        {
+          "shift": 2,
+          "source_state": 91,
+          "source_position": [
+            10,
+            9
+          ],
+          "max_reward_change": 0.9998350908631554,
+          "max_hop": 17
+        },
+        {
+          "shift": 3,
+          "source_state": 29,
+          "source_position": [
+            3,
+            10
+          ],
+          "max_reward_change": 0.9999987831645697,
+          "max_hop": 17
+        },
+        {
+          "shift": 4,
+          "source_state": 53,
+          "source_position": [
+            7,
+            1
+          ],
+          "max_reward_change": 0.9316292927893473,
+          "max_hop": 16
+        },
+        {
+          "shift": 5,
+          "source_state": 16,
+          "source_position": [
+            2,
+            8
+          ],
+          "max_reward_change": 0.9998015189158973,
+          "max_hop": 16
+        }
+      ]
+    },
+    {
+      "seed": 3,
+      "bins": {
+        "0-2": {
+          "xi_auc": 0.2178636943438594,
+          "tau_auc": 11.56721971477855,
+          "beta_tau_auc": 2.5622625221906286,
+          "topology_share": 0.9216353225086906,
+          "mean_states": 8.5,
+          "observed_shifts": 6
+        },
+        "3-5": {
+          "xi_auc": 0.1768373193431542,
+          "tau_auc": 11.164658334131518,
+          "beta_tau_auc": 2.4703860038849124,
+          "topology_share": 0.9331989417774108,
+          "mean_states": 15.833333333333334,
+          "observed_shifts": 6
+        },
+        "6-8": {
+          "xi_auc": 0.16138005202334998,
+          "tau_auc": 10.814233944424279,
+          "beta_tau_auc": 2.395894375705224,
+          "topology_share": 0.9368937294044382,
+          "mean_states": 17.0,
+          "observed_shifts": 6
+        },
+        "9-11": {
+          "xi_auc": 0.17221247091634875,
+          "tau_auc": 10.37837792041154,
+          "beta_tau_auc": 2.2985468970055565,
+          "topology_share": 0.9302997802407637,
+          "mean_states": 27.666666666666668,
+          "observed_shifts": 6
+        },
+        "12+": {
+          "xi_auc": 0.18127480714521663,
+          "tau_auc": 10.930048616938867,
+          "beta_tau_auc": 2.4190963378880235,
+          "topology_share": 0.9302888714591934,
+          "mean_states": 35.0,
+          "observed_shifts": 6
+        }
+      },
+      "shifts": [
+        {
+          "shift": 0,
+          "source_state": 0,
+          "source_position": [
+            1,
+            1
+          ],
+          "max_reward_change": 0.886739857465364,
+          "max_hop": 20
+        },
+        {
+          "shift": 1,
+          "source_state": 9,
+          "source_position": [
+            1,
+            11
+          ],
+          "max_reward_change": 0.6455587949579603,
+          "max_hop": 20
+        },
+        {
+          "shift": 2,
+          "source_state": 85,
+          "source_position": [
+            10,
+            2
+          ],
+          "max_reward_change": 0.9942497485279697,
+          "max_hop": 18
+        },
+        {
+          "shift": 3,
+          "source_state": 85,
+          "source_position": [
+            10,
+            2
+          ],
+          "max_reward_change": 0.9999712317307552,
+          "max_hop": 18
+        },
+        {
+          "shift": 4,
+          "source_state": 44,
+          "source_position": [
+            5,
+            4
+          ],
+          "max_reward_change": 0.9791391561111481,
+          "max_hop": 15
+        },
+        {
+          "shift": 5,
+          "source_state": 84,
+          "source_position": [
+            10,
+            1
+          ],
+          "max_reward_change": 0.9999999901525031,
+          "max_hop": 19
+        }
+      ]
+    },
+    {
+      "seed": 4,
+      "bins": {
+        "0-2": {
+          "xi_auc": 0.1882657912104333,
+          "tau_auc": 12.480047312841059,
+          "beta_tau_auc": 2.7635895204164207,
+          "topology_share": 0.9362211994372195,
+          "mean_states": 10.166666666666666,
+          "observed_shifts": 6
+        },
+        "3-5": {
+          "xi_auc": 0.2109038700243772,
+          "tau_auc": 11.781775923159273,
+          "beta_tau_auc": 2.608138859700354,
+          "topology_share": 0.9251859974307765,
+          "mean_states": 17.666666666666668,
+          "observed_shifts": 6
+        },
+        "6-8": {
+          "xi_auc": 0.1645887927821793,
+          "tau_auc": 10.699480563182755,
+          "beta_tau_auc": 2.3686402727274127,
+          "topology_share": 0.935028065553531,
+          "mean_states": 22.166666666666668,
+          "observed_shifts": 6
+        },
+        "9-11": {
+          "xi_auc": 0.14934030995652806,
+          "tau_auc": 10.43015747611989,
+          "beta_tau_auc": 2.308810113437228,
+          "topology_share": 0.9392468790618815,
+          "mean_states": 26.666666666666668,
+          "observed_shifts": 6
+        },
+        "12+": {
+          "xi_auc": 0.20587099317123503,
+          "tau_auc": 10.401796594249355,
+          "beta_tau_auc": 2.3002991519642073,
+          "topology_share": 0.9178543429819251,
+          "mean_states": 27.333333333333332,
+          "observed_shifts": 6
+        }
+      },
+      "shifts": [
+        {
+          "shift": 0,
+          "source_state": 74,
+          "source_position": [
+            9,
+            2
+          ],
+          "max_reward_change": 0.9999207167925275,
+          "max_hop": 17
+        },
+        {
+          "shift": 1,
+          "source_state": 19,
+          "source_position": [
+            2,
+            11
+          ],
+          "max_reward_change": 0.9999999719039165,
+          "max_hop": 19
+        },
+        {
+          "shift": 2,
+          "source_state": 75,
+          "source_position": [
+            9,
+            3
+          ],
+          "max_reward_change": 0.999984148407707,
+          "max_hop": 16
+        },
+        {
+          "shift": 3,
+          "source_state": 34,
+          "source_position": [
+            4,
+            4
+          ],
+          "max_reward_change": 0.9786327911154616,
+          "max_hop": 16
+        },
+        {
+          "shift": 4,
+          "source_state": 2,
+          "source_position": [
+            1,
+            3
+          ],
+          "max_reward_change": 0.9639311275345689,
+          "max_hop": 18
+        },
+        {
+          "shift": 5,
+          "source_state": 1,
+          "source_position": [
+            1,
+            2
+          ],
+          "max_reward_change": 0.6569481719850992,
+          "max_hop": 19
+        }
+      ]
+    },
+    {
+      "seed": 5,
+      "bins": {
+        "0-2": {
+          "xi_auc": 0.2875275851446769,
+          "tau_auc": 14.569513279761777,
+          "beta_tau_auc": 3.1971717666894697,
+          "topology_share": 0.9174885532109567,
+          "mean_states": 7.833333333333333,
+          "observed_shifts": 6
+        },
+        "3-5": {
+          "xi_auc": 0.25832022296250917,
+          "tau_auc": 13.394866634674008,
+          "beta_tau_auc": 2.9370994140554516,
+          "topology_share": 0.9191592177847477,
+          "mean_states": 15.833333333333334,
+          "observed_shifts": 6
+        },
+        "6-8": {
+          "xi_auc": 0.21634113275919842,
+          "tau_auc": 13.01516306172556,
+          "beta_tau_auc": 2.8541534227666325,
+          "topology_share": 0.9295419259513557,
+          "mean_states": 16.0,
+          "observed_shifts": 6
+        },
+        "9-11": {
+          "xi_auc": 0.19021627855871362,
+          "tau_auc": 12.701621929208741,
+          "beta_tau_auc": 2.78583489119654,
+          "topology_share": 0.9360843387063278,
+          "mean_states": 28.0,
+          "observed_shifts": 6
+        },
+        "12+": {
+          "xi_auc": 0.19508232900507247,
+          "tau_auc": 12.80839030014315,
+          "beta_tau_auc": 2.8099689397568284,
+          "topology_share": 0.9350818633169452,
+          "mean_states": 36.333333333333336,
+          "observed_shifts": 6
+        }
+      },
+      "shifts": [
+        {
+          "shift": 0,
+          "source_state": 54,
+          "source_position": [
+            7,
+            2
+          ],
+          "max_reward_change": 0.9975066102632726,
+          "max_hop": 15
+        },
+        {
+          "shift": 1,
+          "source_state": 0,
+          "source_position": [
+            1,
+            1
+          ],
+          "max_reward_change": 0.9997130270285216,
+          "max_hop": 20
+        },
+        {
+          "shift": 2,
+          "source_state": 0,
+          "source_position": [
+            1,
+            1
+          ],
+          "max_reward_change": 0.9999999932567518,
+          "max_hop": 20
+        },
+        {
+          "shift": 3,
+          "source_state": 10,
+          "source_position": [
+            2,
+            1
+          ],
+          "max_reward_change": 0.9999999420811089,
+          "max_hop": 19
+        },
+        {
+          "shift": 4,
+          "source_state": 7,
+          "source_position": [
+            1,
+            9
+          ],
+          "max_reward_change": 0.9999611626887038,
+          "max_hop": 18
+        },
+        {
+          "shift": 5,
+          "source_state": 7,
+          "source_position": [
+            1,
+            9
+          ],
+          "max_reward_change": 0.9974832228143121,
+          "max_hop": 18
+        }
+      ]
+    },
+    {
+      "seed": 6,
+      "bins": {
+        "0-2": {
+          "xi_auc": 0.23102200174247944,
+          "tau_auc": 11.281891680746954,
+          "beta_tau_auc": 2.4771049876502254,
+          "topology_share": 0.9146930691775699,
+          "mean_states": 11.0,
+          "observed_shifts": 6
+        },
+        "3-5": {
+          "xi_auc": 0.19744469339755158,
+          "tau_auc": 10.712977866769386,
+          "beta_tau_auc": 2.3590027301085663,
+          "topology_share": 0.9227659870560685,
+          "mean_states": 21.0,
+          "observed_shifts": 6
+        },
+        "6-8": {
+          "xi_auc": 0.1427276392769799,
+          "tau_auc": 9.968159793318128,
+          "beta_tau_auc": 2.1947468233249197,
+          "topology_share": 0.938939380275365,
+          "mean_states": 28.0,
+          "observed_shifts": 6
+        },
+        "9-11": {
+          "xi_auc": 0.15544852558371428,
+          "tau_auc": 9.976727234095511,
+          "beta_tau_auc": 2.1987306392276005,
+          "topology_share": 0.9339691184480544,
+          "mean_states": 24.666666666666668,
+          "observed_shifts": 6
+        },
+        "12+": {
+          "xi_auc": 0.17212309968988002,
+          "tau_auc": 10.161052358059319,
+          "beta_tau_auc": 2.242550401724496,
+          "topology_share": 0.9287178578846953,
+          "mean_states": 19.333333333333332,
+          "observed_shifts": 6
+        }
+      },
+      "shifts": [
+        {
+          "shift": 0,
+          "source_state": 74,
+          "source_position": [
+            9,
+            2
+          ],
+          "max_reward_change": 0.9999993427804245,
+          "max_hop": 17
+        },
+        {
+          "shift": 1,
+          "source_state": 23,
+          "source_position": [
+            3,
+            4
+          ],
+          "max_reward_change": 0.9991448040530588,
+          "max_hop": 15
+        },
+        {
+          "shift": 2,
+          "source_state": 90,
+          "source_position": [
+            10,
+            8
+          ],
+          "max_reward_change": 0.9902778039480726,
+          "max_hop": 16
+        },
+        {
+          "shift": 3,
+          "source_state": 23,
+          "source_position": [
+            3,
+            4
+          ],
+          "max_reward_change": 0.9999843005703486,
+          "max_hop": 15
+        },
+        {
+          "shift": 4,
+          "source_state": 13,
+          "source_position": [
+            2,
+            4
+          ],
+          "max_reward_change": 0.7535288010767598,
+          "max_hop": 16
+        },
+        {
+          "shift": 5,
+          "source_state": 45,
+          "source_position": [
+            5,
+            5
+          ],
+          "max_reward_change": 0.5894108052502615,
+          "max_hop": 16
+        }
+      ]
+    },
+    {
+      "seed": 7,
+      "bins": {
+        "0-2": {
+          "xi_auc": 0.13603324842671363,
+          "tau_auc": 9.544913642310135,
+          "beta_tau_auc": 2.1294780705575667,
+          "topology_share": 0.9399547257668512,
+          "mean_states": 10.333333333333334,
+          "observed_shifts": 6
+        },
+        "3-5": {
+          "xi_auc": 0.1441676922388424,
+          "tau_auc": 9.104165509434788,
+          "beta_tau_auc": 2.0335640073064223,
+          "topology_share": 0.9337991487799225,
+          "mean_states": 21.833333333333332,
+          "observed_shifts": 6
+        },
+        "6-8": {
+          "xi_auc": 0.1421547862305941,
+          "tau_auc": 8.815495646406998,
+          "beta_tau_auc": 1.965352286197043,
+          "topology_share": 0.9325483704940329,
+          "mean_states": 26.5,
+          "observed_shifts": 6
+        },
+        "9-11": {
+          "xi_auc": 0.14024660069471767,
+          "tau_auc": 9.143271655653818,
+          "beta_tau_auc": 2.0380440457029017,
+          "topology_share": 0.935616213140954,
+          "mean_states": 24.666666666666668,
+          "observed_shifts": 6
+        },
+        "12+": {
+          "xi_auc": 0.11059671613325034,
+          "tau_auc": 9.237750112553847,
+          "beta_tau_auc": 2.0546589379312397,
+          "topology_share": 0.9489220979861456,
+          "mean_states": 20.666666666666668,
+          "observed_shifts": 6
+        }
+      },
+      "shifts": [
+        {
+          "shift": 0,
+          "source_state": 36,
+          "source_position": [
+            4,
+            7
+          ],
+          "max_reward_change": 0.9751337866516484,
+          "max_hop": 15
+        },
+        {
+          "shift": 1,
+          "source_state": 74,
+          "source_position": [
+            9,
+            2
+          ],
+          "max_reward_change": 0.9688051771724479,
+          "max_hop": 17
+        },
+        {
+          "shift": 2,
+          "source_state": 99,
+          "source_position": [
+            11,
+            7
+          ],
+          "max_reward_change": 0.30434369043016,
+          "max_hop": 16
+        },
+        {
+          "shift": 3,
+          "source_state": 23,
+          "source_position": [
+            3,
+            4
+          ],
+          "max_reward_change": 0.6607625951148881,
+          "max_hop": 15
+        },
+        {
+          "shift": 4,
+          "source_state": 33,
+          "source_position": [
+            4,
+            3
+          ],
+          "max_reward_change": 0.554308331165223,
+          "max_hop": 15
+        },
+        {
+          "shift": 5,
+          "source_state": 14,
+          "source_position": [
+            2,
+            5
+          ],
+          "max_reward_change": 0.9934799462509002,
+          "max_hop": 15
+        }
+      ]
+    }
+  ]
+}

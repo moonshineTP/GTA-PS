@@ -3,7 +3,10 @@ import numpy as np
 from .base import PrioritizedSweepingModule, BellmanMixin, TdMixin, PlanningModel
 from .oracle_model import OracleModel
 from .standard_ps import StandardPS
+from .batching import BatchedPriorityModule
+from .gps_h2 import GpsH2
 from .gta_ps import GtaPS
+from .vast import GtaPsFa, LinearStateProjection, LinearTabularModel, VaST
 from .dp_host import DpHost
 from .dyna_host import DynaHost
 from .empirical_model import EmpiricalModel, CountModel, SampleModel
@@ -149,6 +152,12 @@ __all__ = [
     "PlanningModel",
     "OracleModel",
     "StandardPS",
+    "BatchedPriorityModule",
+    "GpsH2",
+    "GtaPsFa",
+    "LinearStateProjection",
+    "LinearTabularModel",
+    "VaST",
     "DynaPS",
     "GtaPS",
     "DpHost",

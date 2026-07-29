@@ -122,6 +122,7 @@ def test_minigrid_plan():
 # ------------------------------------------------------------------ #
 
 def test_reacher_shapes():
+    pytest.importorskip("mujoco")
     env = ReacherDiscrete(n_bins=8, n_rollout_steps=500, seed=0)
     S, A = env.n_states, env.n_actions
     assert S == 64    # 8*8
@@ -131,11 +132,13 @@ def test_reacher_shapes():
 
 
 def test_reacher_reward_nonzero():
+    pytest.importorskip("mujoco")
     env = ReacherDiscrete(n_bins=8, n_rollout_steps=500, seed=0)
     assert np.any(env.r > 0)
 
 
 def test_reacher_shift():
+    pytest.importorskip("mujoco")
     env = ReacherDiscrete(n_bins=8, n_rollout_steps=500, seed=0)
     r1 = env.r.copy()
     r2 = env.shift_reward(n_rollout_steps=200)
@@ -143,6 +146,7 @@ def test_reacher_shift():
 
 
 def test_reacher_plan():
+    pytest.importorskip("mujoco")
     env = ReacherDiscrete(n_bins=8, n_rollout_steps=500, seed=0)
     alg = GtaPS(env.P, env.r, gamma=env.gamma)
     V = alg.plan(K=20)
@@ -194,7 +198,7 @@ def test_slem_simple():
 def test_resolvent_forward():
     env = GarnetEnv(n_states=30, n_actions=4, branching=3, seed=2)
     policy = np.zeros(30, dtype=int)
-    P_pi = env.policy_transition(policy)
+    P_pi = env.P[policy, np.arange(30), :]
     eta = (1 - env.gamma) / env.gamma
     f = resolvent_forward(P_pi, env.r, eta)
     assert f.shape == (30,)

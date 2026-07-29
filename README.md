@@ -61,6 +61,10 @@ Supporting audits live in `misc/`:
 - **Mixing Threshold:** `mixing_threshold_ablation.py` (Phase behavior at $K \approx t_{\text{mix}}$)
 - **Scheduler:** `scheduler_ablation.py` (Linear vs. Power vs. Log schedules)
 
+### Plot style
+All new experiment figures must call `misc/plot_academic.py` and use its
+Viridis line palette. Do not use Matplotlib's default color cycle.
+
 ### Benchmark Suite
 
 The standard experiment configuration uses **1000 seeds** for statistical significance. Example with 8 workers:

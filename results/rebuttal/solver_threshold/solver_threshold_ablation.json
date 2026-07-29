@@ -1,0 +1,261 @@
+{
+  "protocol": {
+    "search": "discrete ternary search minimizing absolute log timing ratio",
+    "candidate_sizes": [
+      100,
+      150,
+      200,
+      250,
+      300,
+      350,
+      400,
+      450,
+      500,
+      550,
+      600,
+      650,
+      700,
+      750,
+      800,
+      850,
+      900,
+      950,
+      1000
+    ],
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29
+    ],
+    "workers": 6,
+    "repeats": 3,
+    "rank_k": 8,
+    "branching": 3,
+    "n_nbr_rate": 0.1,
+    "reversible": 0.2,
+    "gamma": 0.95,
+    "timed_region": "topology_update_lazy including tau refresh"
+  },
+  "crossover_candidate": 750,
+  "measurements": {
+    "400": {
+      "lu_woodbury": {
+        "mean_seconds": 0.03139704333087947,
+        "median_seconds": 0.03133463331808646,
+        "std_seconds": 0.0021988915481106273,
+        "ci95_seconds": 0.000821079598130027,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "gmres": {
+        "mean_seconds": 0.06189021333185439,
+        "median_seconds": 0.06295289998524822,
+        "std_seconds": 0.006873075269855232,
+        "ci95_seconds": 0.002566448484164277,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "calibration": {
+        "mean_out_degree": 12.441666666666668,
+        "matrix_density": 0.03110416666666667,
+        "half_cut_mass_per_state": 0.051037152777777775
+      },
+      "log_time_ratio": -0.6786483356534687
+    },
+    "600": {
+      "lu_woodbury": {
+        "mean_seconds": 0.060051234446776396,
+        "median_seconds": 0.06023288332895997,
+        "std_seconds": 0.0028304651508555094,
+        "ci95_seconds": 0.001056913057209388,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "gmres": {
+        "mean_seconds": 0.07382506888825448,
+        "median_seconds": 0.07328750000063641,
+        "std_seconds": 0.006765357825888986,
+        "ci95_seconds": 0.0025262261295513843,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "calibration": {
+        "mean_out_degree": 13.048444444444442,
+        "matrix_density": 0.021747407407407406,
+        "half_cut_mass_per_state": 0.05125657517636685
+      },
+      "log_time_ratio": -0.20650025546181083
+    },
+    "650": {
+      "lu_woodbury": {
+        "mean_seconds": 0.06794430999951954,
+        "median_seconds": 0.06717111666997275,
+        "std_seconds": 0.0033806143122513195,
+        "ci95_seconds": 0.001262342130206906,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "gmres": {
+        "mean_seconds": 0.07786149111020171,
+        "median_seconds": 0.08017510001081973,
+        "std_seconds": 0.007530553807570539,
+        "ci95_seconds": 0.0028119550049339145,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "calibration": {
+        "mean_out_degree": 13.137333333333334,
+        "matrix_density": 0.02021128205128205,
+        "half_cut_mass_per_state": 0.049647054334554325
+      },
+      "log_time_ratio": -0.13624309412910623
+    },
+    "700": {
+      "lu_woodbury": {
+        "mean_seconds": 0.0830433155526407,
+        "median_seconds": 0.08205008333122048,
+        "std_seconds": 0.00407066348532322,
+        "ci95_seconds": 0.0015200107260968062,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "gmres": {
+        "mean_seconds": 0.08682189000149568,
+        "median_seconds": 0.08682208332659988,
+        "std_seconds": 0.0066873653513122785,
+        "ci95_seconds": 0.0024971032609234917,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "calibration": {
+        "mean_out_degree": 13.242380952380952,
+        "matrix_density": 0.01891768707482993,
+        "half_cut_mass_per_state": 0.05082640778533635
+      },
+      "log_time_ratio": -0.044496433033482455
+    },
+    "750": {
+      "lu_woodbury": {
+        "mean_seconds": 0.09017286333190795,
+        "median_seconds": 0.09021046665535928,
+        "std_seconds": 0.003990895154406032,
+        "ci95_seconds": 0.001490224741813377,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "gmres": {
+        "mean_seconds": 0.08895347111004716,
+        "median_seconds": 0.09122326666450438,
+        "std_seconds": 0.007960651021318358,
+        "ci95_seconds": 0.0029725559439499104,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "calibration": {
+        "mean_out_degree": 13.296666666666665,
+        "matrix_density": 0.01772888888888889,
+        "half_cut_mass_per_state": 0.050507791005291
+      },
+      "log_time_ratio": 0.013615095315227987
+    },
+    "800": {
+      "lu_woodbury": {
+        "mean_seconds": 0.09713705000144225,
+        "median_seconds": 0.09725645001162775,
+        "std_seconds": 0.0048339853687715,
+        "ci95_seconds": 0.001805039801698145,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "gmres": {
+        "mean_seconds": 0.0888395200011372,
+        "median_seconds": 0.08826351667327495,
+        "std_seconds": 0.007302340443067069,
+        "ci95_seconds": 0.002726738734138106,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "calibration": {
+        "mean_out_degree": 13.387749999999999,
+        "matrix_density": 0.0167346875,
+        "half_cut_mass_per_state": 0.05121607142857142
+      },
+      "log_time_ratio": 0.08929127187826476
+    },
+    "850": {
+      "lu_woodbury": {
+        "mean_seconds": 0.11753317221753404,
+        "median_seconds": 0.11710856666710848,
+        "std_seconds": 0.004175346223853003,
+        "ci95_seconds": 0.0015590999030764704,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "gmres": {
+        "mean_seconds": 0.09806628111853369,
+        "median_seconds": 0.09801368333864957,
+        "std_seconds": 0.00631464059908386,
+        "ci95_seconds": 0.0023579255511197573,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "calibration": {
+        "mean_out_degree": 13.426235294117648,
+        "matrix_density": 0.015795570934256056,
+        "half_cut_mass_per_state": 0.050092822128851536
+      },
+      "log_time_ratio": 0.18107702248395094
+    },
+    "900": {
+      "lu_woodbury": {
+        "mean_seconds": 0.12905200666993752,
+        "median_seconds": 0.12910513333433,
+        "std_seconds": 0.006475702296982299,
+        "ci95_seconds": 0.002418066977511714,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "gmres": {
+        "mean_seconds": 0.09991876000292704,
+        "median_seconds": 0.09857384999243854,
+        "std_seconds": 0.007457926710537449,
+        "ci95_seconds": 0.002784835601206833,
+        "seed_samples": 30,
+        "repeats_per_seed": 3
+      },
+      "calibration": {
+        "mean_out_degree": 13.488925925925928,
+        "matrix_density": 0.014987695473251027,
+        "half_cut_mass_per_state": 0.050890450470311585
+      },
+      "log_time_ratio": 0.2558580197560116
+    }
+  }
+}
