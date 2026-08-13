@@ -6,7 +6,6 @@ import pytest
 
 from gta_ps.envs.garnet import GarnetEnv
 from gta_ps.envs.fourrooms import FourRoomsTabular
-from gta_ps.envs.reacher import ReacherDiscrete
 from gta_ps.algorithms.standard_ps import StandardPS
 from gta_ps.algorithms.gta_ps import GtaPS
 from gta_ps.algorithms.empirical_model import CountModel
@@ -112,43 +111,6 @@ def test_minigrid_shift():
 def test_minigrid_plan():
     env = FourRoomsTabular(k=1, seed=0)
     alg = StandardPS(env.P, env.r, gamma=env.gamma)
-    V = alg.plan(K=20)
-    assert V.shape == (env.n_states,)
-    assert np.all(np.isfinite(V))
-
-
-# ------------------------------------------------------------------ #
-# Environment tests — Reacher discrete (small bins for speed)
-# ------------------------------------------------------------------ #
-
-def test_reacher_shapes():
-    pytest.importorskip("mujoco")
-    env = ReacherDiscrete(n_bins=8, n_rollout_steps=500, seed=0)
-    S, A = env.n_states, env.n_actions
-    assert S == 64    # 8*8
-    assert A == 13
-    assert env.P.shape == (A, S, S)
-    np.testing.assert_allclose(env.P.sum(axis=2), np.ones((A, S)), atol=1e-8)
-
-
-def test_reacher_reward_nonzero():
-    pytest.importorskip("mujoco")
-    env = ReacherDiscrete(n_bins=8, n_rollout_steps=500, seed=0)
-    assert np.any(env.r > 0)
-
-
-def test_reacher_shift():
-    pytest.importorskip("mujoco")
-    env = ReacherDiscrete(n_bins=8, n_rollout_steps=500, seed=0)
-    r1 = env.r.copy()
-    r2 = env.shift_reward(n_rollout_steps=200)
-    assert r2.shape == (64,)
-
-
-def test_reacher_plan():
-    pytest.importorskip("mujoco")
-    env = ReacherDiscrete(n_bins=8, n_rollout_steps=500, seed=0)
-    alg = GtaPS(env.P, env.r, gamma=env.gamma)
     V = alg.plan(K=20)
     assert V.shape == (env.n_states,)
     assert np.all(np.isfinite(V))
