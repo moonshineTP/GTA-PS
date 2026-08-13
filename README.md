@@ -10,7 +10,7 @@ GTA-PS augments the standard priority signal (Bellman residual) with a topology 
 
 ### Core Components
 - `src/gta_ps/algorithms/gta_ps.py`: The primary algorithm implementing $\alpha$ and $\beta$ variants.
-- `src/gta_ps/algorithms/dyna_ps.py`: Baseline Prioritized Sweeping (Moore & Atkeson, 1993).
+- `src/gta_ps/algorithms/dyna_host.py`: Dyna host for Standard-PS and GTA-PS planning modules.
 - `src/gta_ps/utils/spectral.py`: High-performance spectral utilities (SLEM via Arnoldi, Resolvent solvers).
 
 ---
@@ -53,7 +53,7 @@ pytest tests/test_smoke.py -q
 ### Research Questions (RQs)
 All primary experiments live in `experiments/`:
 - **RQ1 (Convergence):** `rq1_convergence.py` (stationary convergence across environments and budgets)
-- **RQ3 (Tradeoff):** `rq3_mixing_tradeoff.py` (Accuracy vs. Coverage)
+- **RQ3 (Tradeoff):** `rq3_alpha_tradeoff.py` (Accuracy vs. Coverage)
 - **RQ4 (Asymmetry):** `rq4_asymmetry.py` (Directed dynamics gain)
 
 ### Ablation Studies
@@ -127,18 +127,3 @@ Example with custom parameters:
 ```cmd
 run_rqs.cmd --workers 8 --seeds 100 --K 40
 ```
-
----
-
-## ⚡ Native Compilation (Nuitka)
-
-For large-scale runs (e.g., 1000+ seeds), use the **Nuitka** compilation pipeline in `compiled/` to generate high-performance native binaries (~2.6x speedup).
-
-```cmd
-# Compile all RQs
-code\compiled\compile_rqs.cmd
-# Run compiled RQs
-code\compiled\run_compiled_rqs.cmd --seeds 1000 --workers 5
-```
-
-See `code/compiled/README.md` for more details.
