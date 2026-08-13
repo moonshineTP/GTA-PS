@@ -26,7 +26,7 @@ class DynaHost(TdMixin):
     module    : PrioritizedSweepingModule
     model_type : {'count', 'sample'}
         'count'  — CountModel (distributional, O(|A||S|²) memory).
-        'sample' — SampleModel (most-recent transition, O(|A||S|) memory).
+        'sample' — SampleModel (sparse frequencies with small backups).
     """
 
     def __init__(
@@ -47,6 +47,7 @@ class DynaHost(TdMixin):
         self.module = module
         self.rng = rng if rng is not None else np.random.default_rng()
         self.Q = np.zeros((n_actions, n_states))
+        self.Q_prev = np.zeros((n_actions, n_states))
         self.completed_backups = 0
         self.backup_counts = np.zeros(n_states, dtype=np.int64)
         self.completed_real_updates = 0
@@ -79,16 +80,21 @@ class DynaHost(TdMixin):
         self.model.update(s, a, s_next, r)
         self.completed_real_updates += 1
         p_row = self.model.get_row(s, a)
-        r_model = self.r_oracle[s] if self.r_oracle is not None else float(r)
+        r_model = self.r_oracle[s] if self.r_oracle is not None else (
+            self.model.reward_mean(s) if isinstance(self.model, SampleModel) else float(r)
+        )
         
         self.module.update_model_transition(s, a, p_row, r_model)
         
-        # TD update
-        abs_delta = self.apply_td_backup(s, a, r, s_next, self.gamma, self.eta_td, self.Q)
-
-        # Update local value in module
-        self.module.update_value(s, float(self.Q[:, s].max()))
-        self.module.push_predecessors(s, abs_delta)
+        if isinstance(self.model, SampleModel):
+            count = self.model.visit_count(s, a)
+            target = r + self.gamma * self.module.V[s_next]
+            self.Q[a, s] = (self.Q[a, s] * (count - 1) + target) / count
+            self.module.enqueue_priority(s, abs(self.Q[a, s] - self.Q_prev[a, s]))
+        else:
+            abs_delta = self.apply_td_backup(s, a, r, s_next, self.gamma, self.eta_td, self.Q)
+            self.module.update_value(s, float(self.Q[:, s].max()))
+            self.module.push_predecessors(s, abs_delta)
 
 
     def real_steps_batch(
@@ -97,6 +103,11 @@ class DynaHost(TdMixin):
         """
         Efficient batch update for high-volume interaction bursts.
         """
+        if isinstance(self.model, SampleModel):
+            for s, a, r, sn in zip(states, actions, rewards, next_states):
+                self.real_step(int(s), int(a), float(r), int(sn))
+            return
+
         self.model.update_batch(states, actions, next_states, rewards)
         self.completed_real_updates += len(states)
         
@@ -121,6 +132,10 @@ class DynaHost(TdMixin):
         Run K simulated Dyna planning steps.
         Now O(K*S) complexity: no O(A*S^2) synchronization call.
         """
+        if isinstance(self.model, SampleModel):
+            self._plan_small_backups(K)
+            return
+
         n_states = self.n_states
         gamma = self.gamma
         eta_td = self.eta_td
@@ -153,9 +168,35 @@ class DynaHost(TdMixin):
             self.module.notify_backup(s, adv_PS_row, abs_delta)
             self.module.push_predecessors(s, abs_delta)
 
+    def _plan_small_backups(self, K: int) -> None:
+        for _ in range(K):
+            s = self.module.pop_and_prioritize()
+            if s is None:
+                break
+
+            self.Q_prev[:, s] = self.Q[:, s]
+            old_value = float(self.module.V[s])
+            new_value = float(self.Q[:, s].max())
+            delta_value = new_value - old_value
+            self.module.update_value(s, new_value)
+
+            advantage = self.Q[:, s] - new_value
+            self.module.notify_backup(s, advantage, abs(delta_value))
+
+            for predecessor, action, probability in self.model.predecessors(s):
+                self.Q[action, predecessor] += self.gamma * probability * delta_value
+                priority = abs(
+                    self.Q[action, predecessor] - self.Q_prev[action, predecessor]
+                )
+                self.module.enqueue_priority(predecessor, priority)
+
+            self.completed_backups += 1
+            self.backup_counts[s] += 1
+
 
     def reset(self) -> None:
         self.Q = np.zeros((self.n_actions, self.n_states))
+        self.Q_prev = np.zeros((self.n_actions, self.n_states))
         self.completed_backups = 0
         self.backup_counts.fill(0)
         self.completed_real_updates = 0

@@ -99,6 +99,13 @@ class StandardPS(PrioritizedSweepingModule, BellmanMixin):
                 return s
         return None
 
+    def enqueue_priority(self, s: int, priority: float) -> None:
+        self.xi[s] = priority
+        if priority > 1e-6:
+            v = self._version.get(s, -1) + 1
+            self._version[s] = v
+            heapq.heappush(self._heap, (-priority, v, s))
+
     def push_predecessors(self, s: int, xi_s: float) -> None:
         for pred, _a in self._predecessors[s]:
             xi_pred = self.compute_bellman_residual(

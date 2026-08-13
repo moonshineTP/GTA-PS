@@ -530,6 +530,16 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         self._slem = self.slem
         return chosen
 
+    def enqueue_priority(self, s: int, priority: float) -> None:
+        self.xi[s] = priority
+        if priority > 1e-4:
+            score = max(float(priority), float(priority + self.beta_t * self.tau[s]))
+            v = self._version_xi.get(s, -1) + 1
+            self._version_xi[s] = v
+            heapq.heappush(self._Q_xi, (-score, v, s))
+            if s in self._version_hq:
+                self._version_hq[s] += 1
+
     def push_predecessors(self, s: int, xi_s: float) -> None:
         """Uses _predecessors cache (built from _P_model; O(|preds|) per call)."""
         for pred, _a in self._predecessors[s]:

@@ -43,6 +43,9 @@ class BatchedPriorityModule(PrioritizedSweepingModule):
             self._batch.extend(self.pop_batch(self.batch_size))
         return self._batch.popleft() if self._batch else None
 
+    def enqueue_priority(self, s: int, priority: float) -> None:
+        self.module.enqueue_priority(s, priority)
+
     def pop_batch(self, limit: int) -> list[int]:
         """Select top-m states before any member of the batch is updated."""
         selected: list[int] = []

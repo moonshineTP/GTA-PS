@@ -26,6 +26,10 @@ class PrioritizedSweepingModule(ABC):
         """Return the next state to back up (highest aggregate priority), or None."""
 
     @abstractmethod
+    def enqueue_priority(self, s: int, priority: float) -> None:
+        """Insert or promote one state using a host-computed residual priority."""
+
+    @abstractmethod
     def push_predecessors(self, s: int, xi_s: float) -> None:
         """
         Given that state s was backed up with residual magnitude xi_s,
