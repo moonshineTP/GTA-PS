@@ -371,7 +371,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=ROOT / "results" / "rebuttal" / "xi_tau_hop_distance",
+        default=ROOT / "results" / "additional_evidence" / "xi_tau_hop_distance",
     )
     parser.add_argument("--output-stem", default="xi_tau_hop_distance")
     parser.add_argument(

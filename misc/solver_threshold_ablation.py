@@ -289,7 +289,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=ROOT / "results" / "rebuttal" / "solver_threshold",
+        default=ROOT / "results" / "additional_evidence" / "solver_threshold",
     )
     parser.add_argument(
         "--plot-from",

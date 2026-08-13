@@ -431,7 +431,7 @@ def main() -> None:
     parser.add_argument("--sharp-threshold", type=float, default=0.75)
     parser.add_argument("--max-shift-attempts", type=int, default=100)
     parser.add_argument(
-        "--out-dir", type=Path, default=ROOT / "results" / "rebuttal" / "rq8_time_ablation"
+        "--out-dir", type=Path, default=ROOT / "results" / "additional_evidence" / "rq8_time_ablation"
     )
     args = parser.parse_args()
     if args.seeds < 2 or args.workers < 1 or min(args.n_shifts, args.budget) < 1:

@@ -141,7 +141,7 @@ def main() -> None:
     if adverse:
         print(
             "WARNING: Fresh final-pass data contradicts at least one fixed "
-            "interpretation sentence in neurips/rebuttal/final.md."
+            "reference interpretation."
         )
         for row, comparator, difference in adverse:
             print(f"{row}: GTA minus {comparator} = {difference:+.6f}")

@@ -107,7 +107,7 @@ def main() -> None:
         type=Path,
         default=ROOT
         / "results"
-        / "rebuttal"
+        / "additional_evidence"
         / "wall_clock_multishift_garnet200"
         / "tuning.json",
     )

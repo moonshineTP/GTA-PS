@@ -817,7 +817,7 @@ def main() -> None:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=ROOT / "results" / "rebuttal" / "rq8_eta_tuning",
+        default=ROOT / "results" / "additional_evidence" / "rq8_eta_tuning",
     )
     parser.add_argument(
         "--export-existing-dir",

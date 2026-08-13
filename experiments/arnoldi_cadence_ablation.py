@@ -223,12 +223,12 @@ def main() -> None:
     parser.add_argument(
         "--input-dir",
         type=Path,
-        default=ROOT / "results" / "rebuttal" / "arnoldi_cadence_30seed",
+        default=ROOT / "results" / "additional_evidence" / "arnoldi_cadence_30seed",
     )
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=ROOT / "results" / "rebuttal" / "arnoldi_cadence_30seed",
+        default=ROOT / "results" / "additional_evidence" / "arnoldi_cadence_30seed",
     )
     args = parser.parse_args()
 

@@ -1,4 +1,4 @@
-"""Validate and extract the final jovy solver-scaling artifact."""
+"""Validate and extract the reference solver-scaling artifact."""
 from __future__ import annotations
 
 import argparse

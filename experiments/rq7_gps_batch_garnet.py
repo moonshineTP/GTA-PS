@@ -228,7 +228,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=ROOT / "results" / "rebuttal" / "gps_batch_garnet75",
+        default=ROOT / "results" / "additional_evidence" / "gps_batch_garnet75",
     )
     parser.add_argument(
         "--output-stem",

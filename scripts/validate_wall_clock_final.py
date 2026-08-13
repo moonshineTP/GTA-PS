@@ -1,4 +1,4 @@
-"""Validate and extract a final wsJb wall-clock host artifact."""
+"""Validate and extract a reference wall-clock host artifact."""
 from __future__ import annotations
 
 import argparse

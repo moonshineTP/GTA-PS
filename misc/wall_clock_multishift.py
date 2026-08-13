@@ -751,7 +751,7 @@ def main() -> None:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=ROOT / "results" / "rebuttal" / "wall_clock_multishift_time",
+        default=ROOT / "results" / "additional_evidence" / "wall_clock_multishift_time",
     )
     parser.add_argument(
         "--plot-from",
