@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT / "experiments"))
 sys.path.insert(0, str(ROOT / "misc"))
 sys.path.insert(0, str(ROOT / "src"))
 
-rq8_time = importlib.import_module("rq8_time_ablation")
+rq9_time = importlib.import_module("rq9_time_ablation")
 
 
 def test_counterfactual_gains_match_direct_one_state_backup():
@@ -19,7 +19,7 @@ def test_counterfactual_gains_match_direct_one_state_backup():
     value = np.zeros(2)
     value_star = np.array([1.0, 0.0])
 
-    gains = rq8_time.counterfactual_backup_gains(
+    gains = rq9_time.counterfactual_backup_gains(
         P, reward, 0.0, value, value_star, np.array([0, 1])
     )
 
@@ -27,13 +27,13 @@ def test_counterfactual_gains_match_direct_one_state_backup():
 
 
 def test_prefix_auc_uses_all_observed_backup_times():
-    assert rq8_time.prefix_auc([1.0, 0.5, 0.25]) == pytest.approx(7.0 / 12.0)
+    assert rq9_time.prefix_auc([1.0, 0.5, 0.25]) == pytest.approx(7.0 / 12.0)
 
 
 def test_standard_queue_order_sorts_residual_descending_then_state_id():
     module = type("Module", (), {"xi": np.array([0.2, 0.4, 0.4, 0.0])})()
 
-    assert rq8_time.standard_queue_order(module).tolist() == [1, 2, 0]
+    assert rq9_time.standard_queue_order(module).tolist() == [1, 2, 0]
 
 
 def test_summary_uses_seed_as_independent_unit_after_shift_averaging():
@@ -63,7 +63,7 @@ def test_summary_uses_seed_as_independent_unit_after_shift_averaging():
         clone["method"] = "gta_beta"
         rows.append(clone)
 
-    summary = rq8_time.summarize_traces(rows, budget=1)
+    summary = rq9_time.summarize_traces(rows, budget=1)
 
     assert summary["curves"]["standard_ps"]["normalized_error"][1]["mean"] == pytest.approx(0.625)
     assert summary["cumulative_tracking_gap"][1]["mean"] == pytest.approx(0.0)

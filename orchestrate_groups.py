@@ -100,7 +100,7 @@ GROUPS: dict[str, tuple[ScriptSpec, ...]] = {
             },
         ),
         ScriptSpec(
-            path="experiments/rq3_mixing_tradeoff.py",
+            path="experiments/rq3_alpha_tradeoff.py",
             label="RQ3 tradeoff",
             forwarded_flags={
                 "workers": "--workers",
