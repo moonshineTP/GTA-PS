@@ -1,5 +1,5 @@
 """
-Regression tests for RQ4/RQ5/RQ6 experiment method wiring.
+Regression tests for RQ4/RQ5 experiment method wiring.
 
 These focus on:
 - explicit mapping from legacy tuned keys to canonical forward/full GTA variants
@@ -21,13 +21,12 @@ sys.path.insert(0, str(ROOT / "src"))
 
 rq4 = importlib.import_module("rq4_asymmetry")
 rq5 = importlib.import_module("rq5_bottlenecks")
-rq6 = importlib.import_module("rq6_curl_divergence")
 rq1_dyna = importlib.import_module("rq1_dyna_timeline")
 from gta_ps.algorithms import make_agent
 from gta_ps.algorithms.empirical_model import SampleModel
 from gta_ps.utils.hyperparams import ENV_DEFAULT_CONFIG, load_tuned_for_env
 
-RQ_MODULES = [rq4, rq5, rq6]
+RQ_MODULES = [rq4, rq5]
 
 def _legacy_cfg() -> dict:
     return {

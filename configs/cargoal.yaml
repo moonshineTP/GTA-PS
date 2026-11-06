@@ -9,7 +9,7 @@ seeds: 50
 # budgets: |S|/4, |S|, 4|S|
 budgets: [100, 400, 1600]
 
-# Disturbance modes (sweep in RQ4/RQ6)
+# Disturbance modes (sweep in RQ4)
 disturbance: calm
 disturbance_sweep: [calm, directional_rain, cyclic_gust, slippery_patch]
 
