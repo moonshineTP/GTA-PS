@@ -22,6 +22,15 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "misc"))
 
+
+def _portable_path(path: Path) -> str:
+    """Return a repo-relative POSIX path so saved artifacts omit local checkout locations."""
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(ROOT).as_posix()
+    except ValueError:
+        return resolved.name
+
 from gta_ps.algorithms import BatchedPriorityModule, DpHost, GpsH2, make_agent
 from gta_ps.envs.garnet import GarnetEnv
 from gta_ps.utils.metrics import value_error_l1
@@ -277,7 +286,7 @@ def main() -> None:
         "protocol": {
             "host": "oracle_dp",
             "env": "GarnetEnv",
-            "config_source": str(args.config.resolve()),
+            "config_source": _portable_path(args.config),
             "states": int(config["n_states"]),
             "actions": int(config["n_actions"]),
             "branching": int(config["branching"]),

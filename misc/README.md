@@ -1,163 +1,58 @@
-# GTA-PS Ablations & Structural Audits
+# Supporting studies and utilities
 
-Secondary ablation scripts and parameter audits that support the primary Research Questions (RQ1–4) and validate the theoretical claims in §6 of the memo. Each script isolates one structural property and produces a JSON result + PNG plot.
+This directory holds the ablations, benchmarks, tuners, and plotting helpers that surround the research-question suite in `experiments/`. Each study isolates one property of GTA-PS, writes a JSON result under `results/`, and renders a figure under `plots/`. Every script lists its options through `--help`.
 
----
+## Ablations
 
-## Theory Validation Scripts (§6)
+| Script | Property tested | Output |
+| --- | --- | --- |
+| `mixing_threshold_ablation.py` | Planning budget `K` against mixing time: the topology advantage shrinks as `K` grows past the mixing horizon | `results/misc/mixing_threshold_ablation/`, `plots/mixing_threshold_ablation.png` |
+| `shift_rate_ablation.py` | Advantage across the planning steps allowed per reward shift | `results/misc/shift_rate_ablation/`, `plots/shift_rate_ablation.png` |
+| `cumulative_ablation.py` | Cumulative tracking error of Standard-PS and GTA-PS on a slow-mixing GARNET with a Dyna host | `results/misc/cumulative_tracking/`, `plots/cumulative_ablation.png` |
+| `scheduler_ablation.py` | Linear and log `beta_t` schedulers against Standard-PS | `results/misc/scheduler_ablation/` |
+| `beta_dynamics.py` | Traces of SLEM, `beta_t`, and the topology signal ratio across backups and shifts | `results/misc/beta_dynamics/` |
+| `gamma_ablation.py` | Discount factor against the convergence trajectory | `results/gamma_ablation_garnet.json`, `plots/gamma_ablation_garnet.png` |
+| `periodicity_ablation.py` | Periodic (bipartite) chains where the spectral gap closes | `results/periodicity_ablation.json`, `plots/periodicity_ablation.png` |
+| `reward_support_ablation.py` | Reward density on GARNET | `results/reward_support_ablation.json`, `plots/reward_support_ablation.png` |
 
-### `cumulative_tracking.py`
-**Theory:** Theorem 6.10(ii) — cumulative tracking-error advantage  
-**Claim:** TE^PS(N) − TE^GTA(N) ≥ N·Ā + o(N) → +∞ a.s. under K < t\_mix(1/4).  
-**Setup:** On-policy Dyna + TD(0) on slow-mixing GARNET (n\_nbr\_rate=0.07, SLEM≈0.99, t\_mix≈143). K=40 << t\_mix. N=25 reward-shift episodes, T\_real=30 real steps per episode, T\_warmup=300 random steps.  
-**Key outputs:**
-- Panel 1: Per-episode L1 value error (log scale) — Standard-PS vs GTA-PS^β
-- Panel 2: Cumulative TE(N) = Σ err\_t over episodes
-- Panel 3: TE^PS(N) − TE^GTA(N) with linear fit slope Ā (should be positive and growing)
+## Equal-time and solver studies
 
-**Requires Dyna host** (DP has no episode structure — reward oracle cannot trigger the K < t\_mix regime).
+These protocols back the additional experiments summarized in `docs/additional-experiments.md`.
 
-```bash
-python misc/cumulative_tracking.py --seeds 10 --n-episodes 25 --K 40
-```
+| Script | Purpose |
+| --- | --- |
+| `wall_clock_multishift.py` | Equal-elapsed-time replanning on GARNET with time-triggered reward shifts |
+| `tune_wall_clock_garnet200.py` | Stability pass for GTA-PS settings before the GARNET-200 wall-clock runs |
+| `solver_threshold_ablation.py` | LU-Woodbury against GMRES crossover on sparse, localized GARNETs |
+| `xi_tau_hop_distance.py` | Residual and topology signal AUC by hop distance from the shifted reward |
 
----
+## Benchmarks and tuning
 
-## Assumption Coverage Scripts
+| Script | Purpose | Output |
+| --- | --- | --- |
+| `convergence_benchmark.py` | Backups needed to reach an error tolerance after each reward shift | `results/misc/convergence_benchmark/` |
+| `time_benchmark.py` | Wall-clock time per backup and topology precomputation overhead | `results/misc/time_benchmark/` |
+| `tuner.py` | Optuna search for GTA-PS hyperparameters, consumed by `load_tuned_for_env` | `results/misc/tuner/` |
 
-### `mixing_threshold_ablation.py`
-**Theory:** Prop. `prop:mfpt`(i) — K-vs-t\_mix phase behaviour  
-**Claim:** Whenever K < t\_mix(1/4), the MFPT-blocked set B\_K is non-empty and GTA-PS yields a positive cumulative tracking-error advantage; the advantage diminishes as K/t\_mix grows toward and past 1.  
-**Setup:** DpHost (oracle transitions, no warm-up noise). Fixed K=40. Sweeps n\_nbr\_rate ∈ {0.05, 0.07, 0.10, 0.15, 0.25, 0.40} — resulting K/t\_mix(¼) ratios span 0.02–1.5, straddling the threshold. N=20 reward-shift episodes per seed.
+## FourRooms showcase
 
-**Why DpHost (not Dyna):** Fast-mixing GARNET is also easier to learn a model for, so Dyna confounds t\_mix with model quality. The oracle isolates the K effect cleanly.
+`showcase.py` compares Dyna with Standard-PS and Dyna with GTA-PS on FourRooms and has two modes.
 
-**Key outputs:**
-- Panel 1: Cumulative advantage TE^PS(N)−TE^GTA(N) vs episode N, one trajectory per mixing regime
-- Panel 2: End-of-run advantage vs K/t\_mix ratio with vertical dashed line at K/t\_mix=1
-- Panel 3: Per-episode L1 error for both variants across all n\_nbr\_rate values
+- `--mode ablation` runs seeds in parallel and saves a multi-panel figure with per-episode error, cumulative tracking error, and value and topology heatmaps to `plots/fourrooms_ablation.png`.
+- `--mode showcase` records one seed as an animation at `plots/fourrooms_showcase.gif`, with one frame per real host step. The option `--n-frames` keeps only the last frames of the run.
 
-**Note on seeds:** 5 seeds show high variance in the middle range (K/t\_mix ≈ 0.1–0.6); the clearest signal is at the extremes (K/t\_mix ≈ 0.02–0.04: advantage ≈ +0.3–0.6; K/t\_mix ≈ 1.5: advantage ≈ −1.0). Run ≥20 seeds for a monotone trend in the transition zone.
-
-```bash
-python misc/mixing_threshold_ablation.py --seeds 20 --n-episodes 30 --K 40
-```
-
----
-
-### `shift_rate_ablation.py`
-**Theory:** Assumption 4b — stationary-ergodic reward shifts with mean amplitude Δ̄\_r > 0  
-**Claim:** GTA-PS advantage is preserved across the full range of ergodic shift rates.  
-**Setup:** Sweeps T (planning steps per shift window) ∈ {5, 10, 25, 50, 100}. Error measured at end of each T-step window. All three variants on GARNET n=100.
+`showcase_support.py` provides the shared rendering code, and `extract_showcase_frames.py` cuts still frames from the saved GIF.
 
 ```bash
-python misc/shift_rate_ablation.py --seeds 10 --n-shifts 10 --K 40
-```
-
----
-
-### `boltzmann_b_ablation.py`
-**Theory:** Assumption 8 — Boltzmann temperature b ∈ (0, b\_max] ensures π^PS\_t(a|s) ≥ π\_act,min > 0  
-**Claim:** GTA-PS advantage is robust across the full b range (not only for one specific temperature).  
-**Setup:** Sweeps b ∈ {0.1, 0.5, 1.0, 2.0, 5.0, 10.0} for gta\_base and gta\_beta. Standard-PS shown as horizontal baseline (b-independent).
-
-```bash
-python misc/boltzmann_b_ablation.py --seeds 10 --n-shifts 8 --K 40
-```
-
----
-
-## Algorithm & Hyperparameter Ablations
-
-### `scheduler_ablation.py`
-Compares three β\_t scheduler families (linear, power, log) against Standard-PS on FourRooms and GARNET. Sweeps β₂ across each scheduler's natural grid with β₁=1 fixed. Primary reference for choosing the linear scheduler as default.
-
-### `beta_dynamics.py`
-Traces SLEM, β\_t, and the β\_t·τ / ξ signal ratio across backup steps and reward shifts for each GTA-PS β-variant. Helps diagnose topology signal saturation or collapse.
-
-### `gamma_ablation.py`
-Sweeps discount factor γ ∈ [0.5, 0.98] to observe how the contraction coefficient affects convergence trajectory. L1 metric; dynamically rescales tuned hyperparameters.
-
-### `mixing_ablation.py`
-GTA-PS (linear scheduler) vs Standard-PS across slow (SLEM≈0.994), medium (SLEM≈0.933), and fast (SLEM≈0.327) mixing GARNET environments. Sweeps β₂ in the linear scheduler range and reports best power-scheduler config.
-
----
-
-## Robustness / Edge-Case Scripts
-
-### `periodicity_ablation.py`
-Investigates robustness to periodic (bipartite) policy-induced chains where SLEM=1.0 (spectral gap collapses). Verifies GTA-PS degrades gracefully and does not diverge.
-
-### `reward_support_ablation.py`
-Sweeps reward density |supp(r\_t)| ∈ {1, 2, 4, 8, 16} on GARNET to quantify how sparsity of reward affects planning efficiency. Relevant to the sparse-reward regime in Assumption 4.
-
----
-
-## Benchmarks
-
-### `convergence_benchmark.py`
-Measures backup steps to reach ‖V − V\*‖\_∞ < ε after each reward shift with warm initialization from the preceding shift. Agents: dyna\_ps, gta\_base, gta\_beta. Environments: garnet (n=100), fourrooms. Default ε=5.0.
-
-### `time_benchmark.py`
-Wall-clock timing per backup step. Median ± std over repeated runs (warmup excluded). Reports overhead of topology pre-computation (\_init\_topology) relative to Standard-PS.
-
----
-
-## Utilities
-
-### `tuner.py`
-Hyperparameter search for GTA-PS variants. Outputs tuned configs consumed by `load_tuned_for_env("garnet")` / `load_tuned_for_env("fourrooms")`.
-
-### `showcase.py`
-**FourRooms graphical interface plug-in** — view interface for Dyna+Standard-PS vs Dyna+GTA-PS^β on FourRooms. Select mode via `--mode` flag.
-
-**`--mode ablation`** (default): Multi-seed headless run. Saves a 6-panel PNG to `plots/fourrooms_ablation.png`:
-- Panel 1: Per-episode mean L1 error with 95% CI
-- Panel 2: Cumulative tracking error TE(N)
-- Panels 3–6: Final value V(s) and priority/topology τ(s) heatmaps for each agent
-
-**`--mode showcase`**: Single-seed animation saved as `plots/fourrooms_showcase.gif` (Agg+pillow, no display required). Each frame corresponds exactly to one **real host step** (one action + $K$ planning steps). 
-
-**Key Features:**
-- **Dynamic Window**: `--n-frames` captures the **last** $N$ steps of the simulation. Defaults to the entire navigation across all episodes if omitted.
-- **Episode Tracking**: Displays the current Episode (Shift) number and the **cumulative reward** received within that episode.
-- **Multi-Panel**: Side-by-side comparison of value functions $V(s)$ and priority/topology maps $\tau(s)$ for Standard-PS and GTA-PS$^{\beta}$.
-
-```bash
-# Ablation: parallel 30-seed run, 8 reward-shift episodes
 python misc/showcase.py --mode ablation --seeds 30 --n-shifts 8 --K 40 --workers auto
-
-# Animation: Capture the entire 10-episode run (100 steps/ep = 1000 frames)
-python misc/showcase.py --mode showcase --n-shifts 10 --n-steps-per-shift 100 --K 40
-
-# Animation: Capture ONLY the final 200 steps of a long run
 python misc/showcase.py --mode showcase --n-shifts 20 --n-frames 200 --K 40
 ```
 
-### `plot_academic.py`
-**Shared plot style and palette** — canonical source of matplotlib rcParams and colour palette for all misc and experiment scripts. Moved here from `experiments/` since all ablations reference it.
+## Shared conventions
 
-Key exports:
-- `apply_style()` — call once before `plt.figure()` to apply canonical rcParams
-- `PALETTE` — `{variant: hex_color}` for standard_ps / gta_base / gta_beta
-- `LABELS` — `{variant: latex_string}` display names
-- `plot_rq2()`, `plot_rq3()` — academic-quality experiment result renderers
+`plot_academic.py` defines the matplotlib style (`apply_style()`), the variant palette (`PALETTE`), and the display labels (`LABELS`). The statistical scripts share these conventions.
 
-All misc scripts import `from plot_academic import apply_style, PALETTE`.
-
----
-
-## Technical Standards
-
-All statistical scripts follow:
-1. **Parallel execution** via `RunManager(n_workers="auto")` (tqdm progress bars included)
-2. **95% CI** via Student-t over seeds (`scipy.stats.sem × t.ppf(0.975, df=seeds−1)`)
-3. **Dual output**: standardized JSON in `results/misc/<name>/` + PNG in `plots/`
-4. **Thread pinning**: `OMP_NUM_THREADS=1`, `MKL_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`
-5. **Shared style**: `from plot_academic import apply_style, PALETTE` — call `apply_style()` before first `plt.figure()`
-6. **Config print**: each script prints a summary table of hyperparameters before the sweep loop
-
-```bash
-# Example: run the Thm 6.10 validation with 10 seeds
-python misc/cumulative_tracking.py --seeds 10 --workers auto
-```
+1. Seeds run in parallel worker processes, through `RunManager` in `threads/runner.py` or a process pool.
+2. Confidence intervals are 95% Student-t intervals over seeds.
+3. BLAS thread counts are pinned to one per worker through `OMP_NUM_THREADS`, `MKL_NUM_THREADS`, and `OPENBLAS_NUM_THREADS`.
+4. Each script writes JSON to `results/` and a figure to `plots/`.

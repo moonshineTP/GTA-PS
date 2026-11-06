@@ -1,10 +1,24 @@
 # GTA-PS
 
-This repository contains the reference implementation and experiment suite for Graph Topology Augmentation for Prioritized Sweeping (GTA-PS). It includes tabular planning agents, environment adapters, research-question experiments, supporting ablations, and reproducibility utilities.
+This repository is the official implementation of *Graph Topology Augmentation for Prioritized Sweeping in Non-stationary Reinforcement Learning*. GTA-PS enriches prioritized sweeping with spectral signals from the policy-induced transition graph, so planning recovers faster after reward shifts. The package provides tabular planning agents, environment adapters, the experiment suite behind each research question, and the saved artifacts that back the reported numbers.
+
+## Repository layout
+
+| Path | Contents |
+| --- | --- |
+| `src/gta_ps/` | Agents (`algorithms/`), tabular environments (`envs/`), spectral and metric utilities (`utils/`) |
+| `experiments/` | One entry point per research question, RQ1 to RQ9, plus the Arnoldi cadence aggregation |
+| `misc/` | Ablations, benchmarks, tuners, the FourRooms showcase, and shared plot styling |
+| `configs/` | YAML settings for GARNET, FourRooms, Reacher, and CarGoal |
+| `scripts/` | Validators that check saved reference artifacts |
+| `tests/` | Unit and protocol tests for the package and the experiment runners |
+| `docs/` | Protocol notes for the additional experiments |
+| `results/`, `plots/` | Reference data and figures, indexed in `results/README.md` and `plots/README.md` |
+| `threads/` | Parallel executor and hyperparameter tuning engine shared by the runners |
 
 ## Installation
 
-Python 3.12 or newer is required. Create the project environment from the repository root.
+Python 3.12 or newer is required. Create the environment from the repository root.
 
 ```powershell
 python -m venv .venv
@@ -12,13 +26,17 @@ python -m venv .venv
 .venv\Scripts\python.exe -m pip install -e ".[dev,reacher]"
 ```
 
-On Linux or macOS, replace `.venv\Scripts\python.exe` with `.venv/bin/python`.
+On Linux or macOS, replace `.venv\Scripts\python.exe` with `.venv/bin/python`. The optional CarGoal environment depends on an older Gymnasium stack, so it lives in its own environment. The pinned packages sit in the `cargoal` group of `pyproject.toml`.
 
-The optional CarGoal environment uses an older Gymnasium stack and must remain in a separate environment. See the `cargoal` dependency group in `pyproject.toml` for its pinned packages.
+## Verifying the installation
 
-## Reproduction entry points
+Run the test suite first, since later comparisons with the reference artifacts rely on it.
 
-The grouped runner executes scripts sequentially and stops at the first failure. A small verification pass is:
+```powershell
+.venv\Scripts\python.exe -m pytest -q
+```
+
+A short end-to-end pass of each experiment group follows. The grouped runner executes scripts sequentially and stops at the first failure.
 
 ```powershell
 .venv\Scripts\python.exe orchestrate_groups.py sanity --seeds 2 --workers 1
@@ -26,7 +44,9 @@ The grouped runner executes scripts sequentially and stops at the first failure.
 .venv\Scripts\python.exe orchestrate_groups.py ablations --seeds 2 --workers 1
 ```
 
-Windows launchers provide the same three groups with publication-scale defaults:
+## Reproducing the experiments
+
+Three Windows launchers run the same groups at publication scale (1,000 seeds, 10 workers by default). Extra arguments override those defaults, for example `run_rqs.cmd --seeds 30 --workers 6`.
 
 ```cmd
 run_sanity.cmd
@@ -34,11 +54,7 @@ run_rqs.cmd
 run_ablations.cmd
 ```
 
-Pass overrides directly to a launcher when a smaller or machine-specific run is needed. For example, `run_rqs.cmd --seeds 30 --workers 6`.
-
-## Research-question system
-
-The main grouped run covers RQ1-RQ5. Later studies have standalone entries because their protocols and output schemas differ.
+Studies with their own protocols run directly, and each script documents its options through `--help`.
 
 | Study | Entry point | Purpose |
 | --- | --- | --- |
@@ -52,20 +68,10 @@ The main grouped run covers RQ1-RQ5. Later studies have standalone entries becau
 | RQ8 | `experiments/rq8_eta_tuning.py` | Topology diffusion horizon |
 | RQ9 | `experiments/rq9_time_ablation.py` | Equal-time planning behavior |
 
-See `experiments/README.md` for the protocol map and common arguments.
+The grouped `rqs` run covers RQ1 to RQ5, while RQ6 to RQ9 have standalone entries. Protocol details are in `experiments/README.md`, supporting studies are in `misc/README.md`, and the solver, diffusion-horizon, and equal-time studies are summarized in `docs/additional-experiments.md`.
 
-## Miscellaneous runners
+## Outputs and reference artifacts
 
-The `misc/` directory holds supporting studies and utilities. Use `run_sanity.cmd` for timing, convergence, and showcase checks. Use `run_ablations.cmd` for mixing, shift-rate, discount, periodicity, reward-support, and cumulative ablations. Other files in `misc/` are standalone diagnostics or artifact validators and expose their options through `--help`.
+Scripts write numerical artifacts under `results/` and figures under `plots/`. Generated data stores its seeds, worker counts, environment settings, and metric definitions where the protocol supports it.
 
-Additional experiment designs for diffusion-horizon tuning, solver crossover, and equal-time recovery are summarized in `docs/additional-experiments.md`.
-
-## Outputs
-
-Scripts write numerical artifacts under `results/` and figures under `plots/`. Existing result files are reference artifacts; use a new `--out-dir` when preserving them matters. Random seeds, worker counts, environment settings, and metric definitions are stored with the generated data where supported.
-
-Run the test suite before comparing new results with the reference artifacts.
-
-```powershell
-.venv\Scripts\python.exe -m pytest -q
-```
+The committed files in `results/` and `plots/` are reference artifacts from final runs. Pass a new `--out-dir` during exploratory work to keep them intact. Smoke, pilot, and check outputs are excluded by `.gitignore`, so exploratory runs never enter version control by accident.

@@ -2,7 +2,7 @@
   "protocol": {
     "host": "oracle_dp",
     "env": "GarnetEnv",
-    "config_source": "C:\\Users\\admin\\Main-project\\root\\main\\lab\\GTA-PS\\code\\configs\\garnet_s75.yaml",
+    "config_source": "configs/garnet_s75.yaml",
     "states": 75,
     "actions": 4,
     "branching": 3,

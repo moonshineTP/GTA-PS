@@ -1,23 +1,37 @@
+# Python bytecode and caches
 __pycache__/
 *.pyc
 *.pyo
-dist/
-build/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.ipynb_checkpoints/
 .coverage
 htmlcov/
-*.log
-*.zip
-*.tmp
-.DS_Store
+
+# Packaging and compiled artifacts
+dist/
+build/
+*.egg-info/
+*.build/
+*.dist/
+*.onefile-build/
+misc/dummy.py
+
+# Virtual environments and local configuration
 .venv*/
 venv/
 env/
 .env
 .env.*
 !.env.example
+.mplconfig
+
+# Editors, operating systems, and agent tooling
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
 .codex/
 .claude/
 .gemini/
@@ -27,6 +41,25 @@ CLAUDE.md
 GEMINI.md
 mcp.json
 mcp.*.json
+
+# Logs, archives, and scratch space
+*.log
+*.zip
+*.7z
+*.tar.gz
+*.tmp
+*.bak
 tmp/
+.trash/
+renders/
 docs/memo
-.mplconfig
+
+# Exploratory outputs. Reference artifacts live in results/additional_evidence/
+# under final-run names; smoke, pilot, swift, check, and readiness runs stay local.
+results/**/*smoke*/
+results/**/*pilot*/
+results/**/*swift*/
+results/**/*_check/
+results/**/*readiness*
+results/**/*smoke*.json
+plots/swift_test_palette_template.png
