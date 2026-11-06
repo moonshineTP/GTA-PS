@@ -25,6 +25,7 @@ These protocols back the additional experiments summarized in `docs/additional-e
 | `tune_wall_clock_garnet200.py` | Stability pass for GTA-PS settings before the GARNET-200 wall-clock runs |
 | `solver_threshold_ablation.py` | LU-Woodbury against GMRES crossover on sparse, localized GARNETs |
 | `xi_tau_hop_distance.py` | Residual and topology signal AUC by hop distance from the shifted reward |
+| `arnoldi_cadence_ablation.py` | Aggregates and plots the GARNET-200 runs that vary the Arnoldi refresh period |
 
 ## Benchmarks and tuning
 

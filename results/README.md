@@ -32,7 +32,7 @@ The folder `additional_evidence/` holds the reference runs for the extended stud
 | `solver_threshold*/` | `misc/solver_threshold_ablation.py` | LU-Woodbury against GMRES crossover; the `final_table` folder is the reference table |
 | `wall_clock_garnet200_r20_*` | `misc/wall_clock_multishift.py` | Equal-time recovery on GARNET-200 with DP and Dyna hosts; `final` folders are the reference runs, and `30seed`, `threads*`, and `tuning` folders support them |
 | `wall_clock_multishift*/` | `misc/wall_clock_multishift.py` | Equal-time runs on GARNET-200 and GARNET-400 |
-| `arnoldi_cadence_*` | `experiments/arnoldi_cadence_ablation.py` | Arnoldi refresh cadence, with 30-seed, instrumented, and micro-benchmark variants |
+| `arnoldi_cadence_*` | `misc/arnoldi_cadence_ablation.py` | Arnoldi refresh cadence, with 30-seed, instrumented, and micro-benchmark variants |
 | `xi_tau_hop_distance_s100_5w/` | `misc/xi_tau_hop_distance.py` | Signal AUC by hop distance from the shifted reward |
 
 The equal-time ablation `experiments/rq9_time_ablation.py` has no retained reference run. Regenerate it with a fresh `--out-dir`.

@@ -7,8 +7,8 @@ This repository is the official implementation of *Graph Topology Augmentation f
 | Path | Contents |
 | --- | --- |
 | `src/gta_ps/` | Agents (`algorithms/`), tabular environments (`envs/`), spectral and metric utilities (`utils/`) |
-| `experiments/` | One entry point per research question, RQ1 to RQ9, plus the Arnoldi cadence aggregation |
-| `misc/` | Ablations, benchmarks, tuners, the FourRooms showcase, and shared plot styling |
+| `experiments/` | One entry point per research question, RQ1 to RQ9 |
+| `misc/` | Ablations, benchmarks, tuners, the Arnoldi cadence aggregation, the FourRooms showcase, and shared plot styling |
 | `configs/` | YAML settings for GARNET, FourRooms, Reacher, and CarGoal |
 | `scripts/` | Validators that check saved reference artifacts |
 | `tests/` | Unit and protocol tests for the package and the experiment runners |
