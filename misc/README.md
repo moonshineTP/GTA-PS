@@ -42,7 +42,7 @@ These protocols back the additional experiments summarized in `docs/additional-e
 - `--mode ablation` runs seeds in parallel and saves a multi-panel figure with per-episode error, cumulative tracking error, and value and topology heatmaps to `plots/fourrooms_ablation.png`.
 - `--mode showcase` records one seed as an animation at `plots/fourrooms_showcase.gif`, with one frame per real host step. The option `--n-frames` keeps only the last frames of the run.
 
-`showcase_support.py` provides the shared rendering code, and `extract_showcase_frames.py` cuts still frames from the saved GIF.
+`showcase_support.py` provides the shared rendering code.
 
 ```bash
 python misc/showcase.py --mode ablation --seeds 30 --n-shifts 8 --K 40 --workers auto
