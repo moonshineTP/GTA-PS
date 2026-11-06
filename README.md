@@ -23,10 +23,10 @@ Python 3.12 or newer is required. Create the environment from the repository roo
 ```powershell
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install --upgrade pip
-.venv\Scripts\python.exe -m pip install -e ".[dev,reacher]"
+.venv\Scripts\python.exe -m pip install -e ".[dev,reacher,tune]"
 ```
 
-On Linux or macOS, replace `.venv\Scripts\python.exe` with `.venv/bin/python`. The optional CarGoal environment depends on an older Gymnasium stack, so it lives in its own environment. The pinned packages sit in the `cargoal` group of `pyproject.toml`.
+The `tune` extra installs Optuna for the hyperparameter search drivers. On Linux or macOS, replace `.venv\Scripts\python.exe` with `.venv/bin/python`. The optional CarGoal environment depends on an older Gymnasium stack, so it lives in its own environment. The pinned packages sit in the `cargoal` group of `pyproject.toml`.
 
 ## Verifying the installation
 

@@ -9,10 +9,10 @@ State encoding:
   s = idx_x * N + idx_y
   where idx_x, idx_y = digitize(x_pos), digitize(y_pos) into [0, N)
 
-Macro-action set (≥10 per memo §8):
+Macro-action set (at least 10):
   10 steering × throttle combinations from a polar grid.
 
-Reward configuration (memo §8, CarGoal):
+Reward configuration (CarGoal):
   Goal relocated among anchor waypoints; disturbance ∈ {calm, rain, gust, slip}.
 
 INSTALLATION NOTE

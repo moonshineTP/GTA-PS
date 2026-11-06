@@ -3,7 +3,7 @@ misc/cumulative_tracking.py
 
 On-policy Dyna ablation: cumulative L1 tracking error across reward-shift episodes.
 
-Validates Theorem 6.10(ii):
+Validates the cumulative tracking theorem:
   TE^PS(N) - TE^GTA(N)  >=  N * A_bar + o(N)  ->  +inf  a.s.
 
 Protocol per seed:
@@ -17,7 +17,7 @@ Protocol per seed:
   Cumulate: TE(n) = sum_{t=1}^{n} err_t
 
 Environment: slow-mixing GARNET (n_nbr_rate=0.07, SLEM~0.99)
-so that K << t_mix(1/4) and Theorem 6.10's regime is active.
+so that K << t_mix(1/4) and the theorem's regime is active.
 
 IMPORTANT: Epsilon-greedy (EPS_GREEDY=0.15) is vital for cumulative reward.
 Without it, GTA-PS over-exploits high-priority states and misses reward

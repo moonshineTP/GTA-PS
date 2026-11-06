@@ -1,5 +1,5 @@
 """
-GTA-PS Computation Management Module (memo §Algorithm and Complexity).
+GTA-PS Computation Management Module (paper: algorithm and complexity analysis).
 
 Exposes named procedures: GtaPolicyUpdate, TopologyUpdate, RewardUpdate,
 PopAndPrioritize, PushPredecessors, RefreshTopQ, RekeyResidualQueue.
@@ -190,7 +190,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
 
 
     # ------------------------------------------------------------------
-    # Initialisation / precompute (memo Algorithm lines 1-7, oracle P)
+    # Initialisation / precompute (paper algorithm, initialization step, oracle P)
     # ------------------------------------------------------------------
 
     def _init_topology(self) -> None:
@@ -342,7 +342,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
     def _rebuild_q_tau(self) -> None:
         n = len(self.tau)
         q = min(self.q_t, n)
-        # argpartition is O(n); argsort would be O(n log n) — memo §Complexity claims O(|S|+q log|S|).
+        # argpartition is O(n); argsort would be O(n log n) — the complexity analysis claims O(|S|+q log|S|).
         idx = np.argpartition(self.tau, n - q)[n - q:]
         self._top_q = set(idx.tolist())
 
@@ -370,7 +370,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
 
 
     def _rekey_residual_queue(self) -> None:
-        # Gate on ξ[s] > 0 (per memo §Algorithm: Q_ξ = {s : ξ[s] > 0}).
+        # Gate on ξ[s] > 0 (per the algorithm: Q_ξ = {s : ξ[s] > 0}).
         # Score = ξ + β_t·τ.
         #   β_t > 0 → topology amplifies priority via magnitude of discounted reachability.
         #   β_t < 0 → topology dampens priority (conservative on fast-mixing).
