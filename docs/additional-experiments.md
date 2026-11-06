@@ -29,6 +29,14 @@ Reference artifacts are stored under:
 - `results/additional_evidence/wall_clock_garnet200_r20_dp_final_s100_s6_t5_8w/`
 - `results/additional_evidence/wall_clock_garnet200_r20_dyna_final_s100_s6_t5_8w/`
 
+## Arnoldi cadence
+
+`experiments/arnoldi_cadence_ablation.py` aggregates and plots the GARNET-200 runs that vary how often the SLEM estimate is refreshed. The per-period runs come from `misc/wall_clock_multishift.py`, and the reference artifacts are stored under `results/additional_evidence/arnoldi_cadence_30seed/`.
+
+## Hop-distance signals
+
+`misc/xi_tau_hop_distance.py` measures the residual signal and the topology signal AUC by hop distance from the shifted reward. Reference artifacts are stored under `results/additional_evidence/xi_tau_hop_distance_s100_5w/`.
+
 ## Validation
 
 Run each generator with `--help` before changing its protocol. Artifact validators live in `scripts/` and fail when expected seeds, conditions, metrics, or companion plots are missing. Preserve existing reference outputs by selecting a new `--out-dir` during exploratory runs.
