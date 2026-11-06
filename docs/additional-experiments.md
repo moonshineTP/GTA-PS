@@ -31,7 +31,7 @@ Reference artifacts are stored under:
 
 ## Arnoldi cadence
 
-`experiments/arnoldi_cadence_ablation.py` aggregates and plots the GARNET-200 runs that vary how often the SLEM estimate is refreshed. The per-period runs come from `misc/wall_clock_multishift.py`, and the reference artifacts are stored under `results/additional_evidence/arnoldi_cadence_30seed/`.
+`misc/arnoldi_cadence_ablation.py` aggregates and plots the GARNET-200 runs that vary how often the SLEM estimate is refreshed. The per-period runs come from `misc/wall_clock_multishift.py`, and the reference artifacts are stored under `results/additional_evidence/arnoldi_cadence_30seed/`.
 
 ## Hop-distance signals
 
