@@ -92,7 +92,7 @@ class DpHost(BellmanMixin):
             # Sync module.V so push_predecessors computes xi_pred from current values.
             self.module.update_value(s, float(self.V[s]))
 
-            # Advantage: γ·E[V|s,a] − max_a γ·E[V|s,a]  (memo §Algorithm)
+            # Advantage: γ·E[V|s,a] − max_a γ·E[V|s,a]  (see the paper's algorithm section)
             EV_all = (P[:, s, :] * self.V[None, :]).sum(axis=1)   # (|A|,)
             adv_PS_row = self.gamma * EV_all - self.gamma * EV_all.max()
 

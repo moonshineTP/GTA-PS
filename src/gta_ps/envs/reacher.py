@@ -9,11 +9,11 @@ State encoding:
   s = idx1 * N + idx2
   where idx1, idx2 = digitize(theta1), digitize(theta2) into [0, N)
 
-Macro-action set (≥10 per memo §8):
+Macro-action set (at least 10):
   All combinations of {-1, 0, +1} for each of 2 joints → 9 combinations,
   plus 4 diagonal half-steps → 13 total macro-actions.
 
-Reward configuration (memo §8, MuJoCo Reacher):
+Reward configuration (MuJoCo Reacher):
   Goal relocated among workspace anchors; reward = 1 / (1 + dist) at goal.
   Disturbance modes: none, mild_torque, sticky_drag, directional_bias.
 
