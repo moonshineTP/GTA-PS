@@ -7,7 +7,7 @@ This repository is the official implementation of *Graph Topology Augmentation f
 | Path | Contents |
 | --- | --- |
 | `src/gta_ps/` | Agents (`algorithms/`), tabular environments (`envs/`), spectral and metric utilities (`utils/`) |
-| `experiments/` | One entry point per research question, RQ1 to RQ9 |
+| `experiments/` | One entry point per research question (RQ1 to RQ5, RQ7, and RQ8) |
 | `misc/` | Ablations, benchmarks, tuners, the Arnoldi cadence aggregation, the FourRooms showcase, and shared plot styling |
 | `configs/` | YAML settings for GARNET, FourRooms, Reacher, and CarGoal |
 | `scripts/` | Validators that check saved reference artifacts |
@@ -63,12 +63,10 @@ Studies with their own protocols run directly, and each script documents its opt
 | RQ3 | `experiments/rq3_alpha_tradeoff.py` | Accuracy and propagation tradeoff |
 | RQ4 | `experiments/rq4_asymmetry.py` | Directed geometry and non-reversibility |
 | RQ5 | `experiments/rq5_bottlenecks.py` | Computational scaling and bottlenecks |
-| RQ6 | `experiments/rq6_curl_divergence.py` | Path-flow and cyclic geometry |
 | RQ7 | `experiments/rq7_gps_batch_*.py` | Batch scheduling and abstraction comparisons |
 | RQ8 | `experiments/rq8_eta_tuning.py` | Topology diffusion horizon |
-| RQ9 | `experiments/rq9_time_ablation.py` | Equal-time planning behavior |
 
-The grouped `rqs` run covers RQ1 to RQ5, while RQ6 to RQ9 have standalone entries. Protocol details are in `experiments/README.md`, supporting studies are in `misc/README.md`, and the solver, diffusion-horizon, and equal-time studies are summarized in `docs/additional-experiments.md`.
+The grouped `rqs` run covers RQ1 to RQ5, while RQ7 and RQ8 have standalone entries. Protocol details are in `experiments/README.md`, supporting studies are in `misc/README.md`, and the solver, diffusion-horizon, and equal-time studies are summarized in `docs/additional-experiments.md`.
 
 ## Outputs and reference artifacts
 

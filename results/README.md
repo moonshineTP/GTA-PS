@@ -35,8 +35,6 @@ The folder `additional_evidence/` holds the reference runs for the extended stud
 | `arnoldi_cadence_*` | `misc/arnoldi_cadence_ablation.py` | Arnoldi refresh cadence, with 30-seed, instrumented, and micro-benchmark variants |
 | `xi_tau_hop_distance_s100_5w/` | `misc/xi_tau_hop_distance.py` | Signal AUC by hop distance from the shifted reward |
 
-The equal-time ablation `experiments/rq9_time_ablation.py` has no retained reference run. Regenerate it with a fresh `--out-dir`.
-
 ## Working with these files
 
 Run new experiments with a different `--out-dir` so reference artifacts stay intact. Smoke, pilot, swift, and check runs are excluded by `.gitignore`. The validators in `scripts/` check that a saved artifact holds its expected seeds, conditions, and metrics.

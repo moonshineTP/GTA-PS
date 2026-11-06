@@ -8,7 +8,7 @@ seeds: 100
 # budgets: |S|/4, |S|, 4|S|
 budgets: [64, 256, 1024]
 
-# Disturbance modes (sweep in RQ4/RQ6)
+# Disturbance modes (sweep in RQ4)
 disturbance: none
 disturbance_sweep: [none, mild_torque, sticky_drag, directional_bias]
 
