@@ -116,6 +116,15 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
             f = spla.spsolve(self._A_in.tocsc(), rhs)
         return f
 
+    def _current_system(self, direction: str) -> sp.csr_array:
+        """Fresh system matrix for the current P_pi (guarded fallback path)."""
+        n, eta = self.n_states, self.eta
+        if direction == "out":
+            return sp.eye(n, format="csr") * (1.0 + eta) - sp.csr_array(self.P_pi)
+        if direction == "in":
+            return in_laplacian(self.P_pi) + sp.eye(n, format="csr") * eta
+        raise ValueError(f"unknown rank-k direction {direction!r}")
+
     def _solve_rank_k(
         self,
         factor: spla.SuperLU,
@@ -123,31 +132,47 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         *,
         direction: str,
     ) -> np.ndarray:
-        """Solve the current system from its base LU and a Woodbury correction."""
+        """Solve the current system from its base LU and an exact low-rank update.
+
+        The out-system changes by the rank-k row perturbation $-\\Delta P$. The
+        in-system is diagonal plus low-rank: $D^{in} - P^T$ changes by
+        $\\operatorname{diag}(\\Delta P^T \\mathbf{1}) - \\Delta P^T$. Both are
+        represented as one Woodbury correction against the cached factorization.
+        """
         delta_P = self.P_pi - self._factor_P_pi
         states = np.flatnonzero(np.max(np.abs(delta_P), axis=1) > 1e-12)
         if states.size == 0:
             return factor.solve(rhs)
 
-        selector = np.zeros((self.n_states, states.size), dtype=float)
-        selector[states, np.arange(states.size)] = 1.0
-        changed_rows = delta_P[states]
+        n = self.n_states
         if direction == "out":
+            selector = np.zeros((n, states.size), dtype=float)
+            selector[states, np.arange(states.size)] = 1.0
             U = -selector
-            Vt = changed_rows
-            current_system = self._A_out
+            Vt = delta_P[states]
         elif direction == "in":
-            U = -changed_rows.T
-            Vt = selector.T
-            current_system = self._A_in
+            delta_colsum = delta_P.sum(axis=0)
+            support = np.flatnonzero(np.abs(delta_colsum) > 1e-12)
+            U = np.zeros((n, support.size + states.size))
+            Vt = np.zeros((support.size + states.size, n))
+            for idx, col in enumerate(support):
+                U[col, idx] = delta_colsum[col]
+                Vt[idx, col] = 1.0
+            offset = int(support.size)
+            for idx, s in enumerate(states):
+                U[:, offset + idx] = -delta_P[s]
+                Vt[offset + idx, s] = 1.0
         else:
             raise ValueError(f"unknown rank-k direction {direction!r}")
 
+        if U.shape[1] > max(1, n // 2):
+            return spla.spsolve(self._current_system(direction).tocsc(), rhs)
+
         base_solution = factor.solve(rhs)
         inverse_U = factor.solve(U)
-        middle = np.eye(states.size) + Vt @ inverse_U
+        middle = np.eye(U.shape[1]) + Vt @ inverse_U
         if not np.all(np.isfinite(middle)) or np.linalg.cond(middle) > 1e12:
-            return spla.spsolve(current_system.tocsc(), rhs)
+            return spla.spsolve(self._current_system(direction).tocsc(), rhs)
         return base_solution - inverse_U @ np.linalg.solve(
             middle,
             Vt @ base_solution,
@@ -160,7 +185,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         Psp.data[np.abs(Psp.data) < 1e-6] = 0.0
         Psp.eliminate_zeros()
         self._A_out = sp.eye(n, format="csr") * (1.0 + eta) - Psp
-        self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * (eta + 1e-6)
+        self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * eta
 
 
 
@@ -191,7 +216,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         Psp.data[np.abs(Psp.data) < 1e-6] = 0.0
         Psp.eliminate_zeros()
         self._A_out = sp.eye(n, format="csr") * (1.0 + eta) - Psp
-        self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * (eta + 1e-6)
+        self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * eta
 
         if use_lu:
             self._lu_out = spla.splu(self._A_out.tocsc())
@@ -431,7 +456,7 @@ class GtaPS(PrioritizedSweepingModule, BellmanMixin):
         Psp.eliminate_zeros()
         
         self._A_out = sp.eye(n, format="csr") * (1.0 + eta) - Psp
-        self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * (eta + 1e-6)
+        self._A_in = in_laplacian(self.P_pi) + sp.eye(n, format="csr") * eta
         
         if self._lu_out is not None:
             self.f_out = self._solve_out(self.r)

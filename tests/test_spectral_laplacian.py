@@ -16,10 +16,9 @@ def test_in_laplacian():
         [0.1, 0.9],
         [0.8, 0.2]
     ])
-    # The true left-eigenvector compatible in-laplacian is I - P^T
-    # This also guarantees that L_in^T = L_out.
+    # The in-Laplacian is D^in - P^T, where D^in is the diagonal of column sums of P.
     L_in = in_laplacian(P)
-    expected = np.eye(2) - P.T
+    expected = np.diag(P.sum(axis=0)) - P.T
     np.testing.assert_allclose(L_in.toarray(), expected)
 
 def test_in_laplacian_sparse():
@@ -29,29 +28,25 @@ def test_in_laplacian_sparse():
         [0.5, 0.5, 0.0]
     ]))
     L_in = in_laplacian(P)
-    expected = np.eye(3) - P.toarray().T
+    dense = P.toarray()
+    expected = np.diag(dense.sum(axis=0)) - dense.T
     np.testing.assert_allclose(L_in.toarray(), expected)
 
-def test_in_laplacian_preserves_left_eigenvectors():
-    # Construct a non-doubly stochastic matrix
+def test_in_laplacian_is_a_graph_laplacian():
+    # A non-doubly stochastic matrix, so D^in differs from the identity.
     P = np.array([
         [0.1, 0.7, 0.2],
         [0.5, 0.3, 0.2],
         [0.0, 0.9, 0.1]
     ])
-    
-    L_out = out_laplacian(P).toarray()
     L_in = in_laplacian(P).toarray()
-    
-    # Check that L_in is exactly the transpose of L_out
-    np.testing.assert_allclose(L_in, L_out.T)
-    
-    # Let v be a left eigenvector of L_out: v^T L_out = lambda v^T
-    # Then L_out^T v = lambda v
-    # Since L_in = L_out^T, L_in v = lambda v
-    # This verifies that right eigenvectors of L_in are left eigenvectors of L_out
-    vals_out_left, vecs_out_left = np.linalg.eig(L_out.T)
-    vals_in_right, vecs_in_right = np.linalg.eig(L_in)
-    
-    # Sort and compare eigenvalues
-    np.testing.assert_allclose(np.sort(np.abs(vals_out_left)), np.sort(np.abs(vals_in_right)))
+
+    # Every row sums to zero, so the constant vector spans the kernel.
+    np.testing.assert_allclose(L_in.sum(axis=1), np.zeros(3), atol=1e-12)
+
+    # The sparse and dense code paths agree.
+    L_sparse = in_laplacian(sp.csr_array(P)).toarray()
+    np.testing.assert_allclose(L_in, L_sparse)
+
+    # D^in differs from I here, so the operator differs from I - P^T.
+    assert not np.allclose(L_in, np.eye(3) - P.T)
