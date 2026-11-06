@@ -33,7 +33,7 @@ def _exact_resolvents(module: GtaPS) -> tuple[np.ndarray, np.ndarray]:
     n = module.n_states
     identity = sp.eye(n, format="csr")
     A_out = identity * (1.0 + module.eta) - sp.csr_array(module.P_pi)
-    A_in = in_laplacian(module.P_pi) + identity * (module.eta + 1e-6)
+    A_in = in_laplacian(module.P_pi) + identity * module.eta
     return (
         np.linalg.solve(A_out.toarray(), module.r),
         np.linalg.solve(A_in.toarray(), module.r),
